@@ -57,6 +57,7 @@ app.innerHTML = `
       <button id="prev" title="上一关 [">◀</button>
       <span id="level-label"></span>
       <button id="next" title="下一关 ]">▶</button>
+      <button id="levels-btn" title="选关面板">▦ 选关</button>
     </div>
     <div class="hud">
       <span id="move-label"></span>
@@ -66,6 +67,7 @@ app.innerHTML = `
       <button id="restart" title="重开 (R)">⟳ 重开</button>
     </div>
   </header>
+  <div id="level-picker" class="level-picker hidden"></div>
   <div id="level-hint" class="level-hint hidden"></div>
   <main class="stage">
     <canvas id="board"></canvas>
@@ -89,6 +91,8 @@ const overlay = app.querySelector('#overlay') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const hintEl = app.querySelector('#level-hint') as HTMLElement
 const toastEl = app.querySelector('#toast') as HTMLElement
+const pickerEl = app.querySelector('#level-picker') as HTMLElement
+const levelsBtn = app.querySelector('#levels-btn') as HTMLButtonElement
 
 const LOGICAL = 480
 
@@ -148,6 +152,7 @@ function openLevel(i: number): void {
   hist = new History(current.def.initialState(levels[index].level))
   hideOverlay()
   hideToast()
+  closePicker()
   draw()
   updateHud()
 }
@@ -158,6 +163,7 @@ function loadGame(id: string): void {
   for (const btn of Array.from(tabsEl.children)) {
     ;(btn as HTMLElement).classList.toggle('active', (btn as HTMLElement).dataset.game === id)
   }
+  closePicker()
   openLevel(0)
 }
 
@@ -193,6 +199,38 @@ function nextLevel(): void {
 
 function prevLevel(): void {
   if (index > 0) openLevel(index - 1)
+}
+
+// ---------- 选关面板：当前游戏全部关卡一屏可选（替代一关关按 ▶） ----------
+
+function buildPicker(): void {
+  pickerEl.innerHTML = ''
+  levels.forEach((l, i) => {
+    const meta = l.level as { id?: string; name?: string }
+    const btn = document.createElement('button')
+    btn.className = 'level-item' + (i === index ? ' active' : '')
+    btn.textContent = `${String(i + 1).padStart(2, '0')} · ${meta.name ?? meta.id ?? ''}`
+    btn.title = meta.id ?? ''
+    btn.addEventListener('click', () => {
+      openLevel(i)
+      closePicker()
+    })
+    pickerEl.appendChild(btn)
+  })
+}
+
+function openPicker(): void {
+  buildPicker()
+  pickerEl.classList.remove('hidden')
+}
+
+function closePicker(): void {
+  pickerEl.classList.add('hidden')
+}
+
+function togglePicker(): void {
+  if (pickerEl.classList.contains('hidden')) openPicker()
+  else closePicker()
 }
 
 // 装饰开关（design §10 纪律：包装可用一个开关整体关掉，玩法信息不受影响）
@@ -263,6 +301,12 @@ for (const b of Object.values(bundles)) {
 ;(app.querySelector('#restart') as HTMLButtonElement).addEventListener('click', restart)
 ;(app.querySelector('#decor') as HTMLButtonElement).addEventListener('click', toggleDecor)
 ;(app.querySelector('#hint') as HTMLButtonElement).addEventListener('click', showHint)
+levelsBtn.addEventListener('click', togglePicker)
+// 点面板以外的地方就收起
+document.addEventListener('click', (e) => {
+  const t = e.target as Node
+  if (!pickerEl.contains(t) && !levelsBtn.contains(t)) closePicker()
+})
 nextAfterWin.addEventListener('click', nextLevel)
 
 window.addEventListener('keydown', (e) => {

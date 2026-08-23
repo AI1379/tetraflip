@@ -104,6 +104,37 @@ button:hover {
   display: none;
 }
 
+/* 选关面板：网格列出当前游戏全部关卡 */
+.level-picker {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  max-height: 264px;
+  overflow-y: auto;
+}
+
+.level-picker.hidden {
+  display: none;
+}
+
+.level-item {
+  text-align: left;
+  font-size: 12px;
+  padding: 6px 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-item.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .stage {
   position: relative;
 }
