@@ -5,7 +5,7 @@ import type { LoadedLevel } from '../core/levels'
 import { History } from '../core/undo'
 import type { AnyGame, Dir } from '../core/protocol'
 import { t3Game, render as renderT3 } from '../games/t3'
-import { chemGame, render as renderChem } from '../games/chem'
+import { chemGame, render as renderChem, setChemDecor } from '../games/chem'
 
 /**
  * 浏览器壳：游戏切换、关卡导航、HUD、撤销/重开、画布宿主。
@@ -17,11 +17,13 @@ interface Bundle {
   label: string
   def: AnyGame
   render: (state: any, ctx: CanvasRenderingContext2D, w: number, h: number) => void
+  /** 装饰开关（design §10：包装可用一个开关整体关掉）；未实现则缺省 */
+  setDecor?: (v: boolean) => void
 }
 
 const bundles: Record<string, Bundle> = {
   t3: { id: 't3', label: 't+3', def: t3Game, render: renderT3 },
-  chem: { id: 'chem', label: '109.5°', def: chemGame, render: renderChem },
+  chem: { id: 'chem', label: '109.5°', def: chemGame, render: renderChem, setDecor: setChemDecor },
 }
 
 // 一次 glob 两个游戏的关卡，按目录分流
@@ -48,6 +50,7 @@ app.innerHTML = `
     </div>
     <div class="hud">
       <span id="move-label"></span>
+      <button id="decor" class="active" title="装饰开关：关掉背景装饰，只留玩法信息">✦ 装饰 开</button>
       <button id="undo" title="撤销 (Z)">↩ 撤销</button>
       <button id="restart" title="重开 (R)">⟳ 重开</button>
     </div>
@@ -166,6 +169,17 @@ function prevLevel(): void {
   if (index > 0) openLevel(index - 1)
 }
 
+// 装饰开关（design §10 纪律：包装可用一个开关整体关掉，玩法信息不受影响）
+let decorOn = true
+function toggleDecor(): void {
+  decorOn = !decorOn
+  for (const b of Object.values(bundles)) b.setDecor?.(decorOn)
+  const btn = app.querySelector('#decor') as HTMLButtonElement
+  btn.textContent = decorOn ? '✦ 装饰 开' : '✦ 装饰 关'
+  btn.classList.toggle('active', decorOn)
+  draw()
+}
+
 // ---------- 事件 ----------
 
 for (const b of Object.values(bundles)) {
@@ -179,6 +193,7 @@ for (const b of Object.values(bundles)) {
 ;(app.querySelector('#next') as HTMLButtonElement).addEventListener('click', nextLevel)
 ;(app.querySelector('#undo') as HTMLButtonElement).addEventListener('click', doUndo)
 ;(app.querySelector('#restart') as HTMLButtonElement).addEventListener('click', restart)
+;(app.querySelector('#decor') as HTMLButtonElement).addEventListener('click', toggleDecor)
 nextAfterWin.addEventListener('click', nextLevel)
 
 window.addEventListener('keydown', (e) => {
