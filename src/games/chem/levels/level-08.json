@@ -1,0 +1,25 @@
+{
+  "id": "chem-08",
+  "name": "别碰已经对的",
+  "hint": "左边中心的 N 臂已经和虚线圈同色——它已经达标，别撞它！撞一下会翻转，反而变错。只进攻还没达标的中心。",
+  "width": 7,
+  "height": 7,
+  "walls": [[1, 6], [2, 6], [3, 6]],
+  "player": [0, 4],
+  "centers": [
+    {
+      "pos": [2, 4],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E"
+    },
+    {
+      "pos": [5, 4],
+      "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "green" },
+      "leaving": "E"
+    }
+  ],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "red" },
+    { "center": 1, "arm": "E", "color": "green" }
+  ]
+}

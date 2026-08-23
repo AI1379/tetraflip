@@ -1,0 +1,25 @@
+{
+  "id": "chem-06",
+  "name": "两个中心",
+  "hint": "两个中心各有自己的开口方向。规划一条顺路，把它们依次撞翻。",
+  "width": 7,
+  "height": 7,
+  "walls": [[3, 3]],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E"
+    },
+    {
+      "pos": [4, 4],
+      "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "green" },
+      "leaving": "W"
+    }
+  ],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "green" },
+    { "center": 1, "arm": "E", "color": "green" }
+  ]
+}

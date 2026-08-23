@@ -1,0 +1,17 @@
+{
+  "id": "chem-02",
+  "name": "站到对面去",
+  "hint": "进攻方向必须等于开口方向。开口朝东（→）：你得先绕到中心的西侧，再按 → 撞入。正面撞是没有用的。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [3, 2],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
+      "leaving": "E"
+    }
+  ],
+  "goals": [{ "center": 0, "arm": "E", "color": "green" }]
+}

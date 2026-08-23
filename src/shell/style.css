@@ -84,6 +84,21 @@ button:hover {
   border-color: var(--muted);
 }
 
+.level-hint {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.level-hint.hidden {
+  display: none;
+}
+
 .stage {
   position: relative;
 }

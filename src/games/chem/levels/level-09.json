@@ -1,0 +1,31 @@
+{
+  "id": "chem-09",
+  "name": "两个房间，三个中心",
+  "hint": "三个中心分在两个房间，墙只留了一扇门。先定进攻顺序，再找门。",
+  "width": 8,
+  "height": 8,
+  "walls": [[4, 0], [4, 1], [4, 2], [4, 3], [4, 5], [4, 6], [4, 7]],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [1, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 6],
+      "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "green" },
+      "leaving": "N"
+    },
+    {
+      "pos": [6, 5],
+      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "leaving": "S"
+    }
+  ],
+  "goals": [
+    { "center": 0, "arm": "E", "color": "yellow" },
+    { "center": 1, "arm": "N", "color": "red" },
+    { "center": 2, "arm": "N", "color": "blue" }
+  ]
+}

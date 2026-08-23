@@ -1,0 +1,17 @@
+{
+  "id": "chem-03",
+  "name": "开口朝上",
+  "hint": "开口朝北（↑）：站到中心的南边，按 ↑ 向上撞入。先看箭头指向，再找路。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [0, 4],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "leaving": "N"
+    }
+  ],
+  "goals": [{ "center": 0, "arm": "S", "color": "green" }]
+}

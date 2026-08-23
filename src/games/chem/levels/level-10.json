@@ -1,0 +1,31 @@
+{
+  "id": "chem-10",
+  "name": "毕业题",
+  "hint": "三个中心，三个开口。先把整条路线规划完，再动手。",
+  "width": 8,
+  "height": 8,
+  "walls": [[4, 4], [4, 5], [4, 6]],
+  "player": [0, 7],
+  "centers": [
+    {
+      "pos": [2, 1],
+      "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" },
+      "leaving": "S"
+    },
+    {
+      "pos": [5, 2],
+      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
+      "leaving": "W"
+    },
+    {
+      "pos": [2, 5],
+      "arms": { "N": "green", "E": "yellow", "S": "blue", "W": "red" },
+      "leaving": "N"
+    }
+  ],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "red" },
+    { "center": 1, "arm": "E", "color": "green" },
+    { "center": 2, "arm": "N", "color": "blue" }
+  ]
+}

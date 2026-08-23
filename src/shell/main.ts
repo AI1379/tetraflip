@@ -21,7 +21,7 @@ interface Bundle {
 
 const bundles: Record<string, Bundle> = {
   t3: { id: 't3', label: 't+3', def: t3Game, render: renderT3 },
-  chem: { id: 'chem', label: 'Inversion', def: chemGame, render: renderChem },
+  chem: { id: 'chem', label: '109.5°', def: chemGame, render: renderChem },
 }
 
 // 一次 glob 两个游戏的关卡，按目录分流
@@ -52,6 +52,7 @@ app.innerHTML = `
       <button id="restart" title="重开 (R)">⟳ 重开</button>
     </div>
   </header>
+  <div id="level-hint" class="level-hint hidden"></div>
   <main class="stage">
     <canvas id="board"></canvas>
     <div id="overlay" class="overlay hidden">
@@ -71,6 +72,7 @@ const levelLabel = app.querySelector('#level-label') as HTMLElement
 const moveLabel = app.querySelector('#move-label') as HTMLElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
+const hintEl = app.querySelector('#level-hint') as HTMLElement
 
 const LOGICAL = 480
 
@@ -87,8 +89,8 @@ function draw(): void {
   current.render(hist.current, ctx, LOGICAL, LOGICAL)
 }
 
-function levelMeta(): { id?: string; name?: string } {
-  return (levels[index]?.level ?? {}) as { id?: string; name?: string }
+function levelMeta(): { id?: string; name?: string; hint?: string } {
+  return (levels[index]?.level ?? {}) as { id?: string; name?: string; hint?: string }
 }
 
 function updateHud(): void {
@@ -96,6 +98,14 @@ function updateHud(): void {
   const title = [meta.id, meta.name].filter(Boolean).join(' · ')
   levelLabel.textContent = levels.length > 0 ? `${index + 1}/${levels.length} ${title}` : '—'
   moveLabel.textContent = `步数 ${hist.depth}`
+  // 关卡 hint（教学/点拨文案）：纯展示，有则显示，无则隐藏
+  if (meta.hint) {
+    hintEl.textContent = meta.hint
+    hintEl.classList.remove('hidden')
+  } else {
+    hintEl.textContent = ''
+    hintEl.classList.add('hidden')
+  }
 }
 
 function showOverlay(): void {
