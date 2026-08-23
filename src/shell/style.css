@@ -1,0 +1,133 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0d10;
+  --panel: #14181f;
+  --ink: #f2f4f8;
+  --muted: #8b95a5;
+  --accent: #e0b64f;
+  --border: #2a323f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  width: min(96vw, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0 24px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tabs button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#level-label,
+#move-label {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+button {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--muted);
+}
+
+.stage {
+  position: relative;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #0e1116;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 13, 16, 0.55);
+  border-radius: 12px;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.win-mark {
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
