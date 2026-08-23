@@ -1,0 +1,13 @@
+{
+  "id": "t3-06",
+  "name": "一拖二",
+  "hint": "每次按键，同时写入两枚回声的历史。延迟相同，起点不同。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": { "start": [0, 2], "goal": [3, 2] },
+  "echoes": [
+    { "color": "red", "start": [0, 0], "goal": [3, 0], "delay": 2 },
+    { "color": "blue", "start": [0, 4], "goal": [3, 4], "delay": 2 }
+  ]
+}

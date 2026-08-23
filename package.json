@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "solve": "vite-node scripts/solve.ts"
+    "solve": "vite-node scripts/solve.ts",
+    "craft:t3": "vite-node scripts/craft-t3.ts"
   },
   "dependencies": {
     "zod": "^3.25.0"

@@ -1,0 +1,13 @@
+{
+  "id": "t3-08",
+  "name": "缝隙",
+  "hint": "三个目标暴露了三层时间各自走过的路。先倒推每一层需要什么，再按下第一拍。",
+  "width": 6,
+  "height": 5,
+  "walls": [[3, 1], [3, 2], [3, 3]],
+  "player": { "start": [0, 2], "goal": [4, 2] },
+  "echoes": [
+    { "color": "red", "start": [0, 3], "goal": [2, 1], "delay": 2 },
+    { "color": "blue", "start": [0, 1], "goal": [2, 0], "delay": 4 }
+  ]
+}

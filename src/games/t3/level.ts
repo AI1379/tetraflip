@@ -14,6 +14,8 @@ export interface T3EchoDef {
 export interface T3Level {
   id: string
   name?: string
+  /** 教学/点拨文案（纯展示，不进引擎与 stateKey） */
+  hint?: string
   width: number
   height: number
   walls: Vec[]
@@ -26,6 +28,7 @@ const vec = z.tuple([z.number().int().min(0), z.number().int().min(0)])
 const schema = z.object({
   id: z.string().min(1),
   name: z.string().optional(),
+  hint: z.string().optional(),
   width: z.number().int().min(2).max(12),
   height: z.number().int().min(2).max(12),
   walls: z.array(vec).default([]),

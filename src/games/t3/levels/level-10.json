@@ -1,0 +1,14 @@
+{
+  "id": "t3-10",
+  "name": "四层合奏",
+  "hint": "四个时间层同时在场。你撞边的拍子，也是某一层唯一的燃料。",
+  "width": 6,
+  "height": 6,
+  "walls": [],
+  "player": { "start": [0, 0], "goal": [5, 2] },
+  "echoes": [
+    { "color": "red", "start": [0, 2], "goal": [4, 4], "delay": 2 },
+    { "color": "blue", "start": [0, 4], "goal": [3, 5], "delay": 4 },
+    { "color": "green", "start": [5, 5], "goal": [4, 5], "delay": 6 }
+  ]
+}
