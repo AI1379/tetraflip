@@ -1,0 +1,28 @@
+{
+  "id": "109.5°-31",
+  "name": "弹出去",
+  "hint": "撞上这种中心时，被顶出来的基团不会到你手里——它会从你身后飞出去，落到远处。飞出去的也是资源：绕过去捡回来，还有用处。",
+  "width": 7,
+  "height": 5,
+  "walls": [],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [4, 2],
+      "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "green" },
+      "leaving": "W"
+    }
+  ],
+  "groups": [{ "pos": [0, 2], "color": "purple" }],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "purple" },
+    { "center": 1, "arm": "E", "color": "green" }
+  ],
+  "par": 11
+}

@@ -1,0 +1,32 @@
+{
+  "id": "109.5°-14",
+  "name": "两种目标",
+  "hint": "左边的中心撞一次就能把两个目标同时对上——但只有空手撞才不会砸坏它；而手一旦拿起色珠，就再也空不下来了。想清楚第一击给谁、什么时机拿货。",
+  "width": 8,
+  "height": 6,
+  "walls": [[4, 0], [4, 1], [4, 2], [4, 4], [4, 5]],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [1, 2],
+      "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 4],
+      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "leaving": "S"
+    },
+    {
+      "pos": [6, 2],
+      "arms": { "N": "purple", "E": "yellow", "S": "green", "W": "red" },
+      "leaving": "S"
+    }
+  ],
+  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "goals": [
+    { "center": 0, "arm": "E", "color": "blue" },
+    { "center": 0, "arm": "W", "color": "red" },
+    { "center": 2, "arm": "N", "color": "blue" }
+  ]
+}

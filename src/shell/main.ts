@@ -5,7 +5,7 @@ import type { LoadedLevel } from '../core/levels'
 import { History } from '../core/undo'
 import type { AnyGame, Dir } from '../core/protocol'
 import { t3Game, render as renderT3 } from '../games/t3'
-import { chemGame, render as renderChem, setChemDecor } from '../games/chem'
+import { chemGame, render as renderChem, setChemDecor, notifyChemImpact } from '../games/chem'
 
 /**
  * 浏览器壳：游戏切换、关卡导航、HUD、撤销/重开、画布宿主。
@@ -19,11 +19,20 @@ interface Bundle {
   render: (state: any, ctx: CanvasRenderingContext2D, w: number, h: number) => void
   /** 装饰开关（design §10：包装可用一个开关整体关掉）；未实现则缺省 */
   setDecor?: (v: boolean) => void
+  /** 无效输入反馈（step 无效果时调用）；未实现则缺省 */
+  onBlocked?: (dir: Dir) => void
 }
 
 const bundles: Record<string, Bundle> = {
   t3: { id: 't3', label: 't+3', def: t3Game, render: renderT3 },
-  chem: { id: 'chem', label: '109.5°', def: chemGame, render: renderChem, setDecor: setChemDecor },
+  chem: {
+    id: 'chem',
+    label: '109.5°',
+    def: chemGame,
+    render: renderChem,
+    setDecor: setChemDecor,
+    onBlocked: notifyChemImpact,
+  },
 }
 
 // 一次 glob 两个游戏的关卡，按目录分流
@@ -86,10 +95,19 @@ let hist: History<any> = new History(undefined)
 
 function draw(): void {
   const dpr = window.devicePixelRatio || 1
-  canvas.width = LOGICAL * dpr
-  canvas.height = LOGICAL * dpr
+  const size = Math.round(LOGICAL * dpr)
+  if (canvas.width !== size || canvas.height !== size) {
+    canvas.width = size
+    canvas.height = size
+  }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   current.render(hist.current, ctx, LOGICAL, LOGICAL)
+}
+
+// 渲染循环：补间动画 / 背景自转 / 无效进攻反馈需要连续重绘（棋盘小，开销可忽略）
+function frame(): void {
+  draw()
+  requestAnimationFrame(frame)
 }
 
 function levelMeta(): { id?: string; name?: string; hint?: string } {
@@ -141,7 +159,10 @@ function loadGame(id: string): void {
 function applyDir(dir: Dir): void {
   const def = current.def
   const next = def.step(hist.current, dir)
-  if (def.stateKey(next) === def.stateKey(hist.current)) return // 无效果，不入历史
+  if (def.stateKey(next) === def.stateKey(hist.current)) {
+    current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
+    return
+  }
   hist.push(next)
   draw()
   updateHud()
@@ -218,3 +239,4 @@ window.addEventListener('keydown', (e) => {
 })
 
 loadGame('t3')
+requestAnimationFrame(frame)

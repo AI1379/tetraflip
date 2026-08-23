@@ -1,0 +1,30 @@
+{
+  "id": "109.5°-40",
+  "name": "大毕业：全线贯通",
+  "hint": "开锁、照光、发射、取珠——每个机关都有它的位置。两次发射之间，记得把开口转回射线上。",
+  "width": 7,
+  "height": 5,
+  "walls": [[4, 1], [4, 3], [5, 2], [6, 0]],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [4, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green" },
+      "leaving": "E",
+      "kind": "trigonal",
+      "shielded": true
+    }
+  ],
+  "groups": [
+    { "pos": [0, 1], "color": "blue" },
+    { "pos": [6, 4], "color": "yellow" }
+  ],
+  "lights": [[0, 4]],
+  "deprotections": [[0, 0]],
+  "launchers": [{ "pos": [0, 2], "dir": "E" }],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "blue" }] },
+    { "goals": [{ "center": 0, "arm": "N", "color": "yellow" }] }
+  ],
+  "par": 21
+}

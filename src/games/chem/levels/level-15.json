@@ -1,0 +1,32 @@
+{
+  "id": "109.5°-15",
+  "name": "毕业题：同一位，两扇门",
+  "hint": "同一个站位，朝北撞和朝南撞是两个不同的进攻——北边那个中心已经达标，别碰它。东边的中心撞一次就能对上；南边的中心要的蓝色得从角落里运来，换出来的颜色暂时没用，攥着就好。",
+  "width": 8,
+  "height": 6,
+  "walls": [],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [3, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "N"
+    },
+    {
+      "pos": [6, 1],
+      "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [3, 4],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
+      "leaving": "S"
+    }
+  ],
+  "groups": [{ "pos": [0, 5], "color": "blue" }],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "red" },
+    { "center": 1, "arm": "E", "color": "blue" },
+    { "center": 2, "arm": "N", "color": "blue" }
+  ]
+}

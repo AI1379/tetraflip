@@ -1,0 +1,29 @@
+{
+  "id": "109.5°-33",
+  "name": "保护与解锁",
+  "hint": "六边形罩子护住了一个中心：怎么撞都没用。先去做别处能做的事，再去找开锁的格子——走过它，罩子就永远消失了。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [3, 2],
+  "centers": [
+    {
+      "pos": [2, 3],
+      "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" },
+      "leaving": "S"
+    },
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E",
+      "shielded": true
+    }
+  ],
+  "groups": [{ "pos": [4, 0], "color": "blue" }],
+  "deprotections": [[0, 0]],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "red" },
+    { "center": 1, "arm": "W", "color": "blue" }
+  ],
+  "par": 9
+}

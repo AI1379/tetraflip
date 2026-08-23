@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "solve": "vite-node scripts/solve.ts",
+    "trace:chem": "vite-node scripts/trace-chem.ts",
     "craft:t3": "vite-node scripts/craft-t3.ts"
   },
   "dependencies": {

@@ -1,0 +1,28 @@
+{
+  "id": "109.5°-30",
+  "name": "毕业：光之路",
+  "hint": "先照光把开口转出来，再带着基团撞进去——连锁会替你把第二段做完。想清楚每一段的顺序。",
+  "width": 5,
+  "height": 4,
+  "walls": [[1, 1]],
+  "player": [4, 3],
+  "centers": [
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "purple", "S": "yellow", "W": "green" },
+      "leaving": "E"
+    },
+    {
+      "pos": [3, 1],
+      "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" },
+      "leaving": "E"
+    }
+  ],
+  "groups": [{ "pos": [0, 3], "color": "blue" }],
+  "lights": [[0, 0]],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "blue" }] },
+    { "goals": [{ "center": 1, "arm": "E", "color": "green" }] }
+  ],
+  "par": 10
+}

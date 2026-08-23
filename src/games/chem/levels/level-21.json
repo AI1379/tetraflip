@@ -1,0 +1,19 @@
+{
+  "id": "109.5°-21",
+  "name": "光的转向",
+  "hint": "走上有放射纹的光照格，所有中心的开口会顺时针转一个方向。开口在哪边，就得从哪边的对面撞进去——转对了方向，路就开了。",
+  "width": 4,
+  "height": 3,
+  "walls": [[2, 2]],
+  "player": [3, 2],
+  "centers": [
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "N"
+    }
+  ],
+  "lights": [[1, 0]],
+  "goals": [{ "center": 0, "arm": "W", "color": "blue" }],
+  "par": 6
+}

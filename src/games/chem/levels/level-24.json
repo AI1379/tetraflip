@@ -1,0 +1,21 @@
+{
+  "id": "109.5°-24",
+  "name": "两步反应",
+  "hint": "这一关分两段：先做出「中间体」（亮着的虚线圈），再做出「产物」。淡色的圈是下一段的目标——顺序到了自然会计入。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [0, 2],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E"
+    }
+  ],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    { "goals": [{ "center": 0, "arm": "E", "color": "blue" }] }
+  ],
+  "par": 7
+}

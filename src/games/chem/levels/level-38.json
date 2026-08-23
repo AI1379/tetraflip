@@ -1,0 +1,34 @@
+{
+  "id": "109.5°-38",
+  "name": "飞珠的用处",
+  "hint": "一击下去：连锁点亮了邻居，被顶出的基团从身后飞走。飞走的那枚正是下一步要用的——规划好路线再去捡。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [1, 4],
+      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
+      "leaving": "S"
+    }
+  ],
+  "groups": [{ "pos": [0, 1], "color": "purple" }],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "purple" },
+    { "center": 1, "arm": "E", "color": "blue" },
+    { "center": 2, "arm": "N", "color": "green" }
+  ],
+  "par": 8
+}

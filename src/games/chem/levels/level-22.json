@@ -1,0 +1,28 @@
+{
+  "id": "109.5°-22",
+  "name": "回收站",
+  "hint": "带着基团撞上中心，手里会换出新东西；可有些中心必须空手撞。带下箭头的那口井能吞掉手里的基团——需要空手的时候，先去井边。",
+  "width": 6,
+  "height": 4,
+  "walls": [],
+  "player": [2, 2],
+  "centers": [
+    {
+      "pos": [1, 1],
+      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "leaving": "E"
+    },
+    {
+      "pos": [4, 2],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "W"
+    }
+  ],
+  "groups": [{ "pos": [0, 2], "color": "purple" }],
+  "disposals": [[3, 1]],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "purple" },
+    { "center": 1, "arm": "E", "color": "blue" }
+  ],
+  "par": 13
+}

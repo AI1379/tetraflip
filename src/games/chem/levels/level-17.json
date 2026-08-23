@@ -1,0 +1,31 @@
+{
+  "id": "109.5°-17",
+  "name": "多米诺",
+  "hint": "震动沿连线一级一级传，而且每翻一个中心都会重新比对连线颜色：有的连接要等前面的中心翻过之后才接通。一击最多能翻几个中心？",
+  "width": 5,
+  "height": 5,
+  "walls": [[2, 0]],
+  "player": [4, 4],
+  "centers": [
+    {
+      "pos": [1, 2],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 2],
+      "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" },
+      "leaving": "W"
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "E"
+    }
+  ],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "green" },
+    { "center": 1, "arm": "N", "color": "red" },
+    { "center": 2, "arm": "E", "color": "blue" }
+  ]
+}

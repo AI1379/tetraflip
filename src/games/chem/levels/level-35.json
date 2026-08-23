@@ -1,0 +1,24 @@
+{
+  "id": "109.5°-35",
+  "name": "狙击",
+  "hint": "三角中心被墙夹住了，走不过去——但弹射台的射线能到。飞过去的基团照样会装进开口，臂照样会转。",
+  "width": 5,
+  "height": 5,
+  "walls": [[2, 1], [2, 3]],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [3, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green" },
+      "leaving": "E",
+      "kind": "trigonal"
+    }
+  ],
+  "groups": [{ "pos": [0, 0], "color": "blue" }],
+  "launchers": [{ "pos": [0, 2], "dir": "E" }],
+  "goals": [
+    { "center": 0, "arm": "N", "color": "blue" },
+    { "center": 0, "arm": "E", "color": "red" }
+  ],
+  "par": 3
+}

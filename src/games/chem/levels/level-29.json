@@ -1,0 +1,20 @@
+{
+  "id": "109.5°-29",
+  "name": "光与三角",
+  "hint": "光照也会转三角中心的开口——它只在三个方向之间轮转。转对了开口，才能接着把臂转到目标位置。",
+  "width": 4,
+  "height": 4,
+  "walls": [[1, 2]],
+  "player": [0, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green" },
+      "leaving": "E",
+      "kind": "trigonal"
+    }
+  ],
+  "lights": [[0, 1]],
+  "goals": [{ "center": 0, "arm": "E", "color": "green" }],
+  "par": 9
+}

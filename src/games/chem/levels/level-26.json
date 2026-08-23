@@ -1,0 +1,29 @@
+{
+  "id": "109.5°-26",
+  "name": "光与回收",
+  "hint": "光照开出进攻的路；撞完之后手里会多出东西——带着它去撞别的中心可不行。井能吞掉手里的基团，让手重新变空。",
+  "width": 6,
+  "height": 4,
+  "walls": [[3, 1]],
+  "player": [0, 1],
+  "centers": [
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [4, 1],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "W"
+    }
+  ],
+  "groups": [{ "pos": [0, 2], "color": "purple" }],
+  "lights": [[0, 0]],
+  "disposals": [[3, 2]],
+  "goals": [
+    { "center": 0, "arm": "S", "color": "purple" },
+    { "center": 1, "arm": "E", "color": "blue" }
+  ],
+  "par": 9
+}

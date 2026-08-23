@@ -1,0 +1,20 @@
+{
+  "id": "109.5°-32",
+  "name": "弹射台",
+  "hint": "手里拿着基团走上双箭头台面：它会沿箭头方向飞出去，远远地撞进开口。被顶出来的基团会落在它刚才经过的格子里。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [4, 2],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E"
+    }
+  ],
+  "groups": [{ "pos": [0, 0], "color": "purple" }],
+  "launchers": [{ "pos": [0, 2], "dir": "E" }],
+  "goals": [{ "center": 0, "arm": "W", "color": "purple" }],
+  "par": 3
+}

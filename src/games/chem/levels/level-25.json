@@ -1,0 +1,19 @@
+{
+  "id": "109.5°-25",
+  "name": "三角形",
+  "hint": "这个中心只有三条臂，中心是个三角形：每撞一次，三条臂顺着三角转一步——不是对调。撞三下才回到原样。先数数要转几下，再动手。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [2, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green" },
+      "leaving": "S",
+      "kind": "trigonal"
+    }
+  ],
+  "goals": [{ "center": 0, "arm": "N", "color": "blue" }],
+  "par": 7
+}

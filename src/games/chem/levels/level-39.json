@@ -1,0 +1,24 @@
+{
+  "id": "109.5°-39",
+  "name": "转向再狙",
+  "hint": "弹射台只会沿箭头方向打。中心的开口不朝着那条线？先去照光，把开口转到射线上，再回来开火。",
+  "width": 5,
+  "height": 5,
+  "walls": [[3, 3]],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [3, 2],
+      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
+      "leaving": "N"
+    }
+  ],
+  "groups": [{ "pos": [0, 4], "color": "purple" }],
+  "lights": [[0, 0]],
+  "launchers": [{ "pos": [0, 2], "dir": "E" }],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "purple" },
+    { "center": 0, "arm": "N", "color": "yellow" }
+  ],
+  "par": 7
+}

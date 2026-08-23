@@ -1,0 +1,23 @@
+{
+  "id": "109.5°-12",
+  "name": "取货",
+  "hint": "想要某个中心臂上没有的颜色，就得先从别的中心把它换出来——空手撞入只是翻转，带着色珠撞入才是交换。先拾起一枚色珠，再去右边的中心把蓝色换出来。",
+  "width": 7,
+  "height": 5,
+  "walls": [],
+  "player": [2, 4],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
+      "leaving": "S"
+    },
+    {
+      "pos": [5, 2],
+      "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" },
+      "leaving": "N"
+    }
+  ],
+  "groups": [{ "pos": [3, 4], "color": "purple" }],
+  "goals": [{ "center": 0, "arm": "N", "color": "blue" }]
+}
