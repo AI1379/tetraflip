@@ -3,6 +3,7 @@ import { dirFromKey, isRestartKey, isUndoKey } from '../core/keyboard'
 import { loadLevels } from '../core/levels'
 import type { LoadedLevel } from '../core/levels'
 import { History } from '../core/undo'
+import { solveFrom } from '../core/solver'
 import type { AnyGame, Dir } from '../core/protocol'
 import { t3Game, render as renderT3 } from '../games/t3'
 import { chemGame, render as renderChem, setChemDecor, notifyChemImpact } from '../games/chem'
@@ -59,6 +60,7 @@ app.innerHTML = `
     </div>
     <div class="hud">
       <span id="move-label"></span>
+      <button id="hint" title="下一步提示 (H)：卡住了就用它，不限次数">💡 提示</button>
       <button id="decor" class="active" title="装饰开关：关掉背景装饰，只留玩法信息">✦ 装饰 开</button>
       <button id="undo" title="撤销 (Z)">↩ 撤销</button>
       <button id="restart" title="重开 (R)">⟳ 重开</button>
@@ -67,6 +69,7 @@ app.innerHTML = `
   <div id="level-hint" class="level-hint hidden"></div>
   <main class="stage">
     <canvas id="board"></canvas>
+    <div id="toast" class="toast hidden"></div>
     <div id="overlay" class="overlay hidden">
       <div class="overlay-card">
         <div class="win-mark">✓ 已解出</div>
@@ -74,7 +77,7 @@ app.innerHTML = `
       </div>
     </div>
   </main>
-  <footer class="hint">方向键 / WASD 行动 · Z 撤销 · R 重开 · [ ] 切换关卡</footer>
+  <footer class="hint">方向键 / WASD 行动 · H 提示 · Z 撤销 · R 重开 · [ ] 切换关卡</footer>
 `
 
 const canvas = app.querySelector('#board') as HTMLCanvasElement
@@ -85,6 +88,7 @@ const moveLabel = app.querySelector('#move-label') as HTMLElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const hintEl = app.querySelector('#level-hint') as HTMLElement
+const toastEl = app.querySelector('#toast') as HTMLElement
 
 const LOGICAL = 480
 
@@ -143,6 +147,7 @@ function openLevel(i: number): void {
   index = Math.max(0, Math.min(i, levels.length - 1))
   hist = new History(current.def.initialState(levels[index].level))
   hideOverlay()
+  hideToast()
   draw()
   updateHud()
 }
@@ -201,6 +206,48 @@ function toggleDecor(): void {
   draw()
 }
 
+// ---------- solver 提示（design §10「玩家辅助」：从当前局面实时求解，不写手打攻略） ----------
+
+const DIR_TEXT: Record<string, string> = {
+  N: '↑（上）',
+  E: '→（右）',
+  S: '↓（下）',
+  W: '←（左）',
+}
+
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+function toast(msg: string, ms = 5000): void {
+  toastEl.textContent = msg
+  toastEl.classList.remove('hidden')
+  if (toastTimer !== null) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => toastEl.classList.add('hidden'), ms)
+}
+function hideToast(): void {
+  toastEl.classList.add('hidden')
+  if (toastTimer !== null) {
+    clearTimeout(toastTimer)
+    toastTimer = null
+  }
+}
+
+function showHint(): void {
+  if (current.def.isWin(hist.current)) {
+    toast('这关已经解出来了！按 ] 或「下一关」继续。')
+    return
+  }
+  // 从当前局面跑通用 BFS（与入库关卡验证同一个 solver），取最短解的第一步
+  const r = solveFrom(current.def, hist.current, { maxDepth: 30 })
+  if (r.solved && r.solution.length > 0) {
+    toast(`下一步：${DIR_TEXT[r.solution[0]] ?? r.solution[0]} · 距通关还有 ${r.solution.length} 步（最短路线）`)
+  } else if (!r.solved && !r.truncated) {
+    // 搜索空间穷尽仍无解 = 当前局面真的走不通了（比如扔掉了必需的珠子）
+    toast('这个局面已经走不通了。↩ 撤销 (Z) 回退几步，或 ⟳ 重开 (R)。')
+  } else {
+    const meta = levelMeta()
+    toast(meta.hint ? `提示：${meta.hint}` : '再想想——开口的对面就是进攻的位置。')
+  }
+}
+
 // ---------- 事件 ----------
 
 for (const b of Object.values(bundles)) {
@@ -215,23 +262,34 @@ for (const b of Object.values(bundles)) {
 ;(app.querySelector('#undo') as HTMLButtonElement).addEventListener('click', doUndo)
 ;(app.querySelector('#restart') as HTMLButtonElement).addEventListener('click', restart)
 ;(app.querySelector('#decor') as HTMLButtonElement).addEventListener('click', toggleDecor)
+;(app.querySelector('#hint') as HTMLButtonElement).addEventListener('click', showHint)
 nextAfterWin.addEventListener('click', nextLevel)
 
 window.addEventListener('keydown', (e) => {
   const dir = dirFromKey(e)
   if (dir) {
     e.preventDefault()
-    if (!e.repeat) applyDir(dir)
+    if (!e.repeat) {
+      hideToast()
+      applyDir(dir)
+    }
     return
   }
   if (isUndoKey(e)) {
     e.preventDefault()
+    hideToast()
     doUndo()
     return
   }
   if (isRestartKey(e)) {
     e.preventDefault()
+    hideToast()
     restart()
+    return
+  }
+  if (e.key === 'h' || e.key === 'H') {
+    e.preventDefault()
+    showHint()
     return
   }
   if (e.key === '[') prevLevel()

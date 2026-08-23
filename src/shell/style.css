@@ -151,3 +151,27 @@ canvas {
   font-size: 12px;
   text-align: center;
 }
+
+/* solver 提示浮层：棋盘顶部居中，几秒后自动消失 */
+.toast {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 88%;
+  background: rgba(20, 24, 31, 0.94);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 16px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.toast.hidden {
+  display: none;
+}

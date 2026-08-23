@@ -18,19 +18,19 @@ export interface SolveResult<A> {
 }
 
 /**
- * 通用 BFS solver：对任何实现 GameDefinition 的游戏求最短解。
+ * 通用 BFS solver：对任何实现 GameDefinition 的游戏、从任意给定局面求最短解。
  * 依赖 game.stateKey 去重（其中不得包含步数等纯计数器）。
  * 无效动作（step 返回原状态）会因 stateKey 相同被自动剪掉。
+ * 用途：入库关卡验证（从初始局面）、玩家提示（从当前局面，见 design §10「玩家辅助」）。
  */
-export function solve<L, S, A>(
+export function solveFrom<L, S, A>(
   game: GameDefinition<L, S, A>,
-  level: L,
+  initial: S,
   opts: SolveOptions = {},
 ): SolveResult<A> {
   const maxDepth = opts.maxDepth ?? 32
   const maxVisits = opts.maxVisits ?? 200_000
 
-  const initial = game.initialState(level)
   if (game.isWin(initial)) {
     return { solved: true, solution: [], visited: 1, depth: 0, truncated: false }
   }
@@ -63,4 +63,13 @@ export function solve<L, S, A>(
   }
 
   return { solved: false, solution: [], visited: visited.size, depth, truncated: frontier.length > 0 }
+}
+
+/** 从关卡初始局面求最短解（入库验证用）。 */
+export function solve<L, S, A>(
+  game: GameDefinition<L, S, A>,
+  level: L,
+  opts: SolveOptions = {},
+): SolveResult<A> {
+  return solveFrom(game, game.initialState(level), opts)
 }
