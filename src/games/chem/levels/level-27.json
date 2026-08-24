@@ -1,7 +1,7 @@
 {
   "id": "109.5°-27",
   "name": "三臂搬运",
-  "hint": "带着基团撞三角中心：它会装进「开口的下下家」那条臂——顺着三角转两步的位置。开口臂上的基团则会被换到你手里。",
+  "hint": "三臂中心的染色也完全一样：手中珠装进开口臂，原珠换到手中，然后三颗珠和缺口一起翻到对侧。",
   "width": 5,
   "height": 5,
   "walls": [],
@@ -16,8 +16,8 @@
   ],
   "groups": [{ "pos": [0, 2], "color": "yellow" }],
   "goals": [
-    { "center": 0, "arm": "E", "color": "yellow" },
-    { "center": 0, "arm": "N", "color": "green" }
+    { "center": 0, "arm": "N", "color": "yellow" },
+    { "center": 0, "arm": "W", "color": "blue" }
   ],
   "par": 5
 }

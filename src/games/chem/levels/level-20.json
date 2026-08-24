@@ -2,33 +2,33 @@
   "id": "109.5°-20",
   "name": "毕业：全共轭",
   "hint": "毕业题：中间的中心牵着两条链——翻一次点燃一边，再翻一次才点燃另一边。还要留意：色珠什么时候拿起来，决定它最后落到哪条臂上。",
-  "width": 7,
+  "width": 5,
   "height": 5,
-  "walls": [[0, 0], [5, 4]],
-  "player": [0, 4],
+  "walls": [],
+  "player": [1, 3],
   "centers": [
     {
-      "pos": [2, 2],
+      "pos": [1, 2],
       "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "green" },
       "leaving": "W"
     },
     {
-      "pos": [3, 2],
+      "pos": [2, 2],
       "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
       "leaving": "N"
     },
     {
-      "pos": [4, 2],
+      "pos": [3, 2],
       "arms": { "N": "green", "E": "yellow", "S": "blue", "W": "red" },
       "leaving": "E"
     },
     {
-      "pos": [2, 1],
+      "pos": [1, 1],
       "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
       "leaving": "N"
     }
   ],
-  "groups": [{ "pos": [6, 0], "color": "purple" }],
+  "groups": [{ "pos": [4, 2], "color": "purple" }],
   "goals": [
     { "center": 0, "arm": "W", "color": "red" },
     { "center": 1, "arm": "N", "color": "purple" },

@@ -1,24 +1,24 @@
 {
   "id": "109.5°-13",
   "name": "一手交一手",
-  "hint": "交换是双向的：你撞进去什么，就撞出来什么。左边的中心缺蓝色、右边的缺绿色，而这两枚色珠正好互相攥在对方手里——先想清楚第一件「货」从哪来、每一次交换会换出什么。",
-  "width": 7,
-  "height": 5,
-  "walls": [[3, 0]],
-  "player": [0, 4],
+  "hint": "连续染色时，手不会变空，只会换成原开口臂的颜色。每次撞入前问两件事：我会放进去什么？又会拿出来什么？左边需要的蓝色在右边，右边需要的绿色在左边，把两次交换接成一条颜色接力。",
+  "width": 5,
+  "height": 4,
+  "walls": [],
+  "player": [2, 3],
   "centers": [
     {
-      "pos": [2, 2],
+      "pos": [1, 2],
       "arms": { "N": "red", "E": "purple", "S": "green", "W": "yellow" },
       "leaving": "S"
     },
     {
-      "pos": [5, 2],
+      "pos": [3, 2],
       "arms": { "N": "blue", "E": "yellow", "S": "purple", "W": "red" },
       "leaving": "N"
     }
   ],
-  "groups": [{ "pos": [1, 4], "color": "purple" }],
+  "groups": [{ "pos": [3, 3], "color": "purple" }],
   "goals": [
     { "center": 0, "arm": "N", "color": "blue" },
     { "center": 1, "arm": "N", "color": "green" }

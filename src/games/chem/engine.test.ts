@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { solve } from '../../core/solver'
 import type { Dir, Vec } from '../../core/protocol'
-import { initialState, step, chemGame, stateKey } from './engine'
+import { initialState, step, chemGame, stateKey, peekFlip } from './engine'
 import type { ChemLauncherDef } from './level'
 import type { ChemLevel } from './level'
 import level01 from './levels/level-01.json'
@@ -261,9 +261,9 @@ describe('chem v2 共振传导引擎', () => {
   })
 })
 
-/** v3 机制群（design §5）：光照转轴 / 回收格 / 保护基 / 分步目标 / 弹射 / 弹射台 / 三元中心 */
+/** v3 机制群（design §5）：光照转轴 / 回收格 / 保护基 / 分步目标 / 弹射 / 弹射台 / 三臂中心 */
 describe('chem v3 机制群引擎', () => {
-  it('光照格：走入的一瞬所有中心开口顺时针转 90°，臂色不动（三元中心在三方向内轮转）', () => {
+  it('光照格：开口顺时针移到下一条现存臂，三臂中心跳过缺口', () => {
     const level: ChemLevel = {
       id: 'test-light',
       width: 4,
@@ -289,9 +289,76 @@ describe('chem v3 机制群引擎', () => {
     const s0 = initialState(level)
     const s = step(s0, 'W') // (1,0) → (0,0) 光照格
     expect(s.centers[0].leaving).toBe('E') // N → E
-    expect(s.centers[1].leaving).toBe('N') // 三元：S → N（不经过 W）
+    expect(s.centers[1].leaving).toBe('N') // 三臂：S → W（缺失）→ N
     expect(s.centers[0].arms).toEqual(s0.centers[0].arms) // 只转开口
     expect(s.moves).toBe(1)
+  })
+
+  it('三臂中心校验：缺口可位于任一槽，开口必须有臂，目标可指向翻转后出现的槽位', () => {
+    const raw = {
+      id: 'test-trigonal-schema',
+      width: 3,
+      height: 3,
+      walls: [],
+      player: [0, 0],
+      centers: [
+        {
+          pos: [1, 1],
+          arms: { N: 'red', S: 'green', W: 'blue' }, // 初始缺 E；翻转后 blue 会到 E
+          leaving: 'N',
+          kind: 'trigonal',
+        },
+      ],
+      goals: [{ center: 0, arm: 'E', color: 'blue' }],
+    }
+    expect(() => chemGame.parseLevel(raw)).not.toThrow()
+    expect(() =>
+      chemGame.parseLevel({
+        ...raw,
+        centers: [{ ...raw.centers[0], leaving: 'E' }], // 开口不能指向缺口
+      }),
+    ).toThrow()
+    expect(() =>
+      chemGame.parseLevel({
+        ...raw,
+        centers: [
+          {
+            ...raw.centers[0],
+            arms: { N: 'red', E: 'yellow', S: 'green', W: 'blue' }, // 不能伪装成四臂
+          },
+        ],
+      }),
+    ).toThrow()
+  })
+
+  it('三臂中心的移动缺口会在翻转后接通共振链', () => {
+    const level: ChemLevel = {
+      id: 'test-trigonal-gap-resonance',
+      width: 4,
+      height: 3,
+      walls: [],
+      player: [1, 0],
+      centers: [
+        {
+          pos: [1, 1],
+          arms: { N: 'red', S: 'green', W: 'blue' }, // 缺 E；翻后 W 的 blue 移到 E
+          leaving: 'S',
+          kind: 'trigonal',
+        },
+        {
+          pos: [2, 1],
+          arms: { N: 'yellow', E: 'red', S: 'green', W: 'blue' },
+          leaving: 'E',
+        },
+      ],
+      groups: [],
+      stages: [{ goals: [{ center: 1, arm: 'N', color: 'green' }] }],
+      ...V3_DEFAULTS,
+    }
+    const s = step(initialState(level), 'S')
+    expect(s.centers[0].arms).toEqual({ N: 'green', S: 'red', E: 'blue' })
+    expect(s.centers[1].arms.N).toBe('green') // 新出现的 E=blue 对上邻居 W=blue，传导成功
+    expect(s.won).toBe(true)
   })
 
   it('回收格：手持走入销毁色珠；空手走入无效果', () => {
@@ -506,7 +573,7 @@ describe('chem v3 机制群引擎', () => {
     expect(s.won).toBe(true)
   })
 
-  it('三元中心：进攻 = 三臂轮换（mod 3），三次进攻回到恒等', () => {
+  it('三臂中心：三颗珠、缺口与开口整体翻转 180°，两次进攻回到恒等', () => {
     const level: ChemLevel = {
       id: 'test-trigonal',
       width: 3,
@@ -522,28 +589,22 @@ describe('chem v3 机制群引擎', () => {
         },
       ],
       groups: [],
-      // 中性目标（purple 不在轮换内）：防止第二次轮换后提前胜利挡住第三次进攻
+      // 中性目标（purple 不在翻转内）：防止第一次翻转后提前胜利挡住第二次进攻
       stages: [{ goals: [{ center: 0, arm: 'N', color: 'purple' }] }],
       ...V3_DEFAULTS,
     }
-    // 第一次（站位北侧 (1,0)，向南撞）：轮换一步
+    // 第一次（站位北侧 (1,0)，向南撞）：整体翻转，缺口 W → E
     let s = step(initialState(level), 'S')
-    expect(s.centers[0].arms).toEqual({ N: 'green', E: 'red', S: 'blue' })
+    expect(s.centers[0].arms).toEqual({ N: 'green', W: 'blue', S: 'red' })
     expect(s.centers[0].leaving).toBe('N')
-    // 第二次：开口 N ⇒ 站位南侧 (1,2)：E S S W 绕行
+    // 第二次：开口 N ⇒ 站位南侧 (1,2)：E S S W 绕行后向北撞
     for (const d of ['E', 'S', 'S', 'W'] as const) s = step(s, d)
     s = step(s, 'N')
-    expect(s.centers[0].arms).toEqual({ N: 'blue', E: 'green', S: 'red' })
-    expect(s.centers[0].leaving).toBe('E')
-    // 第三次：开口 E ⇒ 站位西侧 (0,1)
-    for (const d of ['S', 'W', 'N'] as const) s = step(s, d) // (1,2)→(1,3)→(0,3)→(0,2)…
-    s = step(s, 'N') // (0,1)
-    s = step(s, 'E')
-    expect(s.centers[0].arms).toEqual({ N: 'red', E: 'blue', S: 'green' }) // mod 3 恒等
+    expect(s.centers[0].arms).toEqual({ N: 'red', E: 'blue', S: 'green' })
     expect(s.centers[0].leaving).toBe('S')
   })
 
-  it('三元中心：持珠进攻提取开口臂，携带物落到「下下家」臂', () => {
+  it('三臂中心：持珠取代完全复用普通中心语义，携带物随翻转落到对侧', () => {
     const level: ChemLevel = {
       id: 'test-trigonal-carry',
       width: 3,
@@ -559,7 +620,7 @@ describe('chem v3 机制群引擎', () => {
         },
       ],
       groups: [{ pos: [2, 0], color: 'yellow' }],
-      stages: [{ goals: [{ center: 0, arm: 'E', color: 'yellow' }] }],
+      stages: [{ goals: [{ center: 0, arm: 'N', color: 'yellow' }] }],
       ...V3_DEFAULTS,
     }
     let s = step(initialState(level), 'E') // (2,0) 拾取 yellow
@@ -567,8 +628,8 @@ describe('chem v3 机制群引擎', () => {
     s = step(s, 'W') // 回到 (1,0)
     s = step(s, 'S') // 持珠进攻（开口 S，向南撞）
     expect(s.holding).toBe('green') // 提取开口臂
-    // 轮换后：携带物落在 triPrev(S)=E 臂
-    expect(s.centers[0].arms).toEqual({ N: 'green', E: 'yellow', S: 'blue' })
+    // 手持珠先装入 S，整体翻转后落到 N；原 E 臂连同缺口一起转到 W。
+    expect(s.centers[0].arms).toEqual({ N: 'yellow', W: 'blue', S: 'red' })
     expect(s.won).toBe(true)
   })
 
@@ -668,5 +729,40 @@ describe('chem v3 机制群引擎', () => {
     const s1 = step(s0, 'N') // 脱保护格
     expect(stateKey(s1)).toContain('D1')
     expect(stateKey(s0)).not.toBe(stateKey(s1))
+  })
+})
+
+describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
+  it('tetra：翻一次 = 四臂 180° 对换 + 开口反向；翻两次回到原构型（周期 2）', () => {
+    const center = {
+      pos: [1, 1] as Vec,
+      arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+      leaving: 'W' as Dir,
+      kind: 'tetra' as const,
+      shielded: false,
+      ejects: false,
+    }
+    const once = peekFlip(center)
+    expect(once.arms).toEqual({ N: 'green', E: 'yellow', S: 'red', W: 'blue' })
+    expect(once.leaving).toBe('E')
+    expect(peekFlip(once)).toEqual(center)
+    // 纯函数：不改动入参
+    expect(center.arms.N).toBe('red')
+    expect(center.leaving).toBe('W')
+  })
+
+  it('trigonal：翻一次 = 三臂与缺口整体旋转 180°；翻两次回到原构型（周期 2）', () => {
+    const center = {
+      pos: [1, 1] as Vec,
+      arms: { N: 'red', E: 'blue', S: 'green' },
+      leaving: 'N' as Dir,
+      kind: 'trigonal' as const,
+      shielded: false,
+      ejects: false,
+    }
+    const once = peekFlip(center)
+    expect(once.arms).toEqual({ N: 'green', W: 'blue', S: 'red' })
+    expect(once.leaving).toBe('S')
+    expect(peekFlip(once)).toEqual(center)
   })
 })

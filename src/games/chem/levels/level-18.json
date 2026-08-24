@@ -1,24 +1,24 @@
 {
   "id": "109.5°-18",
   "name": "点火之前",
-  "hint": "第一次进攻不会点燃连线——每次翻转后连接臂的颜色都会变，看清楚什么时候才接通。同一个中心要进攻两次：开口翻到对面后得换个站位；第二次进攻前，记得先把手里换成对的色珠。",
-  "width": 6,
-  "height": 6,
+  "hint": "第一次进攻不会点燃连线——每次翻转后连接臂都会重新比色。同一个中心要进攻两次；第二次染色前，先确认手中色珠和光环预览的落点，别把目标臂染成错误颜色。",
+  "width": 5,
+  "height": 4,
   "walls": [],
-  "player": [0, 0],
+  "player": [4, 1],
   "centers": [
     {
-      "pos": [3, 2],
+      "pos": [2, 1],
       "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "purple" },
       "leaving": "W"
     },
     {
-      "pos": [3, 3],
+      "pos": [2, 2],
       "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [5, 2], "color": "blue" }],
+  "groups": [{ "pos": [3, 0], "color": "blue" }],
   "goals": [
     { "center": 0, "arm": "W", "color": "blue" },
     { "center": 0, "arm": "N", "color": "blue" },

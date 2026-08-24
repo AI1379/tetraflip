@@ -1,6 +1,6 @@
 import { DIRS, DIR_VEC, cellKey, opposite } from '../../core/protocol'
 import type { Dir, GameDefinition, Vec } from '../../core/protocol'
-import { parseChemLevel, triNext, TRI_DIRS } from './level'
+import { parseChemLevel } from './level'
 import type { CenterKind, ChemLauncherDef, ChemLevel, ChemStage } from './level'
 
 /**
@@ -13,11 +13,11 @@ import type { CenterKind, ChemLauncherDef, ChemLevel, ChemStage } from './level'
  * - 共振传导：翻转后，面对臂同色的相邻未翻中心被传导纯翻转；保护罩中心传不进去（链闸）。
  *
  * v3 机制群：
- * - 三元中心（kind='trigonal'）：只有 N/E/S 三臂，进攻 = 三臂轮换（mod 3），
- *   持珠落臂 = 开口的「下下家」（triPrev），提取槽仍是开口臂；不与西侧邻居共振。
+ * - 三臂中心（kind='trigonal'）：四槽中恰好缺一臂；与普通中心同样整体翻转 180°，
+ *   三颗珠、缺口与开口一起转到对侧，持珠取代也完全复用普通中心语义（周期 2）。
  * - 弹射中心（ejects）：持珠进攻时，携带珠照常注入（手变空），被顶出的基团沿攻击反方向
  *   从玩家身后飞出，落到射线第一个障碍前一格；身后第一格即被堵 ⇒ 进攻无效。
- * - 光照格：玩家走入的一瞬，所有中心的开口顺时针转 90°（三元中心在三方向内轮转）。
+ * - 光照格：玩家走入的一瞬，所有中心的开口顺时针移到下一条现存臂（三臂中心跳过缺口）。
  * - 回收格：手持色珠走入 ⇒ 销毁、手变空。
  * - 保护基 / 脱保护格：受保护中心进攻无效、共振不入；首次走上脱保护格永久解除全场保护。
  * - 弹射台：手持色珠走入 ⇒ 色珠沿台面方向直线飞出（远程取代 / 落珠），手清空。
@@ -77,31 +77,29 @@ const hasVec = (list: readonly Vec[], x: number, y: number): boolean =>
 const isShielded = (s: Pick<ChemState, 'deprotected'>, c: ChemCenterState): boolean =>
   c.shielded && !s.deprotected
 
-const armDirs = (kind: CenterKind): readonly Dir[] => (kind === 'trigonal' ? TRI_DIRS : DIRS)
+const presentArmDirs = (center: Pick<ChemCenterState, 'arms'>): Dir[] =>
+  DIRS.filter((d) => center.arms[d] !== undefined)
 
-/** 纯翻转（尊重 kind）：tetra 180° 对换；trigonal 三臂轮换一步 */
+/** 对现存臂做 180° 翻转；Partial 保证三臂中心的缺口也随结构转到对侧。 */
+function rotateArms(arms: Partial<Record<Dir, string>>): Partial<Record<Dir, string>> {
+  const rotated: Partial<Record<Dir, string>> = {}
+  for (const d of DIRS) {
+    const color = arms[d]
+    if (color !== undefined) rotated[opposite(d)] = color
+  }
+  return rotated
+}
+
+/** 纯翻转：四臂 / 三臂中心统一为整体 180° 对换，周期均为 2。 */
 function flipCenter(centers: ChemCenterState[], i: number): ChemCenterState[] {
   const c = centers[i]
-  if (c.kind === 'trigonal') {
-    const arms: Partial<Record<Dir, string>> = {
-      N: c.arms.S,
-      E: c.arms.N,
-      S: c.arms.E,
-    }
-    return centers.map((cc, j) => (j === i ? { ...cc, arms, leaving: triNext(cc.leaving) } : cc))
-  }
-  const arms: Partial<Record<Dir, string>> = {
-    N: c.arms.S,
-    S: c.arms.N,
-    E: c.arms.W,
-    W: c.arms.E,
-  }
+  const arms = rotateArms(c.arms)
   return centers.map((cc, j) => (j === i ? { ...cc, arms, leaving: opposite(cc.leaving) } : cc))
 }
 
 /**
  * 共振传导（v2 + v3 链闸）：从 start 起逐层传播纯翻转。
- * 保护罩中心不翻、链在其停下；三元中心没有 W 臂（不与西侧连）。
+ * 保护罩中心不翻、链在其停下；三臂中心只通过当前实际存在的面对臂连接。
  */
 function propagate(
   centers: ChemCenterState[],
@@ -113,7 +111,7 @@ function propagate(
   while (queue.length > 0) {
     const x = queue.shift()!
     const xc = centers[x]
-    for (const d of armDirs(xc.kind)) {
+    for (const d of presentArmDirs(xc)) {
       const [ex, ey] = DIR_VEC[d]
       const yi = centers.findIndex(
         (c) => c.pos[0] === xc.pos[0] + ex && c.pos[1] === xc.pos[1] + ey,
@@ -121,7 +119,6 @@ function propagate(
       if (yi < 0 || flipped.has(yi)) continue
       const yc = centers[yi]
       if (yc.shielded && !deprotected) continue // 链闸：保护罩挡住共振
-      if (yc.kind === 'trigonal' && opposite(d) === 'W') continue // 邻居没有面对臂
       if (centers[x].arms[d] === centers[yi].arms[opposite(d)]) {
         centers = flipCenter(centers, yi)
         flipped.add(yi)
@@ -133,7 +130,7 @@ function propagate(
 }
 
 /**
- * 取代计算（尊重 kind）：返回新臂面、新开口与被顶出的基团颜色。
+ * 取代计算：四臂 / 三臂中心完全复用同一语义，返回新臂面、新开口与被顶出的基团颜色。
  * dir = 进攻/命中方向（= 开口方向）。
  */
 function substitute(
@@ -141,23 +138,20 @@ function substitute(
   dir: Dir,
   carried: string | null,
 ): { arms: Partial<Record<Dir, string>>; leaving: Dir; extracted: string | undefined } {
-  if (center.kind === 'trigonal') {
-    const extracted = center.arms[dir]
-    const injected = { ...center.arms }
-    if (carried !== null) injected[triNext(dir)] = carried // 轮换后落到「下下家」
-    return {
-      arms: { N: injected.S, E: injected.N, S: injected.E },
-      leaving: triNext(dir),
-      extracted,
-    }
-  }
-  const injected = { ...center.arms } as Record<Dir, string>
+  const injected = { ...center.arms }
   if (carried !== null) injected[dir] = carried
   return {
-    arms: { N: injected.S, S: injected.N, E: injected.W, W: injected.E },
+    arms: rotateArms(injected),
     leaving: opposite(dir),
     extracted: center.arms[dir],
   }
+}
+
+/** 光照把开口顺时针移到下一条当前存在的臂；三臂中心自动跳过缺口。 */
+function nextPresentOpening(center: ChemCenterState): Dir {
+  let d = ROT_CW[center.leaving]
+  while (center.arms[d] === undefined) d = ROT_CW[d]
+  return d
 }
 
 /**
@@ -305,7 +299,7 @@ export function step(s: ChemState, dir: Dir): ChemState {
   if (hasVec(s.lights, nx, ny)) {
     centers = centers.map((c) => ({
       ...c,
-      leaving: c.kind === 'trigonal' ? triNext(c.leaving) : ROT_CW[c.leaving],
+      leaving: nextPresentOpening(c),
     }))
   }
   if (hasVec(s.disposals, nx, ny) && holding !== null) holding = null
@@ -377,6 +371,14 @@ function fireBead(
   return { centers, groups }
 }
 
+/**
+ * 检视（Inspect，design §11 认知外置层）用：中心再被**纯翻转**一次后的构型。
+ * 不含取代与共振——只回答「这个中心翻一次会变成什么」。纯函数，渲染层专用。
+ */
+export function peekFlip(center: ChemCenterState): ChemCenterState {
+  return flipCenter([center], 0)[0]
+}
+
 export function isWin(s: ChemState): boolean {
   return s.stage >= s.stages.length
 }
@@ -384,7 +386,7 @@ export function isWin(s: ChemState): boolean {
 export function stateKey(s: ChemState): string {
   const centers = s.centers
     .map((c) => {
-      const armsKey = armDirs(c.kind)
+      const armsKey = DIRS
         .map((d) => c.arms[d] ?? '-')
         .join('/')
       return `${cellKey(c.pos[0], c.pos[1])}:${armsKey}@${c.leaving}`

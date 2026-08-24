@@ -1,35 +1,46 @@
-import { DIR_VEC, opposite } from '../../core/protocol'
-import type { Dir } from '../../core/protocol'
+import { DIR_VEC, cellKey, opposite } from '../../core/protocol'
+import type { Dir, Vec } from '../../core/protocol'
 import { Tweens, easeInOutQuad, easeOutCubic } from '../../core/tween'
-import { stateKey } from './engine'
-import type { ChemState } from './engine'
+import { peekFlip, stateKey } from './engine'
+import type { ChemCenterState, ChemState } from './engine'
 import type { CenterKind } from './level'
 
 /**
  * 《109.5°》渲染（design §10 轻包装：化学味、零美术素材、全程序化 Canvas）。
  *
- * - 中心画成分子骨架风格：细键线 + 原子点（中心原子 + 臂原子）；三元中心为三角骨架。
- * - 开口以「朝外的白色箭头」标记（指向进攻方向；iteration #6 起，取代旧白圈——白圈被试玩反馈误认为 UI bug）。
+ * - 中心画成分子骨架风格：细键线 + 原子点（中心原子 + 臂原子）；三臂中心以三角核区分。
+ * - 开口以中心核内的白色短箭头标记（指向进攻方向；固定在旋转中心上，避免被进攻位玩家遮挡）。
  * - 相邻中心画「共轭键」：面对臂同色时点亮（共振可传导），否则暗色（v2 玩法信息）。
  * - v3 特殊格：光照格（金色放射纹）/ 回收格（下箭头井口）/ 脱保护格（打开的锁）/ 弹射台（双箭头）；
- *   保护罩中心画六边形罩；分步目标当前段正常虚线圈、未来段淡圈预告；HUD 显示标准杆与段数。
+ *   保护罩中心画六边形罩；分步目标当前段正常虚线圈、未来段淡圈预告。
  * - 背景：极低透明度的四面体线框（标题《109.5°》的几何本体，纯装饰，缓慢自转）。
- * - 手感：行走补间、翻转旋转动画（连锁时按传播距离阶梯延迟；三元中心为沿弧轮换动画）、
+ * - 可读性：色珠同时使用颜色与内部纹样编码；玩家用亮环暗芯轮廓，与色珠 / 中心 / 目标区分。
+ * - 手感：行走补间、整体 180° 翻转动画（连锁时按传播距离阶梯延迟；三臂中心的缺口也随骨架转动）、
  *   无效进攻抖动 + 撞面红闪；已达标中心画锁定圈 + ✓ 徽标。
  * - 动画状态是渲染层私有时钟（只读游戏状态、绝不改状态）；状态转移由 stateKey 变化驱动。
  * - 纪律：装饰不压缩棋盘（布局常量与无装饰时完全一致）；
  *   `setChemDecor(false)` 可整体关掉装饰（玩法信息——开口箭头/目标虚线/共轭键/锁定徽标/特殊格——永远保留）。
  * - 全程不出现化学术语/化学式文字。
+ *
+ * 认知外置层（design §11，2026-08-24）：
+ * - **按住预演**（`setChemPreview`，壳层注入 step(当前态, 按住方向)）：棋盘压暗，变化的中心以正式执行同款
+ *   翻转动画过渡到「动作后构型」ghost 态（虚线晕圈标记尚未发生），共振链按相邻 BFS 距离标 ①②③；
+ *   手持换出物 / 场上珠增减画 ghost；目标 ✓ 锁定圈按预演后状态判定。弹射台 / 光照格 / 回收 /
+ *   保护罩全部走通用 diff，规则零特判。
+ * - **Inspect**（`setChemInspect` + `chemHitTest`）：点按中心显示完整模 2 构型周期——现在 / 翻一次后，
+ *   三臂中心同时显示缺口移动，当前态高亮（读引擎纯函数 peekFlip）。
+ * - **标记**（`setChemMarks`）：玩家自笔记——中心顺序标 ①–⑤，任意格 ★/？/×；常显、不进引擎状态。
+ * 以上三者均为渲染层只读状态，绝不修改游戏状态。
  */
 
 const COLORS: Record<string, string> = {
-  red: '#e5484d',
-  blue: '#4f8ef7',
-  green: '#46a758',
-  yellow: '#e0b64f',
-  purple: '#a06cd5',
+  red: '#ff6369',
+  blue: '#5da9ff',
+  green: '#58d68d',
+  yellow: '#f6c85f',
+  purple: '#c084fc',
 }
-const colorOf = (name: string): string => COLORS[name] ?? '#a06cd5'
+const colorOf = (name: string): string => COLORS[name] ?? '#c084fc'
 const INK = '#f2f4f8'
 const BOND = '#55617a' // 键线
 const FAINT = '#39424f' // 墙 / 刻度 / 角框
@@ -40,8 +51,8 @@ const FLIP_MS = 260 // 翻转旋转动画时长
 const WALK_MS = 110 // 行走补间时长
 const SHAKE_MS = 240 // 无效进攻抖动时长
 const HOP_MS = 90 // 共振连锁：每传播一级的动画延迟
-const ARM_LEN = 1 // 普通臂长（格）
-const ARM_LEN_SHORT = 0.42 // 相邻中心侧的缩短臂长（避免压到邻居中心）
+const ARM_LEN = 0.46 // 普通臂长（格）：收在中心附近，避免与进攻位上的玩家重叠
+const ARM_LEN_SHORT = 0.34 // 相邻中心侧进一步缩短，留出共振键
 const TETRA_SPIN = 0.00012 // 背景四面体自转（rad/ms）
 
 let decor = true
@@ -51,14 +62,77 @@ export function setChemDecor(v: boolean): void {
   decor = v
 }
 
+// ---------- 认知外置层（design §11）：预演 / Inspect / 标记（渲染层只读，不进游戏状态） ----------
+
+/** 玩家自笔记标记：中心顺序标 ①–⑤；任意格 ★/？/×。含义由玩家自己理解。 */
+export type ChemMark = '1' | '2' | '3' | '4' | '5' | 'star' | 'question' | 'cross'
+
+/** 壳层按住方向时注入的一步预演态（= step(当前态, 按住方向)）；null = 无预演。 */
+let preview: ChemState | null = null
+let previewStartedAt = 0
+export function setChemPreview(next: ChemState | null): void {
+  preview = next
+  previewStartedAt = next === null ? 0 : performance.now()
+}
+
+/** Inspect 检视的中心下标；null = 关闭面板。 */
+let inspect: number | null = null
+export function setChemInspect(index: number | null): void {
+  inspect = index
+}
+
+/** 玩家标记（cellKey → 标记）；null = 无标记。 */
+let marks: ReadonlyMap<string, ChemMark> | null = null
+export function setChemMarks(map: ReadonlyMap<string, ChemMark> | null): void {
+  marks = map
+}
+
+/** 棋盘布局（render 与 hitTest 共用同一份几何，保证点按命中与绘制一致）。 */
+function chemLayout(s: ChemState, W: number, H: number): { cell: number; ox: number; oy: number } {
+  const pad = 28
+  const cell = Math.max(
+    8,
+    Math.floor(Math.min((W - pad * 2) / s.width, (H - pad * 2) / s.height)),
+  )
+  return {
+    cell,
+    ox: Math.floor((W - cell * s.width) / 2),
+    oy: Math.floor((H - cell * s.height) / 2),
+  }
+}
+
+/**
+ * 点按命中检测（壳层把画布坐标换算成逻辑坐标后调用）。
+ * 返回命中的中心，或普通格（用于标记模式）；棋盘外返回 null。
+ */
+export function chemHitTest(
+  s: ChemState,
+  lx: number,
+  ly: number,
+  W: number,
+  H: number,
+): { kind: 'center'; index: number } | { kind: 'cell'; x: number; y: number } | null {
+  const { cell, ox, oy } = chemLayout(s, W, H)
+  const x = Math.floor((lx - ox) / cell)
+  const y = Math.floor((ly - oy) / cell)
+  if (x < 0 || y < 0 || x >= s.width || y >= s.height) return null
+  const index = s.centers.findIndex((c) => c.pos[0] === x && c.pos[1] === y)
+  return index >= 0 ? { kind: 'center', index } : { kind: 'cell', x, y }
+}
+
 // ---------- 渲染层私有动画状态（不进游戏状态，撤销/重开由 stateKey 大跳检测兜底） ----------
 
 interface FlipAnim {
   start: number
-  /** tetra：起始臂面 = swap(新臂)，旋转 π 后恰好落到新臂面；trigonal：旋转前的旧臂面（沿弧滑向新位） */
+  before: ChemCenterState
+  after: ChemCenterState
+}
+
+interface CenterPose {
   arms: Partial<Record<Dir, string>>
   leaving: Dir
-  kind: CenterKind
+  rot: number
+  armRot?: Partial<Record<Dir, number>>
 }
 
 let lastKey = ''
@@ -74,15 +148,45 @@ export function notifyChemImpact(dir: Dir): void {
   shake = { start: performance.now(), dir }
 }
 
-const swapArms = (arms: Record<Dir, string>): Record<Dir, string> => ({
-  N: arms.S,
-  S: arms.N,
-  E: arms.W,
-  W: arms.E,
-})
+const rotateArms = (arms: Partial<Record<Dir, string>>): Partial<Record<Dir, string>> => {
+  const rotated: Partial<Record<Dir, string>> = {}
+  for (const d of ['N', 'E', 'S', 'W'] as const) {
+    const color = arms[d]
+    if (color !== undefined) rotated[opposite(d)] = color
+  }
+  return rotated
+}
 
 /** 臂方向的基准角（屏幕坐标系，N 朝上） */
 const ARM_ANGLE: Record<Dir, number> = { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI }
+
+/** 臂方向的单位向量（屏幕坐标系，N 朝上）——迷你图等小件用 */
+const ARM_VEC: Record<Dir, readonly [number, number]> = {
+  N: [0, -1],
+  E: [1, 0],
+  S: [0, 1],
+  W: [-1, 0],
+}
+
+/**
+ * 正式执行与预演共用的翻转姿态口径：四臂 / 三臂中心都将现存结构整体旋转半圈。
+ * progress 可小于 0（连锁尚未轮到）或大于 1（已经落到动作后构型）。
+ */
+function flipPose(
+  before: ChemCenterState,
+  after: ChemCenterState,
+  progress: number,
+): CenterPose {
+  if (progress >= 1) return { arms: after.arms, leaving: after.leaving, rot: 0 }
+
+  const e = easeInOutQuad(Math.max(0, progress))
+  return {
+    // 与正式动画一致：取代色先进入翻转前臂面，再随骨架旋转到最终位置。
+    arms: rotateArms(after.arms),
+    leaving: before.leaving,
+    rot: Math.PI * e,
+  }
+}
 
 /** 由 stateKey 变化驱动动画：行走补间、翻转时钟、手持脉冲；大跳（重开/换关）则全部重置 */
 function sync(s: ChemState, now: number): void {
@@ -141,16 +245,10 @@ function sync(s: ChemState, now: number): void {
           }
         }
         for (const i of changed) {
-          const kind = s.centers[i].kind
           flips.set(i, {
             start: now + (hop.get(i) ?? 0) * HOP_MS,
-            // tetra：swap 是旋转 π 的中间态起点；trigonal：直接用旧臂面沿弧滑过去
-            arms:
-              kind === 'trigonal'
-                ? { ...prev.centers[i].arms }
-                : swapArms(s.centers[i].arms as Record<Dir, string>),
-            leaving: prev.centers[i].leaving,
-            kind,
+            before: prev.centers[i],
+            after: s.centers[i],
           })
         }
       }
@@ -168,15 +266,11 @@ function sync(s: ChemState, now: number): void {
 export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H: number): void {
   const now = performance.now()
   sync(s, now)
-  const pad = 16
-  const stripH = 40
-  const cell = Math.floor(Math.min((W - pad * 2) / s.width, (H - pad * 2 - stripH) / s.height))
-  const ox = Math.floor((W - cell * s.width) / 2)
-  const oy = Math.floor((H - stripH - cell * s.height) / 2)
+  const { cell, ox, oy } = chemLayout(s, W, H)
   const cx = (x: number): number => ox + x * cell + cell / 2
   const cy = (y: number): number => oy + y * cell + cell / 2
 
-  ctx.fillStyle = '#0e1116'
+  ctx.fillStyle = '#0b1018'
   ctx.fillRect(0, 0, W, H)
 
   if (decor) {
@@ -184,8 +278,10 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     drawFrame(ctx, ox, oy, cell * s.width, cell * s.height, cell)
   }
 
-  // 网格
-  ctx.strokeStyle = '#1c222b'
+  // 棋盘底板与网格
+  ctx.fillStyle = 'rgba(18, 27, 39, 0.72)'
+  ctx.fillRect(ox, oy, cell * s.width, cell * s.height)
+  ctx.strokeStyle = '#202b39'
   ctx.lineWidth = 1
   for (let x = 0; x <= s.width; x++) {
     line(ctx, ox + x * cell + 0.5, oy, ox + x * cell + 0.5, oy + s.height * cell)
@@ -195,13 +291,26 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   }
 
   // 墙
-  ctx.fillStyle = FAINT
   for (const key of s.walls) {
     const [x, y] = key.split(',').map(Number)
     const inset = cell * 0.08
+    const wx = ox + x * cell + inset
+    const wy = oy + y * cell + inset
+    const ws = cell - inset * 2
+    ctx.fillStyle = '#303b4a'
     ctx.beginPath()
-    ctx.roundRect(ox + x * cell + inset, oy + y * cell + inset, cell - inset * 2, cell - inset * 2, cell * 0.12)
+    ctx.roundRect(wx, wy, ws, ws, cell * 0.12)
     ctx.fill()
+    ctx.save()
+    ctx.beginPath()
+    ctx.roundRect(wx, wy, ws, ws, cell * 0.12)
+    ctx.clip()
+    ctx.strokeStyle = 'rgba(139, 149, 165, 0.16)'
+    ctx.lineWidth = Math.max(1, cell * 0.025)
+    for (let d = -ws; d < ws * 2; d += Math.max(7, cell * 0.18)) {
+      line(ctx, wx + d, wy + ws, wx + d + ws, wy)
+    }
+    ctx.restore()
   }
 
   drawSpecialCells(ctx, s, cx, cy, cell, now)
@@ -221,21 +330,36 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 
   // 目标（虚线圈）：当前段正常显示，未来段淡圈预告（分步目标，v3）。
   // 臂若朝向相邻中心，圈画在两中心之间的半程位置（避让邻居）。
-  const drawGoal = (g: { center: number; arm: Dir; color: string }, alpha: number): void => {
-    const c = s.centers[g.center]
+  const drawGoal = (
+    g: { center: number; arm: Dir; color: string },
+    alpha: number,
+    view: ChemState = s,
+  ): void => {
+    const c = view.centers[g.center]
+    // ✓ 已经承担“完成”提示；已满足目标圈退后，避免同一信息在局部重复抢眼。
+    const ringAlpha = c.arms[g.arm] === g.color ? alpha * 0.3 : alpha
     if (neighborIdx(g.center, g.arm) >= 0) {
       const [dx, dy] = DIR_VEC[g.arm]
       dashedCircle(
         ctx,
         cx(c.pos[0]) + dx * cell * 0.5,
         cy(c.pos[1]) + dy * cell * 0.5,
-        cell * 0.2,
+        cell * 0.17,
         colorOf(g.color),
-        alpha,
+        ringAlpha,
+        goalDash(g.color),
       )
     } else {
-      const [gx, gy] = armCell(c.pos, g.arm)
-      dashedCircle(ctx, cx(gx), cy(gy), cell * 0.34, colorOf(g.color), alpha)
+      const [dx, dy] = DIR_VEC[g.arm]
+      dashedCircle(
+        ctx,
+        cx(c.pos[0]) + dx * cell * ARM_LEN,
+        cy(c.pos[1]) + dy * cell * ARM_LEN,
+        cell * 0.25,
+        colorOf(g.color),
+        ringAlpha,
+        goalDash(g.color),
+      )
     }
   }
   s.stages.forEach((st, si) => {
@@ -253,7 +377,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       const cj = s.centers[j]
       const fi = ci.arms[d]
       const fj = cj.arms[opposite(d)]
-      if (fi === undefined || fj === undefined) continue // 三元中心没有该臂：不连
+      if (fi === undefined || fj === undefined) continue // 三臂中心当前缺少面对臂：不连
       const [dx, dy] = DIR_VEC[d]
       const x1 = cx(ci.pos[0]) + dx * cell * ARM_LEN_SHORT
       const y1 = cy(ci.pos[1]) + dy * cell * ARM_LEN_SHORT
@@ -280,18 +404,23 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     const gx = cx(g.pos[0])
     const gy = cy(g.pos[1])
     dashedCircle(ctx, gx, gy, cell * 0.26, colorOf(g.color))
-    ctx.fillStyle = colorOf(g.color)
-    ctx.beginPath()
-    ctx.arc(gx, gy, cell * 0.15, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-    ctx.lineWidth = Math.max(1, cell * 0.03)
-    ctx.stroke()
+    drawAtom(ctx, gx, gy, cell * 0.15, g.color)
   }
 
-  // 中心与臂（翻转中：tetra 整个骨架旋转 0→π；trigonal 各臂沿弧滑向下一臂位）
+  // 中心与臂（翻转中：四臂 / 三臂结构都整体旋转 0→π，缺口随结构移动）
+  // 预演（design §11）：将变化的中心会在预演层整体切换为「动作后构型」ghost，
+  // 常规管线里这些中心的落点预览 / 锁定圈跳过（避免画两遍、口径不一）。
+  const previewChanged: number[] = []
+  if (preview && !s.won) {
+    for (let i = 0; i < s.centers.length && i < preview.centers.length; i++) {
+      const p = preview.centers[i]
+      const c = s.centers[i]
+      if (p && c && (p.arms !== c.arms || p.leaving !== c.leaving)) previewChanged.push(i)
+    }
+  }
   for (let i = 0; i < s.centers.length; i++) {
     const c = s.centers[i]
+    const ghosted = previewChanged.includes(i)
     const px = cx(c.pos[0])
     const py = cy(c.pos[1])
     const flip = flips.get(i)
@@ -303,70 +432,49 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       const t = (now - flip.start) / FLIP_MS
       if (t >= 1) {
         flips.delete(i)
-      } else if (flip.kind === 'trigonal') {
-        // 三臂轮换：内容 N→E→S→N，各臂沿弧滑过去（N/E 滑 90°，S 绕远路滑 180°）
-        const e = easeInOutQuad(Math.max(0, t))
-        arms = flip.arms
-        leaving = flip.leaving
-        armRot = { N: (Math.PI / 2) * e, E: (Math.PI / 2) * e, S: Math.PI * e }
       } else {
-        rot = Math.PI * easeInOutQuad(Math.max(0, t))
-        arms = flip.arms
-        leaving = flip.leaving
+        const pose = flipPose(flip.before, flip.after, t)
+        arms = pose.arms
+        leaving = pose.leaving
+        rot = pose.rot
+        armRot = pose.armRot
       }
     }
     drawCenter(ctx, px, py, cell, arms, leaving, rot, neighborsOf(i), c.kind, armRot)
 
-    // 保护罩（v3）：六边形罩 + 微填充；脱保护后消失
-    if (c.shielded && !s.deprotected) {
-      ctx.save()
-      ctx.strokeStyle = INK
-      ctx.globalAlpha = 0.55
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      for (let k = 0; k < 6; k++) {
-        const a = -Math.PI / 2 + (k * Math.PI) / 3
-        const hx = px + Math.cos(a) * cell * 0.54
-        const hy = py + Math.sin(a) * cell * 0.54
-        if (k === 0) ctx.moveTo(hx, hy)
-        else ctx.lineTo(hx, hy)
+    // 持珠且已经站到合法进攻位：用手持色预览本次染色最终落到哪条臂。
+    // 只做渲染提示，不提前计算或修改游戏状态。（ghost 中心改由预演层绘制）
+    if (!ghosted && s.holding !== null && !(c.shielded && !s.deprotected)) {
+      const [adx, ady] = DIR_VEC[c.leaving]
+      const ready = s.player[0] + adx === c.pos[0] && s.player[1] + ady === c.pos[1]
+      if (ready) {
+        const landing = opposite(c.leaving)
+        const [ldx, ldy] = DIR_VEC[landing]
+        const len = neighborsOf(i)[landing] ? ARM_LEN_SHORT : ARM_LEN
+        drawLandingPreview(
+          ctx,
+          cx(s.player[0]),
+          cy(s.player[1]),
+          px + ldx * cell * len,
+          py + ldy * cell * len,
+          cell,
+          s.holding,
+          now,
+        )
       }
-      ctx.closePath()
-      ctx.stroke()
-      ctx.globalAlpha = 0.06
-      ctx.fillStyle = INK
-      ctx.fill()
-      ctx.restore()
     }
 
+    // 保护罩（v3）：六边形罩 + 微填充；脱保护后消失
+    if (c.shielded && !s.deprotected) drawShield(ctx, px, py, cell)
+
     // 已达标锁定圈 + ✓ 徽标（当前段中该中心的所有目标均已满足且至少有一个）
+    // 预演中变化的中心由预演层按「动作后」状态判定（design §11）
     const activeGoals =
       s.stage < s.stages.length
         ? s.stages[s.stage].goals.filter((g) => g.center === i)
         : []
-    if (activeGoals.length > 0 && activeGoals.every((g) => c.arms[g.arm] === g.color)) {
-      ctx.save()
-      ctx.strokeStyle = INK
-      ctx.globalAlpha = 0.4
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(px, py, cell * 0.46, 0, Math.PI * 2)
-      ctx.stroke()
-      ctx.restore()
-      const r = cell * 0.13
-      const bx = px + cell * 0.42
-      const by = py - cell * 0.42
-      ctx.fillStyle = INK
-      ctx.beginPath()
-      ctx.arc(bx, by, r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = '#0e1116'
-      ctx.lineWidth = Math.max(1.5, r * 0.28)
-      ctx.beginPath()
-      ctx.moveTo(bx - r * 0.45, by + r * 0.05)
-      ctx.lineTo(bx - r * 0.12, by + r * 0.4)
-      ctx.lineTo(bx + r * 0.5, by - r * 0.35)
-      ctx.stroke()
+    if (!ghosted && activeGoals.length > 0 && activeGoals.every((g) => c.arms[g.arm] === g.color)) {
+      drawLockRing(ctx, px, py, cell)
     }
 
     // 无效进攻红闪：撞面短弧（仅当撞的是中心）
@@ -422,9 +530,18 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     ctx.stroke()
     ctx.restore()
   }
+  // 玩家使用“亮环 + 暗芯”，与目标圈、中心原子和游离珠形成不同轮廓。
   ctx.fillStyle = INK
   ctx.beginPath()
-  ctx.arc(sx, sy, cell * 0.28, 0, Math.PI * 2)
+  ctx.arc(sx, sy, cell * 0.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#111923'
+  ctx.beginPath()
+  ctx.arc(sx, sy, cell * 0.2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = INK
+  ctx.beginPath()
+  ctx.arc(sx, sy, cell * 0.07, 0, Math.PI * 2)
   ctx.fill()
 
   // 手持色珠：玩家右上角小原子 + 键线；拾取/换手时脉冲扩散
@@ -434,10 +551,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     ctx.strokeStyle = BOND
     ctx.lineWidth = Math.max(1, cell * 0.04)
     line(ctx, sx + cell * 0.14, sy - cell * 0.14, hx, hy)
-    ctx.fillStyle = colorOf(s.holding)
-    ctx.beginPath()
-    ctx.arc(hx, hy, cell * 0.12, 0, Math.PI * 2)
-    ctx.fill()
+    drawAtom(ctx, hx, hy, cell * 0.12, s.holding)
   }
   if (handPulse) {
     const age = now - handPulse.start
@@ -456,13 +570,501 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     }
   }
 
-  drawStrip(ctx, s, ox, s.width * cell, oy + s.height * cell, cell)
+  // ---------- 认知外置层（design §11）：按住预演 / 标记 / Inspect ----------
+
+  if (preview && !s.won) {
+    const p = preview
+    // 整体压暗：当前态退后，「将发生的变化」浮到最上层
+    ctx.fillStyle = 'rgba(7, 10, 15, 0.42)'
+    ctx.fillRect(0, 0, W, H)
+
+    // 预演后的当前段目标（分步关卡一步连进多段时，直接展示新段目标）
+    if (p.stage < p.stages.length) {
+      for (const g of p.stages[p.stage].goals) drawGoal(g, 0.7, p)
+    }
+
+    // 变化的中心：切换为「动作后构型」ghost + 共振链 ①②③
+    if (previewChanged.length > 0) {
+      const hop = new Map<number, number>()
+      const root = previewChanged.find((i) => {
+        const c = s.centers[i]
+        return Math.abs(c.pos[0] - p.player[0]) + Math.abs(c.pos[1] - p.player[1]) === 1
+      })
+      if (root !== undefined) {
+        hop.set(root, 0)
+        const q = [root]
+        while (q.length > 0) {
+          const x = q.shift()!
+          for (const y of previewChanged) {
+            if (hop.has(y)) continue
+            const a = s.centers[x]
+            const b = s.centers[y]
+            if (Math.abs(a.pos[0] - b.pos[0]) + Math.abs(a.pos[1] - b.pos[1]) === 1) {
+              hop.set(y, hop.get(x)! + 1)
+              q.push(y)
+            }
+          }
+        }
+      }
+      const ordered = [...previewChanged].sort(
+        (a, b) => (hop.get(a) ?? 99) - (hop.get(b) ?? 99) || a - b,
+      )
+      ordered.forEach((i, n) => {
+        const pc = p.centers[i]
+        const c = s.centers[i]
+        const gx = cx(pc.pos[0])
+        const gy = cy(pc.pos[1])
+        const armChanged = c.arms !== pc.arms
+        const progress =
+          (now - previewStartedAt - (hop.get(i) ?? 0) * HOP_MS) / FLIP_MS
+        const pose = armChanged
+          ? flipPose(c, pc, progress)
+          : { arms: pc.arms, leaving: pc.leaving, rot: 0 }
+        // ghost 晕圈：虚线 = 尚未发生
+        ctx.save()
+        ctx.strokeStyle = INK
+        ctx.globalAlpha = 0.5
+        ctx.lineWidth = 2
+        ctx.setLineDash([5, 4])
+        ctx.beginPath()
+        ctx.arc(gx, gy, cell * 0.58, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+        // 复用正式执行的翻转姿态；共振链也按相同 HOP_MS 逐级启动。
+        // 仅开口变化（光照格转轴）不是翻转，仍直接展示动作后方向。
+        drawCenter(
+          ctx,
+          gx,
+          gy,
+          cell,
+          pose.arms,
+          pose.leaving,
+          pose.rot,
+          neighborsOf(i),
+          pc.kind,
+          pose.armRot,
+        )
+        if (pc.shielded && !p.deprotected) drawShield(ctx, gx, gy, cell)
+        // 动作后的锁定圈（预演态判定：这一步之后谁达标）
+        const goals =
+          s.stage < s.stages.length
+            ? s.stages[s.stage].goals.filter((g) => g.center === i)
+            : []
+        if (goals.length > 0 && goals.every((g) => pc.arms[g.arm] === g.color)) {
+          drawLockRing(ctx, gx, gy, cell)
+        }
+        // 染色落点预览（被进攻的中心；落点由当前开口决定）
+        if (s.holding !== null && !(c.shielded && !s.deprotected)) {
+          const [adx, ady] = DIR_VEC[c.leaving]
+          if (s.player[0] + adx === c.pos[0] && s.player[1] + ady === c.pos[1]) {
+            const landing = opposite(c.leaving)
+            const [ldx, ldy] = DIR_VEC[landing]
+            const len = neighborsOf(i)[landing] ? ARM_LEN_SHORT : ARM_LEN
+            drawLandingPreview(
+              ctx,
+              cx(s.player[0]),
+              cy(s.player[1]),
+              gx + ldx * cell * len,
+              gy + ldy * cell * len,
+              cell,
+              s.holding,
+              now,
+            )
+          }
+        }
+        // 共振链徽标 ①②③（≥2 个中心变化才有链可言）
+        if (ordered.length >= 2) drawChainBadge(ctx, gx, gy, cell, n)
+      })
+    }
+
+    // 场上珠增减 ghost：新出现的珠（换落 / 弹射落点）半透明画出
+    for (const g of p.groups) {
+      const cur = s.groups.find((o) => o.pos[0] === g.pos[0] && o.pos[1] === g.pos[1])
+      if (!cur || cur.color !== g.color) {
+        const gx = cx(g.pos[0])
+        const gy = cy(g.pos[1])
+        ctx.save()
+        ctx.globalAlpha = 0.8
+        dashedCircle(ctx, gx, gy, cell * 0.26, colorOf(g.color), 0.9)
+        drawAtom(ctx, gx, gy, cell * 0.15, g.color)
+        ctx.restore()
+      }
+    }
+    // 将消失的珠（被拾取 / 被发射）：淡虚线圈标记原位
+    for (const g of s.groups) {
+      const nxt = p.groups.find((o) => o.pos[0] === g.pos[0] && o.pos[1] === g.pos[1])
+      if (!nxt) dashedCircle(ctx, cx(g.pos[0]), cy(g.pos[1]), cell * 0.26, INK, 0.35)
+    }
+
+    // 玩家 ghost：移动 / 走上弹射台
+    if (p.player[0] !== s.player[0] || p.player[1] !== s.player[1]) {
+      const gx = cx(p.player[0])
+      const gy = cy(p.player[1])
+      ctx.save()
+      ctx.strokeStyle = INK
+      ctx.globalAlpha = 0.9
+      ctx.lineWidth = 2
+      ctx.setLineDash([5, 4])
+      ctx.beginPath()
+      ctx.arc(gx, gy, cell * 0.3, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.globalAlpha = 0.12
+      ctx.fillStyle = INK
+      ctx.fill()
+      ctx.restore()
+      // 移动箭头（起止缩短，避免压住本体与 ghost）
+      const ax = cx(s.player[0])
+      const ay = cy(s.player[1])
+      const dx = gx - ax
+      const dy = gy - ay
+      const len = Math.hypot(dx, dy)
+      const ux = dx / len
+      const uy = dy / len
+      ctx.save()
+      ctx.strokeStyle = INK
+      ctx.fillStyle = INK
+      ctx.globalAlpha = 0.65
+      ctx.lineWidth = 2
+      line(ctx, ax + ux * cell * 0.36, ay + uy * cell * 0.36, gx - ux * cell * 0.38, gy - uy * cell * 0.38)
+      const head = Math.max(5, cell * 0.12)
+      const angle = Math.atan2(dy, dx)
+      const ex = gx - ux * cell * 0.38
+      const ey = gy - uy * cell * 0.38
+      ctx.beginPath()
+      ctx.moveTo(ex, ey)
+      ctx.lineTo(ex - head * Math.cos(angle - 0.5), ey - head * Math.sin(angle - 0.5))
+      ctx.lineTo(ex - head * Math.cos(angle + 0.5), ey - head * Math.sin(angle + 0.5))
+      ctx.closePath()
+      ctx.fill()
+      ctx.restore()
+    }
+
+    // 手持变化 ghost：换出物（进攻 / 换珠）或清空（回收 / 弹射 / 注入）
+    if (p.holding !== s.holding) {
+      const hx = sx + cell * 0.34
+      const hy = sy - cell * 0.34
+      if (p.holding !== null) {
+        ctx.save()
+        ctx.globalAlpha = 0.9
+        drawAtom(ctx, hx, hy, cell * 0.12, p.holding)
+        ctx.globalAlpha = 0.7
+        dashedCircle(ctx, hx, hy, cell * 0.2, colorOf(p.holding), 0.8)
+        ctx.restore()
+      } else {
+        // 手将被清空
+        dashedCircle(ctx, hx, hy, cell * 0.2, INK, 0.4)
+        ctx.save()
+        ctx.strokeStyle = INK
+        ctx.globalAlpha = 0.55
+        ctx.lineWidth = 1.5
+        const t = cell * 0.08
+        line(ctx, hx - t, hy - t, hx + t, hy + t)
+        line(ctx, hx - t, hy + t, hx + t, hy - t)
+        ctx.restore()
+      }
+    }
+
+    // 预演提示条（输入模型可发现性）
+    drawPreviewBanner(ctx, W)
+  }
+
+  // 玩家标记：预演压暗之后重画，保持可读（design §11 层 ③）
+  if (marks) drawMarks(ctx, s, cx, cy, cell)
+
+  // Inspect 检视面板：构型周期（design §11 层 ①）
+  if (inspect !== null && s.centers[inspect] !== undefined) {
+    drawInspectPanel(ctx, s, inspect, cx, cy, cell, W)
+  }
+}
+
+/** 保护罩（v3）：六边形罩 + 微填充（常规与预演共用） */
+function drawShield(ctx: CanvasRenderingContext2D, px: number, py: number, cell: number): void {
+  ctx.save()
+  ctx.strokeStyle = INK
+  ctx.globalAlpha = 0.55
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  for (let k = 0; k < 6; k++) {
+    const a = -Math.PI / 2 + (k * Math.PI) / 3
+    const hx = px + Math.cos(a) * cell * 0.54
+    const hy = py + Math.sin(a) * cell * 0.54
+    if (k === 0) ctx.moveTo(hx, hy)
+    else ctx.lineTo(hx, hy)
+  }
+  ctx.closePath()
+  ctx.stroke()
+  ctx.globalAlpha = 0.06
+  ctx.fillStyle = INK
+  ctx.fill()
+  ctx.restore()
+}
+
+/** 已达标锁定圈 + ✓ 徽标（常规与预演共用） */
+function drawLockRing(ctx: CanvasRenderingContext2D, px: number, py: number, cell: number): void {
+  ctx.save()
+  ctx.strokeStyle = INK
+  ctx.globalAlpha = 0.34
+  ctx.lineWidth = Math.max(1.5, cell * 0.025)
+  ctx.beginPath()
+  // 只环住中心核，避免旧版大圆穿过四个臂原子、与目标圈叠成一团。
+  ctx.arc(px, py, cell * 0.28, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+  const r = cell * 0.105
+  const bx = px + cell * 0.27
+  const by = py - cell * 0.27
+  ctx.fillStyle = INK
+  ctx.beginPath()
+  ctx.arc(bx, by, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = '#0b1018'
+  ctx.lineWidth = Math.max(1.5, r * 0.28)
+  ctx.beginPath()
+  ctx.moveTo(bx - r * 0.45, by + r * 0.05)
+  ctx.lineTo(bx - r * 0.12, by + r * 0.4)
+  ctx.lineTo(bx + r * 0.5, by - r * 0.35)
+  ctx.stroke()
+}
+
+/** 共振链徽标：①②③…（按传播距离的渲染近似，与翻转阶梯动画同口径） */
+const CHAIN_GLYPHS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'] as const
+function drawChainBadge(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  order: number,
+): void {
+  const glyph = CHAIN_GLYPHS[order] ?? String(order + 1)
+  const r = cell * 0.16
+  const bx = px - cell * 0.46
+  const by = py - cell * 0.46
+  ctx.save()
+  ctx.fillStyle = '#10161f'
+  ctx.strokeStyle = '#f0c65a'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.arc(bx, by, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#f0c65a'
+  ctx.font = `${Math.max(10, Math.floor(cell * 0.2))}px ui-monospace, Menlo, monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(glyph, bx, by + 0.5)
+  ctx.restore()
+}
+
+/** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性） */
+function drawPreviewBanner(ctx: CanvasRenderingContext2D, W: number): void {
+  const text = '预演中 · 松开执行 · Esc 取消'
+  // 宽度按字符估算（CJK ≈ 12px / ASCII ≈ 7px @12px 字号），不依赖 measureText
+  const textW = [...text].reduce((w, ch) => w + ((ch.codePointAt(0) ?? 0) > 0x2e80 ? 12 : 7), 0)
+  const w = textW + 28
+  const h = 24
+  const x = Math.floor((W - w) / 2)
+  ctx.save()
+  ctx.font = '12px ui-monospace, Menlo, monospace'
+  ctx.fillStyle = 'rgba(13, 19, 28, 0.92)'
+  ctx.strokeStyle = 'rgba(240, 198, 90, 0.55)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(x, 8, w, h, 12)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#f0c65a'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, W / 2, 8 + h / 2)
+  ctx.restore()
+}
+
+/** 玩家标记徽章：格左上角小圆牌（顺序 ①–⑤ 金色；★/？/× 白色） */
+function drawMarks(
+  ctx: CanvasRenderingContext2D,
+  s: ChemState,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+): void {
+  if (!marks) return
+  for (const [key, mark] of marks) {
+    const [x, y] = key.split(',').map(Number)
+    if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) continue
+    if (x >= s.width || y >= s.height) continue
+    const bx = cx(x) - cell / 2 + cell * 0.17
+    const by = cy(y) - cell / 2 + cell * 0.17
+    const r = cell * 0.14
+    const seq = mark !== 'star' && mark !== 'question' && mark !== 'cross'
+    const glyph = seq ? mark : mark === 'star' ? '★' : mark === 'question' ? '?' : '×'
+    ctx.save()
+    ctx.fillStyle = '#10161f'
+    ctx.strokeStyle = seq ? '#f0c65a' : INK
+    ctx.globalAlpha = 0.95
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.arc(bx, by, r, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.fillStyle = seq ? '#f0c65a' : INK
+    ctx.font = `${Math.max(9, Math.floor(cell * (seq ? 0.16 : 0.19)))}px ui-monospace, Menlo, monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(glyph, bx, by + 0.5)
+    ctx.restore()
+  }
 }
 
 /**
- * 中心分子骨架：键线 + 臂原子 + 开口箭头。rot=0 且无 armRot 时与静态布局完全一致。
+ * Inspect 检视面板：并排显示该中心的全部构型周期（peekFlip 逐次推进），
+ * 当前态高亮——回答「这个中心翻完是什么样 / 我是不是已经翻过它」。纯展示，不消耗回合。
+ */
+function drawInspectPanel(
+  ctx: CanvasRenderingContext2D,
+  s: ChemState,
+  index: number,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  W: number,
+): void {
+  const c = s.centers[index]
+  if (!c) return
+  // 棋盘上：被检视中心的虚线高亮环
+  ctx.save()
+  ctx.strokeStyle = '#f0c65a'
+  ctx.globalAlpha = 0.75
+  ctx.lineWidth = 2
+  ctx.setLineDash([6, 4])
+  ctx.beginPath()
+  ctx.arc(cx(c.pos[0]), cy(c.pos[1]), cell * 0.62, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  // 四臂 / 三臂中心都保持模 2；三臂中心的缺口在两态间移到对侧。
+  const cycle: ChemCenterState[] = [c, peekFlip(c)]
+  const labels = ['现在', '翻一次后']
+
+  const miniW = 62
+  const padX = 14
+  const panelW = cycle.length * miniW + padX * 2
+  const panelH = 104
+  const x = W - panelW - 10
+  const y = 10
+
+  ctx.save()
+  ctx.fillStyle = 'rgba(13, 19, 28, 0.94)'
+  ctx.strokeStyle = BOND
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(x, y, panelW, panelH, 12)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = INK
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.font = '700 12px ui-monospace, Menlo, monospace'
+  ctx.fillText(
+    `中心 ${String(index + 1).padStart(2, '0')}${c.kind === 'trigonal' ? ' · 三臂' : ''}`,
+    x + padX,
+    y + 18,
+  )
+  ctx.font = '10px ui-monospace, Menlo, monospace'
+  ctx.fillStyle = '#8d9aab'
+  ctx.fillText('构型周期 · 进攻翻转', x + padX, y + 34)
+
+  cycle.forEach((cfg, i) => {
+    const mx = x + padX + i * miniW + miniW / 2
+    const my = y + 62
+    const isCurrent = i === 0
+    if (isCurrent) {
+      ctx.strokeStyle = '#f0c65a'
+      ctx.globalAlpha = 0.85
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.roundRect(mx - miniW / 2 + 3, my - 30, miniW - 6, 64, 8)
+      ctx.stroke()
+      ctx.globalAlpha = 1
+    }
+    drawMiniCenter(ctx, mx, my, cfg.arms, cfg.leaving, cfg.kind, isCurrent)
+    ctx.fillStyle = isCurrent ? '#f0c65a' : '#8d9aab'
+    ctx.font = '10px ui-monospace, Menlo, monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText(labels[i], mx, y + 88)
+  })
+  ctx.restore()
+}
+
+/** Inspect 面板里的迷你中心：小号骨架 + 臂原子 + 中心核方向箭头（当前态加亮） */
+function drawMiniCenter(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  arms: Partial<Record<Dir, string>>,
+  leaving: Dir,
+  kind: CenterKind,
+  bright: boolean,
+): void {
+  const dirs = (['N', 'E', 'S', 'W'] as const).filter((d) => arms[d] !== undefined)
+  const len = 15
+  ctx.save()
+  ctx.globalAlpha = bright ? 1 : 0.72
+  ctx.strokeStyle = BOND
+  ctx.lineWidth = 1.5
+  for (const d of dirs) {
+    const [ax, ay] = ARM_VEC[d]
+    line(ctx, px, py, px + ax * len, py + ay * len)
+  }
+  for (const d of dirs) {
+    const color = arms[d]
+    if (!color) continue
+    const [ax, ay] = ARM_VEC[d]
+    drawAtom(ctx, px + ax * len, py + ay * len, 6, color)
+  }
+  if (kind === 'trigonal') {
+    const missing = (['N', 'E', 'S', 'W'] as const).find((d) => arms[d] === undefined)
+    if (missing) {
+      const [ax, ay] = ARM_VEC[missing]
+      ctx.save()
+      ctx.strokeStyle = BOND
+      ctx.globalAlpha = 0.45
+      ctx.setLineDash([2, 2])
+      ctx.beginPath()
+      ctx.arc(px + ax * len, py + ay * len, 3.5, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+    }
+  }
+  // 中心原子（三臂中心画小三角）
+  ctx.fillStyle = FAINT
+  ctx.strokeStyle = '#8b95a5'
+  ctx.lineWidth = 1
+  if (kind === 'trigonal') {
+    ctx.beginPath()
+    for (let k = 0; k < 3; k++) {
+      const a = -Math.PI / 2 + (k * 2 * Math.PI) / 3
+      const tx = px + Math.cos(a) * 5
+      const ty = py + Math.sin(a) * 5
+      if (k === 0) ctx.moveTo(tx, ty)
+      else ctx.lineTo(tx, ty)
+    }
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+  } else {
+    ctx.beginPath()
+    ctx.arc(px, py, 4.5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  drawCenterDirection(ctx, px, py, 40, ARM_ANGLE[leaving])
+  ctx.restore()
+}
+
+/**
+ * 中心分子骨架：键线 + 臂原子 + 中心核方向箭头。rot=0 且无 armRot 时与静态布局完全一致。
  * 朝向相邻中心的臂缩短（避免压到邻居），开口以朝外的白色箭头标记进攻方向。
- * trigonal：只有 N/E/S 三臂，中心原子画成小三角（三元中心一眼可辨）。
+ * trigonal：四槽中恰好缺一臂，中心原子画成小三角（三臂中心一眼可辨）。
  */
 function drawCenter(
   ctx: CanvasRenderingContext2D,
@@ -476,7 +1078,7 @@ function drawCenter(
   kind: CenterKind,
   armRot?: Partial<Record<Dir, number>>,
 ): void {
-  const dirs = kind === 'trigonal' ? (['N', 'E', 'S'] as const) : (['N', 'E', 'S', 'W'] as const)
+  const dirs = (['N', 'E', 'S', 'W'] as const).filter((d) => arms[d] !== undefined)
   const armLen = (arm: Dir): number => (neighbors[arm] ? ARM_LEN_SHORT : ARM_LEN)
   const armPos = (arm: Dir): [number, number] => {
     const a = ARM_ANGLE[arm] + rot + (armRot?.[arm] ?? 0)
@@ -497,26 +1099,31 @@ function drawCenter(
     const color = arms[arm]
     if (!color) continue
     const [ax, ay] = armPos(arm)
-    const r = neighbors[arm] ? cell * 0.15 : cell * 0.22
-    ctx.fillStyle = colorOf(color)
-    ctx.beginPath()
-    ctx.arc(ax, ay, r, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-    ctx.lineWidth = Math.max(1, cell * 0.03)
-    ctx.stroke()
+    const r = neighbors[arm] ? cell * 0.13 : cell * 0.19
+    drawAtom(ctx, ax, ay, r, color)
 
-    // 开口臂：朝外的白色箭头 = 进攻方向（玩法信息，永远保留；随骨架一起旋转/滑动）
-    if (arm === leaving) {
-      const a = ARM_ANGLE[arm] + rot + (armRot?.[arm] ?? 0)
-      const tipLen = (neighbors[arm] ? ARM_LEN_SHORT + 0.3 : 1.42) * cell
-      const tipX = px + Math.cos(a) * tipLen
-      const tipY = py + Math.sin(a) * tipLen
-      arrow(ctx, px, py, tipX, tipY, cell)
+  }
+
+  // 三臂中心保留一个暗淡空槽，明确区分「结构缺口」与中心核内的进攻箭头。
+  if (kind === 'trigonal') {
+    const missing = (['N', 'E', 'S', 'W'] as const).find((d) => arms[d] === undefined)
+    if (missing) {
+      const a = ARM_ANGLE[missing] + rot + (armRot?.[missing] ?? 0)
+      const mx = px + Math.cos(a) * cell * ARM_LEN
+      const my = py + Math.sin(a) * cell * ARM_LEN
+      ctx.save()
+      ctx.strokeStyle = BOND
+      ctx.globalAlpha = 0.5
+      ctx.lineWidth = Math.max(1.5, cell * 0.035)
+      ctx.setLineDash([3, 3])
+      ctx.beginPath()
+      ctx.arc(mx, my, cell * 0.085, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
     }
   }
 
-  // 中心原子（三元中心画三角）
+  // 中心原子（三臂中心画三角）
   ctx.fillStyle = FAINT
   ctx.strokeStyle = '#8b95a5'
   ctx.lineWidth = 1
@@ -538,48 +1145,134 @@ function drawCenter(
     ctx.fill()
     ctx.stroke()
   }
+
+  // 方向提示固定在中心核内并最后绘制：玩家、目标圈和相邻中心都不会再遮住它。
+  // 动画中沿用开口臂的即时角度，因此会跟随四臂 / 三臂中心整体翻转。
+  const directionAngle = ARM_ANGLE[leaving] + rot + (armRot?.[leaving] ?? 0)
+  drawCenterDirection(ctx, px, py, cell, directionAngle)
 }
 
-/** 底部 HUD：刻度尺 + 读数（步数 / 标准杆 / 段数 / 手持 / 开口方向） */
-function drawStrip(
+/** 中心核内的进攻方向短箭头：不占用臂端和相邻格空间。 */
+function drawCenterDirection(
   ctx: CanvasRenderingContext2D,
-  s: ChemState,
-  x0: number,
-  width: number,
-  yTop: number,
+  px: number,
+  py: number,
   cell: number,
+  angle: number,
 ): void {
-  if (decor) {
-    // 仪器刻度：每 1/3 格一小格，每格一大格
-    const stepPx = Math.max(6, cell / 3)
-    const y = yTop + 6
-    ctx.strokeStyle = FAINT
-    ctx.lineWidth = 1
-    let i = 0
-    for (let x = x0; x <= x0 + width + 0.5; x += stepPx, i++) {
-      const h = i % 3 === 0 ? 5 : 3
-      line(ctx, Math.round(x) + 0.5, y, Math.round(x) + 0.5, y + h)
-    }
+  const ux = Math.cos(angle)
+  const uy = Math.sin(angle)
+  const vx = -uy
+  const vy = ux
+  const tailR = cell * 0.045
+  const neckR = cell * 0.025
+  const tipR = cell * 0.105
+  const wing = cell * 0.038
+
+  ctx.save()
+  ctx.strokeStyle = INK
+  ctx.globalAlpha = 0.94
+  ctx.lineWidth = Math.max(1.5, cell * 0.025)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  line(ctx, px - ux * tailR, py - uy * tailR, px + ux * neckR, py + uy * neckR)
+  ctx.beginPath()
+  ctx.moveTo(px + ux * neckR + vx * wing, py + uy * neckR + vy * wing)
+  ctx.lineTo(px + ux * tipR, py + uy * tipR)
+  ctx.lineTo(px + ux * neckR - vx * wing, py + uy * neckR - vy * wing)
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** 色珠内部纹样：颜色之外再给一条稳定编码，避免只靠红绿区分。 */
+function drawAtom(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  color: string,
+): void {
+  ctx.fillStyle = colorOf(color)
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.42)'
+  ctx.lineWidth = Math.max(1, r * 0.16)
+  ctx.stroke()
+
+  ctx.save()
+  ctx.strokeStyle = 'rgba(7, 10, 15, 0.62)'
+  ctx.fillStyle = 'rgba(7, 10, 15, 0.62)'
+  ctx.lineWidth = Math.max(1.2, r * 0.16)
+  ctx.lineCap = 'round'
+  if (color === 'red') {
+    ctx.beginPath()
+    ctx.arc(x, y, r * 0.22, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (color === 'blue') {
+    line(ctx, x - r * 0.38, y, x + r * 0.38, y)
+  } else if (color === 'green') {
+    line(ctx, x, y - r * 0.38, x, y + r * 0.38)
+  } else if (color === 'yellow') {
+    line(ctx, x - r * 0.3, y - r * 0.3, x + r * 0.3, y + r * 0.3)
+    line(ctx, x + r * 0.3, y - r * 0.3, x - r * 0.3, y + r * 0.3)
+  } else {
+    ctx.beginPath()
+    ctx.arc(x, y, r * 0.3, 0, Math.PI * 2)
+    ctx.stroke()
   }
-  ctx.fillStyle = '#8b95a5'
-  ctx.textBaseline = 'middle'
-  ctx.font = `${Math.max(12, Math.floor(cell * 0.3))}px ui-monospace, Menlo, monospace`
-  const leavingText = s.centers.map((c) => c.leaving).join(' / ')
-  const holdingText = s.holding ?? '—'
-  const parText = s.par !== undefined ? ` │ 标准杆 ${String(s.par).padStart(3, '0')}` : ''
-  const stageText =
-    s.stages.length > 1 ? ` │ 段 ${Math.min(s.stage + 1, s.stages.length)}/${s.stages.length}` : ''
-  ctx.fillText(
-    `步数 ${String(s.moves).padStart(3, '0')}${parText}${stageText} │ 手持 ${holdingText} │ 开口 ${leavingText} · 从开口的对面撞入`,
-    x0,
-    yTop + 26,
+  ctx.restore()
+}
+
+/** 染色落点预览：从玩家手中流向翻转后的最终臂位。 */
+function drawLandingPreview(
+  ctx: CanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  cell: number,
+  color: string,
+  now: number,
+): void {
+  const tone = colorOf(color)
+  const pulse = 0.72 + 0.18 * Math.sin(now / 180)
+  const angle = Math.atan2(toY - fromY, toX - fromX)
+  const tipX = toX - Math.cos(angle) * cell * 0.26
+  const tipY = toY - Math.sin(angle) * cell * 0.26
+  const head = cell * 0.1
+
+  ctx.save()
+  ctx.strokeStyle = tone
+  ctx.fillStyle = tone
+  ctx.globalAlpha = pulse
+  ctx.lineWidth = Math.max(2, cell * 0.04)
+  ctx.setLineDash([3, 4])
+  line(
+    ctx,
+    fromX + Math.cos(angle) * cell * 0.28,
+    fromY + Math.sin(angle) * cell * 0.28,
+    tipX,
+    tipY,
   )
-  // 胜利后按标准杆评星（纯展示）
-  if (s.won && s.par !== undefined) {
-    const stars = s.moves <= s.par ? '★★★' : s.moves <= s.par + 3 ? '★★☆' : '★☆☆'
-    ctx.fillStyle = '#e0b64f'
-    ctx.fillText(`${stars} 完成`, x0 + width - ctx.measureText(`${stars} 完成`).width, yTop + 26)
-  }
+  ctx.setLineDash([])
+  ctx.beginPath()
+  ctx.moveTo(tipX, tipY)
+  ctx.lineTo(tipX - head * Math.cos(angle - 0.55), tipY - head * Math.sin(angle - 0.55))
+  ctx.lineTo(tipX - head * Math.cos(angle + 0.55), tipY - head * Math.sin(angle + 0.55))
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.globalAlpha = 0.14 + 0.06 * Math.sin(now / 180)
+  ctx.beginPath()
+  ctx.arc(toX, toY, cell * 0.25, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = pulse
+  ctx.lineWidth = Math.max(2, cell * 0.045)
+  ctx.beginPath()
+  ctx.arc(toX, toY, cell * 0.29, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
 }
 
 /** v3 特殊格：光照（金色放射纹）/ 回收（井口下箭头）/ 脱保护（开锁）/ 弹射台（双箭头） */
@@ -703,11 +1396,6 @@ function drawFrame(
   corner(x + w + o, y + h + o, -1, -1)
 }
 
-function armCell(center: readonly [number, number], arm: 'N' | 'E' | 'S' | 'W'): [number, number] {
-  const [dx, dy] = DIR_VEC[arm]
-  return [center[0] + dx, center[1] + dy]
-}
-
 function line(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
   ctx.beginPath()
   ctx.moveTo(x1, y1)
@@ -722,43 +1410,26 @@ function dashedCircle(
   r: number,
   color: string,
   alpha = 0.85,
+  dash: readonly number[] = [4, 3],
 ): void {
   ctx.save()
   ctx.strokeStyle = color
   ctx.globalAlpha = alpha
-  ctx.setLineDash([4, 3])
-  ctx.lineWidth = 2
+  ctx.setLineDash([...dash])
+  ctx.lineWidth = Math.max(2, r * 0.08)
   ctx.beginPath()
   ctx.arc(x, y, r, 0, Math.PI * 2)
   ctx.stroke()
   ctx.restore()
 }
 
-function arrow(
-  ctx: CanvasRenderingContext2D,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  cell: number,
-): void {
-  ctx.save()
-  ctx.strokeStyle = INK
-  ctx.fillStyle = INK
-  ctx.globalAlpha = 0.55
-  ctx.lineWidth = 2
-  const angle = Math.atan2(toY - fromY, toX - fromX)
-  const headLen = cell * 0.16
-  const tipX = toX - Math.cos(angle) * cell * 0.05
-  const tipY = toY - Math.sin(angle) * cell * 0.05
-  line(ctx, fromX, fromY, tipX, tipY)
-  ctx.beginPath()
-  ctx.moveTo(tipX, tipY)
-  ctx.lineTo(tipX - headLen * Math.cos(angle - 0.5), tipY - headLen * Math.sin(angle - 0.5))
-  ctx.lineTo(tipX - headLen * Math.cos(angle + 0.5), tipY - headLen * Math.sin(angle + 0.5))
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
+/** 目标环的节奏与色珠内部纹样对应：即使低饱和/色弱状态也能区分目标色。 */
+function goalDash(color: string): readonly number[] {
+  if (color === 'red') return [2, 4]
+  if (color === 'blue') return [7, 3]
+  if (color === 'green') return [8, 3, 2, 3]
+  if (color === 'yellow') return [12, 4]
+  return [1, 3]
 }
 
 /** 正四面体线框（正交投影；顶点即「原子点」）。109.5° 的几何本体。 */

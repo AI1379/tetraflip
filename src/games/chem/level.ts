@@ -8,11 +8,11 @@ export type CenterKind = 'tetra' | 'trigonal'
 
 export interface ChemCenterDef {
   pos: Vec
-  /** tetra：N/E/S/W 四臂；trigonal：只有 N/E/S 三臂（v3，见 design §5） */
+  /** tetra：N/E/S/W 四臂；trigonal：四个方向槽中恰好缺一臂（v3.1，见 design §5） */
   arms: Partial<Record<Dir, string>>
   /** 开口臂方向：攻击者必须朝这个方向移动撞入（= 从它的背面进攻） */
   leaving: Dir
-  /** 三元中心（v3）：进攻 = 三臂轮换（mod 3）。缺省 tetra */
+  /** 三臂中心（v3.1）：与普通中心同样做 180° 翻转，缺口也随之转到对侧。缺省 tetra */
   kind?: CenterKind
   /** 保护基（v3）：脱保护前进攻无效、共振传不进去 */
   shielded?: boolean
@@ -110,13 +110,6 @@ const schema = z
     message: 'goals 与 stages 不能同时提供（旧格式用 goals，分步用 stages）',
   })
 
-/** 三元中心的臂方向与顺时针轮转（N→E→S→N） */
-export const TRI_DIRS = ['N', 'E', 'S'] as const
-export const triNext = (d: Dir): Dir =>
-  d === 'N' ? 'E' : d === 'E' ? 'S' : d === 'S' ? 'N' : 'N'
-export const triPrev = (d: Dir): Dir =>
-  d === 'N' ? 'S' : d === 'S' ? 'E' : d === 'E' ? 'N' : 'N'
-
 export function parseChemLevel(json: unknown): ChemLevel {
   const raw = schema.parse(json)
   const { width: w, height: h } = raw
@@ -147,13 +140,12 @@ export function parseChemLevel(json: unknown): ChemLevel {
     if (blocked.has(key)) fail(`中心 ${c.pos} 与墙 / 玩家 / 其他中心重叠`)
     blocked.add(key)
     const kind = c.kind ?? 'tetra'
-    const required = kind === 'tetra' ? (['N', 'E', 'S', 'W'] as const) : TRI_DIRS
-    const arms = Object.keys(c.arms) as Dir[]
-    for (const d of required) {
-      if (!c.arms[d]) fail(`${kind} 中心 ${c.pos} 缺少 ${d} 臂`)
+    const arms = (['N', 'E', 'S', 'W'] as const).filter((d) => c.arms[d] !== undefined)
+    if (kind === 'tetra' && arms.length !== 4) fail(`tetra 中心 ${c.pos} 必须有 N/E/S/W 四臂`)
+    if (kind === 'trigonal' && arms.length !== 3) {
+      fail(`trigonal 中心 ${c.pos} 必须在 N/E/S/W 四槽中恰好缺一臂`)
     }
-    if (kind === 'trigonal' && arms.length !== 3) fail(`trigonal 中心 ${c.pos} 只能有 N/E/S 三臂`)
-    if (kind === 'trigonal' && c.leaving === 'W') fail(`trigonal 中心 ${c.pos} 的开口不能是 W`)
+    if (c.arms[c.leaving] === undefined) fail(`中心 ${c.pos} 的开口 ${c.leaving} 必须位于现存臂上`)
     const colors = Object.values(c.arms)
     if (new Set(colors).size !== colors.length) fail(`中心 ${c.pos} 的各臂颜色必须互不相同`)
   }
@@ -187,7 +179,7 @@ export function parseChemLevel(json: unknown): ChemLevel {
     ? raw.stages.map((s) => ({ goals: [...s.goals] }))
     : [{ goals: [...(raw.goals ?? [])] }]
 
-  // 目标校验：中心存在、臂存在（trigonal 无 W 臂）、颜色存在于任一臂或游离基团
+  // 目标校验：四臂中心的目标臂必须初始存在；三臂中心的缺口会翻到对侧，允许目标指向初始缺失槽。
   const palette = new Set<string>([
     ...raw.centers.flatMap((c) => Object.values(c.arms)),
     ...raw.groups.map((g) => g.color),
@@ -196,7 +188,7 @@ export function parseChemLevel(json: unknown): ChemLevel {
     for (const g of stage.goals) {
       const center = raw.centers[g.center]
       if (!center) fail(`第 ${si + 1} 段目标引用了不存在的中心 ${g.center}`)
-      if (!center.arms[g.arm]) {
+      if ((center.kind ?? 'tetra') === 'tetra' && !center.arms[g.arm]) {
         fail(`第 ${si + 1} 段目标引用了中心 ${g.center} 不存在的 ${g.arm} 臂`)
       }
       if (!palette.has(g.color)) {

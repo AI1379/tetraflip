@@ -1,7 +1,7 @@
 {
   "id": "109.5°-35",
   "name": "狙击",
-  "hint": "三角中心被墙夹住了，走不过去——但弹射台的射线能到。飞过去的基团照样会装进开口，臂照样会转。",
+  "hint": "三臂中心被墙夹住了，但弹射台仍能染色。飞入的珠装进开口后，会和缺口一起翻到对侧。",
   "width": 5,
   "height": 5,
   "walls": [[2, 1], [2, 3]],
@@ -17,8 +17,8 @@
   "groups": [{ "pos": [0, 0], "color": "blue" }],
   "launchers": [{ "pos": [0, 2], "dir": "E" }],
   "goals": [
-    { "center": 0, "arm": "N", "color": "blue" },
-    { "center": 0, "arm": "E", "color": "red" }
+    { "center": 0, "arm": "N", "color": "green" },
+    { "center": 0, "arm": "W", "color": "blue" }
   ],
   "par": 3
 }
