@@ -1,28 +1,15 @@
 {
   "id": "109.5°-43",
-  "name": "东西换路",
-  "hint": "缺口在东西两侧切换；每一击只有一条左右支路会共振。",
+  "name": "开罩接三路",
+  "hint": "第一击的连锁有三条去处：缺口切断一条，护罩拦下一条。真正能通过的那一条，要等罩子开放。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    2,
-    1
+    0,
+    2
   ],
   "centers": [
-    {
-      "pos": [
-        2,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green"
-      },
-      "leaving": "S",
-      "kind": "trigonal"
-    },
     {
       "pos": [
         1,
@@ -30,11 +17,37 @@
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "red",
         "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "blue",
         "W": "yellow"
       },
-      "leaving": "W"
+      "leaving": "E"
     },
     {
       "pos": [
@@ -42,38 +55,34 @@
         2
       ],
       "arms": {
-        "N": "yellow",
+        "N": "red",
         "E": "green",
-        "S": "red",
+        "S": "yellow",
         "W": "blue"
       },
-      "leaving": "E"
+      "leaving": "E",
+      "shieldUntilStage": 1
     }
   ],
   "stages": [
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "yellow"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 1,
+          "center": 3,
           "arm": "N",
-          "color": "green"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "red"
+          "color": "yellow"
         }
       ]
     }
   ],
-  "par": 8
+  "par": 7
 }

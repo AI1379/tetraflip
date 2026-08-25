@@ -1,17 +1,12 @@
 {
   "id": "109.5°-21",
-  "name": "照亮两步",
-  "hint": "两段目标、同一个中心：光照决定何时换到另一侧进攻。",
-  "width": 4,
-  "height": 4,
-  "walls": [
-    [
-      2,
-      3
-    ]
-  ],
+  "name": "缺了一臂",
+  "hint": "它和普通中心一样翻转，只是少一条臂：三颗珠、缺口和箭头都会一起转到对侧。撞两下仍会回到原样。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
   "player": [
-    0,
+    2,
     0
   ],
   "centers": [
@@ -23,37 +18,23 @@
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "S": "green"
       },
-      "leaving": "N"
+      "leaving": "S",
+      "kind": "trigonal"
     }
   ],
-  "lights": [
-    [
-      1,
-      0
-    ]
-  ],
-  "stages": [
+  "goals": [
     {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "green"
-        }
-      ]
+      "center": 0,
+      "arm": "N",
+      "color": "green"
     },
     {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "red"
-        }
-      ]
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
     }
   ],
-  "par": 9
+  "par": 2
 }

@@ -15,13 +15,12 @@ import level01 from './levels/level-01.json'
 import level03 from './levels/level-03.json'
 import level05 from './levels/level-05.json'
 import level09 from './levels/level-09.json'
-import level11 from './levels/level-11.json'
+import level10 from './levels/level-10.json'
+import level14 from './levels/level-14.json'
 import level15 from './levels/level-15.json'
-import level16 from './levels/level-16.json'
-import level17 from './levels/level-17.json'
-import level20 from './levels/level-20.json'
-import level32 from './levels/level-32.json'
-import level36 from './levels/level-36.json'
+import level18 from './levels/level-18.json'
+import level29 from './levels/level-29.json'
+import level33 from './levels/level-33.json'
 
 /**
  * 渲染冒烟测试：用 Proxy 桩画布验证 render 可无异常执行。
@@ -58,7 +57,7 @@ function recordingCtx(texts: string[]): CanvasRenderingContext2D {
 describe('chem（109.5°）渲染冒烟', () => {
   it('单中心 / 多中心 / v1 搬运关均可直接渲染，装饰开关两种状态均可用', () => {
     const ctx = stubCtx()
-    for (const json of [level01, level09, level11, level15]) {
+    for (const json of [level01, level09, level10, level14]) {
       const s = initialState(chemGame.parseLevel(json))
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
       setChemDecor(false)
@@ -97,15 +96,15 @@ describe('chem（109.5°）渲染冒烟', () => {
 
   it('v2 共振关（相邻中心 / 共轭键 / 连锁翻转转移）渲染不抛错', () => {
     const ctx = stubCtx()
-    for (const json of [level16, level20]) {
+    for (const json of [level10, level18]) {
       const s = initialState(chemGame.parseLevel(json))
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
       setChemDecor(false)
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
       setChemDecor(true)
     }
-    // 连锁翻转转移：level-17 一击分叉到四个中心。
-    const level = chemGame.parseLevel(level17)
+    // 连锁翻转转移：level-15 一击分叉到四个中心。
+    const level = chemGame.parseLevel(level15)
     let s = initialState(level)
     render(s, ctx, 480, 480)
     const attacked = step(s, 'E')
@@ -168,7 +167,7 @@ describe('chem（109.5°）渲染冒烟', () => {
 
   it('弹射中心：静态轮廓、就位弹道、按住预演、执行飞珠与喷口受阻反馈均可渲染', () => {
     const ctx = stubCtx()
-    let s = initialState(chemGame.parseLevel(level32))
+    let s = initialState(chemGame.parseLevel(level29))
     expect(() => render(s, ctx, 480, 480)).not.toThrow() // 静态菱形喷嘴核 + 常驻双箭头
     s = step(s, 'S')
     s = step(s, 'S') // 拾取 blue
@@ -182,7 +181,7 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(next, ctx, 480, 480)).not.toThrow()
 
     const blocked = chemGame.parseLevel({
-      ...level32,
+      ...level29,
       id: 'render-eject-blocked',
       player: [0, 1],
       groups: [{ pos: [1, 1], color: 'blue' }],
@@ -198,7 +197,7 @@ describe('chem（109.5°）渲染冒烟', () => {
   it('阶段护罩：与未来段目标共享“2”号编码，预演解除与正式碎裂均可渲染', () => {
     const texts: string[] = []
     const ctx = recordingCtx(texts)
-    let s = initialState(chemGame.parseLevel(level36))
+    let s = initialState(chemGame.parseLevel(level33))
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
     expect(texts).toContain('2')
 
@@ -246,9 +245,9 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
     reset()
   })
 
-  it('共振链预演：多中心连锁（level-17 一击翻三个）渲染不抛错', () => {
+  it('共振链预演：多中心连锁（level-15 一击翻三个）渲染不抛错', () => {
     const ctx = stubCtx()
-    let s = initialState(chemGame.parseLevel(level17))
+    let s = initialState(chemGame.parseLevel(level15))
     const next = step(s, 'E')
     // 该攻击引发连锁（≥2 个中心变化）⇒ 走对应翻转动画 + 阶梯延迟 + ①②③ 徽标路径
     const changed = s.centers.filter(

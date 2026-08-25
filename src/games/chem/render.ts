@@ -161,6 +161,19 @@ export function notifyChemImpact(dir: Dir): void {
   shake = { start: performance.now(), dir }
 }
 
+/** 换关 / 重开时清除渲染层跨关卡动画状态，避免把“上一关的 1 步胜利”误判成当前关的步进动画 */
+export function resetChemAnim(): void {
+  lastKey = ''
+  lastState = null
+  lastDims = ''
+  walk = new Tweens()
+  flips.clear()
+  shake = null
+  handPulse = null
+  ejectionAnim = null
+  shieldBursts.clear()
+}
+
 const rotateArms = (arms: Partial<Record<Dir, string>>): Partial<Record<Dir, string>> => {
   const rotated: Partial<Record<Dir, string>> = {}
   for (const d of ['N', 'E', 'S', 'W'] as const) {

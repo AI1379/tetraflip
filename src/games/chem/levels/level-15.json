@@ -1,13 +1,13 @@
 {
   "id": "109.5°-15",
-  "name": "双链点火",
-  "hint": "中间中心牵着左右与上方链路；翻转奇偶决定哪一边被点燃，拾珠时机决定最终注入色。",
+  "name": "四级分叉",
+  "hint": "传播不是预先固定的线：中间中心翻过后，可能同时接通两条支路。",
   "width": 5,
   "height": 5,
   "walls": [],
   "player": [
-    1,
-    3
+    0,
+    2
   ],
   "centers": [
     {
@@ -16,12 +16,12 @@
         2
       ],
       "arms": {
-        "N": "yellow",
-        "E": "red",
-        "S": "blue",
-        "W": "green"
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "W"
+      "leaving": "E"
     },
     {
       "pos": [
@@ -29,12 +29,12 @@
         2
       ],
       "arms": {
-        "N": "green",
-        "E": "red",
-        "S": "yellow",
+        "N": "yellow",
+        "E": "green",
+        "S": "red",
         "W": "blue"
       },
-      "leaving": "N"
+      "leaving": "W"
     },
     {
       "pos": [
@@ -44,49 +44,40 @@
       "arms": {
         "N": "green",
         "E": "yellow",
-        "S": "blue",
-        "W": "red"
+        "S": "red",
+        "W": "blue"
       },
       "leaving": "E"
     },
     {
       "pos": [
-        1,
+        2,
         1
       ],
       "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "yellow",
-        "W": "green"
+        "N": "blue",
+        "E": "green",
+        "S": "red",
+        "W": "yellow"
       },
       "leaving": "N"
-    }
-  ],
-  "groups": [
-    {
-      "pos": [
-        4,
-        2
-      ],
-      "color": "purple"
     }
   ],
   "goals": [
     {
       "center": 0,
       "arm": "W",
-      "color": "red"
+      "color": "green"
     },
     {
       "center": 1,
       "arm": "N",
-      "color": "purple"
+      "color": "red"
     },
     {
       "center": 2,
       "arm": "E",
-      "color": "red"
+      "color": "blue"
     },
     {
       "center": 3,
@@ -94,5 +85,5 @@
       "color": "red"
     }
   ],
-  "par": 9
+  "par": 1
 }

@@ -1,18 +1,31 @@
 {
   "id": "109.5°-07",
-  "name": "插槽与奇偶锁",
-  "hint": "开口轴是可染色的插槽；与它垂直的两臂不能注入，只随翻转奇偶互换。这一击同时考两种目标。",
-  "width": 4,
+  "name": "空手只有一次",
+  "hint": "空手撞是纯翻转；一旦拾珠，手就不会再空。A 的目标只能靠纯翻转达成。",
+  "width": 5,
   "height": 3,
   "walls": [],
   "player": [
     0,
-    0
+    1
   ],
   "centers": [
     {
       "pos": [
-        2,
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
         1
       ],
       "arms": {
@@ -28,7 +41,7 @@
     {
       "pos": [
         0,
-        1
+        0
       ],
       "color": "purple"
     }
@@ -37,13 +50,13 @@
     {
       "center": 0,
       "arm": "W",
-      "color": "purple"
+      "color": "blue"
     },
     {
-      "center": 0,
-      "arm": "N",
-      "color": "green"
+      "center": 1,
+      "arm": "W",
+      "color": "purple"
     }
   ],
-  "par": 3
+  "par": 6
 }

@@ -1,53 +1,44 @@
 {
   "id": "109.5°-41",
-  "name": "开罩三响",
-  "hint": "同一击要完成三件事：注入、共振与飞珠落地。在那之前，先空手把第 1 段做完。",
-  "width": 5,
+  "name": "转轴回收飞珠",
+  "hint": "一束光要同时把两个开口转到能用的方向；被顶出的珠是下一趟货。",
+  "width": 4,
   "height": 4,
-  "walls": [],
+  "walls": [
+    [
+      3,
+      3
+    ]
+  ],
   "player": [
-    2,
-    2
+    1,
+    0
   ],
   "centers": [
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "N"
-    },
     {
       "pos": [
         3,
         2
       ],
       "arms": {
-        "N": "red",
+        "N": "green",
         "E": "blue",
-        "S": "yellow",
-        "W": "green"
+        "S": "red",
+        "W": "yellow"
       },
-      "leaving": "E",
-      "ejects": true,
-      "shieldUntilStage": 1
+      "leaving": "N",
+      "ejects": true
     },
     {
       "pos": [
-        4,
-        2
+        1,
+        3
       ],
       "arms": {
         "N": "red",
         "E": "yellow",
-        "S": "blue",
-        "W": "green"
+        "S": "green",
+        "W": "purple"
       },
       "leaving": "E"
     }
@@ -55,36 +46,24 @@
   "groups": [
     {
       "pos": [
-        1,
-        2
+        0,
+        1
       ],
       "color": "purple"
     }
   ],
-  "stages": [
+  "lights": [
+    [
+      0,
+      0
+    ]
+  ],
+  "goals": [
     {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "W",
-          "color": "purple"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "blue"
-        }
-      ]
+      "center": 1,
+      "arm": "N",
+      "color": "blue"
     }
   ],
-  "par": 4
+  "par": 10
 }

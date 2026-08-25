@@ -1,28 +1,15 @@
 {
   "id": "109.5°-36",
-  "name": "第二阶段开放",
-  "hint": "护罩标着 2：先完成第 1 段，整次结算后它才解除，之后才可撞入罩内中心。",
-  "width": 5,
-  "height": 5,
+  "name": "罩内预调",
+  "hint": "护罩挡进攻与共振，不挡光。罩内开口可以在开罩前先调好。",
+  "width": 6,
+  "height": 4,
   "walls": [],
   "player": [
-    3,
-    2
+    0,
+    0
   ],
   "centers": [
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "green",
-        "E": "blue",
-        "S": "red",
-        "W": "yellow"
-      },
-      "leaving": "S"
-    },
     {
       "pos": [
         2,
@@ -34,9 +21,28 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "E",
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        4,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N",
       "shieldUntilStage": 1
     }
+  ],
+  "lights": [
+    [
+      1,
+      0
+    ]
   ],
   "stages": [
     {
@@ -44,7 +50,7 @@
         {
           "center": 0,
           "arm": "N",
-          "color": "red"
+          "color": "green"
         }
       ]
     },
@@ -58,5 +64,5 @@
       ]
     }
   ],
-  "par": 5
+  "par": 6
 }

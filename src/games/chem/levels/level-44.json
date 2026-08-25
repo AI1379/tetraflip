@@ -1,15 +1,10 @@
 {
   "id": "109.5°-44",
-  "name": "照光填槽",
-  "hint": "墙挡住初始进攻轴，光能把开口转出来。三臂中心被染色时，缺口同样随臂翻转。",
+  "name": "终局：三段闭环",
+  "hint": "三段目标、一束预调的光。每颗珠都有自己的去处——包括被弹出的那颗。",
   "width": 4,
-  "height": 4,
-  "walls": [
-    [
-      1,
-      2
-    ]
-  ],
+  "height": 5,
+  "walls": [],
   "player": [
     0,
     0
@@ -18,24 +13,52 @@
     {
       "pos": [
         2,
-        2
+        1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "purple",
+        "E": "red",
         "S": "green"
       },
-      "leaving": "E",
-      "kind": "trigonal"
+      "leaving": "N",
+      "kind": "trigonal",
+      "ejects": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        1,
+        3
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "yellow",
+        "S": "green",
+        "W": "purple"
+      },
+      "leaving": "E"
     }
   ],
   "groups": [
     {
       "pos": [
         1,
-        0
+        1
       ],
-      "color": "purple"
+      "color": "blue"
     }
   ],
   "lights": [
@@ -44,17 +67,44 @@
       1
     ]
   ],
-  "goals": [
+  "stages": [
     {
-      "center": 0,
-      "arm": "N",
-      "color": "purple"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "yellow"
+        }
+      ]
     },
     {
-      "center": 0,
-      "arm": "W",
-      "color": "blue"
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "red"
+        }
+      ]
     }
   ],
-  "par": 6
+  "par": 12
 }

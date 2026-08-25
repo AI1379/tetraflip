@@ -12,6 +12,7 @@ import {
   render as renderChem,
   setChemDecor,
   notifyChemImpact,
+  resetChemAnim,
   setChemPreview,
   setChemInspect,
   setChemMarks,
@@ -39,6 +40,8 @@ interface Bundle {
   setDecor?: (v: boolean) => void
   /** 无效输入反馈（step 无效果时调用）；未实现则缺省 */
   onBlocked?: (dir: Dir) => void
+  /** 换关 / 重开时重置渲染层动画状态；未实现则缺省 */
+  resetAnim?: () => void
   /** 按住预演（design §11）：注入 / 清除 step(当前, 方向) 的 ghost 态；未实现则缺省 */
   setPreview?: (state: any | null) => void
   /** 是否支持玩家标记（design §11 层 ③）；当前仅 chem（t3 的记忆负担由时间线完整外置） */
@@ -54,6 +57,7 @@ const bundles: Record<string, Bundle> = {
     render: renderChem,
     setDecor: setChemDecor,
     onBlocked: notifyChemImpact,
+    resetAnim: resetChemAnim,
     setPreview: setChemPreview,
     supportsMarks: true,
   },
@@ -130,9 +134,16 @@ app.innerHTML = `
         <div id="win-stats" class="win-stats"></div>
         <div class="win-actions">
           <button id="replay-after-win" class="secondary-button">再玩一次</button>
+          <button id="view-after-win" class="secondary-button">查看棋盘</button>
           <button id="next-after-win" class="primary-button">下一关 →</button>
         </div>
       </div>
+    </div>
+    <div id="winbar" class="winbar hidden" aria-live="polite">
+      <span id="winbar-text" class="winbar-text"></span>
+      <button id="winbar-replay" class="secondary-button">再玩一次</button>
+      <button id="winbar-next" class="primary-button">下一关 →</button>
+      <button id="winbar-close" class="winbar-close" title="关闭通关栏" aria-label="关闭通关栏">✕</button>
     </div>
   </main>
 
@@ -186,6 +197,12 @@ const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const replayAfterWin = app.querySelector('#replay-after-win') as HTMLButtonElement
+const viewAfterWin = app.querySelector('#view-after-win') as HTMLButtonElement
+const winbar = app.querySelector('#winbar') as HTMLElement
+const winbarText = app.querySelector('#winbar-text') as HTMLElement
+const winbarReplay = app.querySelector('#winbar-replay') as HTMLButtonElement
+const winbarNext = app.querySelector('#winbar-next') as HTMLButtonElement
+const winbarClose = app.querySelector('#winbar-close') as HTMLButtonElement
 const hintEl = app.querySelector('#level-hint') as HTMLElement
 const briefEl = app.querySelector('#level-brief') as HTMLDetailsElement
 const briefLabel = app.querySelector('#brief-label') as HTMLElement
@@ -323,10 +340,7 @@ function updateHud(): void {
   }
 }
 
-function showOverlay(): void {
-  const isLast = index >= levels.length - 1
-  completed.add(`${current.id}:${index}`)
-  const meta = levelMeta()
+function winResult(): string {
   const s = hist.current as { moves?: number; par?: number }
   const moves = s.moves ?? hist.depth
   let result = `${moves} 步完成`
@@ -334,12 +348,22 @@ function showOverlay(): void {
     const stars = moves <= s.par ? '★★★' : moves <= s.par + 3 ? '★★☆' : '★☆☆'
     result = `${stars} · ${moves} 步 / 标准 ${s.par}`
   }
+  return result
+}
+
+function showOverlay(): void {
+  const isLast = index >= levels.length - 1
+  completed.add(`${current.id}:${index}`)
+  const meta = levelMeta()
+  const result = winResult()
   winTitle.textContent = meta.name ?? meta.id ?? `第 ${index + 1} 关`
   winStats.textContent = result
+  winbarText.textContent = `✓ 已通关 · ${result}`
   nextAfterWin.textContent = isLast ? '回到本关' : '下一关 →'
+  winbarNext.textContent = isLast ? '回到本关' : '下一关 →'
   overlay.classList.remove('hidden')
   overlay.setAttribute('aria-hidden', 'false')
-  nextAfterWin.focus()
+  viewAfterWin.focus()
 }
 
 function hideOverlay(): void {
@@ -347,9 +371,20 @@ function hideOverlay(): void {
   overlay.setAttribute('aria-hidden', 'true')
 }
 
+/** 关闭通关卡片、露出终局棋盘，同时保留一条精简通栏 */
+function viewBoard(): void {
+  hideOverlay()
+  winbar.classList.remove('hidden')
+}
+
+function hideWinbar(): void {
+  winbar.classList.add('hidden')
+}
+
 function openLevel(i: number): void {
   index = Math.max(0, Math.min(i, levels.length - 1))
-  if (current.id === 'chem' && index === 10 && !completed.has('chem:10')) briefEl.open = true
+  if (current.id === 'chem' && index === 9 && !completed.has('chem:9')) briefEl.open = true
+  current.resetAnim?.()
   hist = new History(current.def.initialState(levels[index].level))
   cancelPending()
   setChemInspect(null)
@@ -357,6 +392,7 @@ function openLevel(i: number): void {
   loadMarks()
   setChemMarks(current.id === 'chem' ? currentMarks : null)
   hideOverlay()
+  hideWinbar()
   hideToast()
   closePicker()
   draw()
@@ -386,6 +422,7 @@ function loadGame(id: string): void {
 
 function applyDir(dir: Dir): void {
   const def = current.def
+  const wasWin = def.isWin(hist.current)
   const next = def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
@@ -396,7 +433,7 @@ function applyDir(dir: Dir): void {
   hist.push(next)
   draw()
   updateHud()
-  if (def.isWin(next)) showOverlay()
+  if (!wasWin && def.isWin(next)) showOverlay()
 }
 
 function doUndo(): void {
@@ -405,6 +442,7 @@ function doUndo(): void {
   setChemInspect(null)
   clearInspectTimer()
   hideOverlay()
+  hideWinbar()
   draw()
   updateHud()
 }
@@ -711,6 +749,13 @@ nextAfterWin.addEventListener('click', () => {
   else nextLevel()
 })
 replayAfterWin.addEventListener('click', restart)
+viewAfterWin.addEventListener('click', viewBoard)
+winbarReplay.addEventListener('click', restart)
+winbarNext.addEventListener('click', () => {
+  if (index >= levels.length - 1) restart()
+  else nextLevel()
+})
+winbarClose.addEventListener('click', hideWinbar)
 
 // 触屏方向键（design §11 输入模型）：按下开始计时，松开 = 执行；指针移开按钮 = 取消。
 // 键盘可达性：Enter/Space 触发的 click（无 pointerdown 前置）直接执行。
@@ -820,8 +865,15 @@ window.addEventListener('keydown', (e) => {
       cancelPending() // 预演中：Esc 只取消预演，不执行
       return
     }
+    if (!overlay.classList.contains('hidden')) {
+      viewBoard() // 通关卡片：Esc 收起卡片看终局
+      return
+    }
+    if (!winbar.classList.contains('hidden')) {
+      hideWinbar()
+      return
+    }
     closePicker()
-    hideOverlay()
     return
   }
   if (isUndoKey(e)) {

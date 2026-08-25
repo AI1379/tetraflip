@@ -1,32 +1,40 @@
 {
   "id": "109.5°-18",
-  "name": "光的转向",
-  "hint": "走上金色光照格，所有中心的开口顺时针移到下一条真实臂；颜色臂本身不会转。",
-  "width": 4,
-  "height": 3,
-  "walls": [
-    [
-      2,
-      2
-    ]
-  ],
+  "name": "光的连锁",
+  "hint": "两个中心的站位互相占住。光能把开口转到可达的方向。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
   "player": [
-    3,
-    2
+    0,
+    0
   ],
   "centers": [
     {
       "pos": [
         2,
-        1
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "N"
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
   "lights": [
@@ -38,7 +46,12 @@
   "goals": [
     {
       "center": 0,
-      "arm": "W",
+      "arm": "N",
+      "color": "yellow"
+    },
+    {
+      "center": 1,
+      "arm": "E",
       "color": "blue"
     }
   ],

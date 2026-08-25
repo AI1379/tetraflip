@@ -1,93 +1,68 @@
 {
   "id": "109.5°-29",
-  "name": "双染引链",
-  "hint": "染色换出的珠，是下一次染色的输入；缺口的翻转决定每一击震动通向哪一侧。",
+  "name": "一击三果",
+  "hint": "同一击会注入、沿亮键翻转邻居，并把原开口珠弹到身后。三个结果要一起预测。",
   "width": 5,
-  "height": 3,
+  "height": 5,
   "walls": [],
   "player": [
-    2,
-    2
+    0,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        1
+        2,
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
+        "E": "green",
+        "S": "yellow",
         "W": "purple"
       },
-      "leaving": "S"
+      "leaving": "E",
+      "ejects": true
     },
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "blue",
-        "S": "red"
-      },
-      "leaving": "N",
-      "kind": "trigonal"
-    },
-    {
-      "pos": [
-        2,
-        0
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "green",
-        "S": "purple",
-        "W": "red"
-      },
-      "leaving": "N"
-    }
-  ],
-  "groups": [
     {
       "pos": [
         3,
         2
       ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "blue",
+        "W": "purple"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "color": "blue"
+    }
+  ],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    },
+    {
+      "center": 0,
+      "arm": "S",
+      "color": "red"
+    },
+    {
+      "center": 1,
+      "arm": "E",
       "color": "purple"
     }
   ],
-  "stages": [
-    {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "S",
-          "color": "purple"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "S",
-          "color": "yellow"
-        },
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "purple"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "purple"
-        }
-      ]
-    }
-  ],
-  "par": 5
+  "par": 4
 }

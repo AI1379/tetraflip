@@ -1,81 +1,62 @@
 {
   "id": "109.5°-33",
-  "name": "飞珠接力",
-  "hint": "第一次弹射同时完成共振；弹出的珠是下一棒。",
+  "name": "第二阶段开放",
+  "hint": "护罩标着 2：先完成第 1 段，整次结算后它才解除，之后才可撞入罩内中心。",
   "width": 5,
   "height": 5,
   "walls": [],
   "player": [
-    0,
-    0
+    3,
+    2
   ],
   "centers": [
     {
       "pos": [
         2,
-        2
+        3
       ],
       "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "E",
-      "ejects": true
-    },
-    {
-      "pos": [
-        3,
-        2
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "red",
-        "S": "green",
-        "W": "blue"
-      },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        1,
-        4
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "green"
+        "N": "green",
+        "E": "blue",
+        "S": "red",
+        "W": "yellow"
       },
       "leaving": "S"
-    }
-  ],
-  "groups": [
+    },
     {
       "pos": [
-        0,
+        2,
         1
       ],
-      "color": "purple"
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "shieldUntilStage": 1
     }
   ],
-  "goals": [
+  "stages": [
     {
-      "center": 0,
-      "arm": "W",
-      "color": "purple"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        }
+      ]
     },
     {
-      "center": 1,
-      "arm": "E",
-      "color": "blue"
-    },
-    {
-      "center": 2,
-      "arm": "N",
-      "color": "green"
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "blue"
+        }
+      ]
     }
   ],
-  "par": 8
+  "par": 5
 }

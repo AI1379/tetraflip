@@ -1,63 +1,85 @@
 {
   "id": "109.5°-35",
-  "name": "空穴喷流",
-  "hint": "三臂弹射中心会让色珠、缺口和喷流方向一起翻面；身后的障碍决定被顶出珠的落点。",
-  "width": 5,
+  "name": "逐层开罩",
+  "hint": "三面罩、三个编号。同一站位，按什么顺序进攻，编号自己会说。",
+  "width": 4,
   "height": 5,
-  "walls": [
-    [
-      0,
-      2
-    ],
-    [
-      2,
-      1
-    ],
-    [
-      2,
-      3
-    ]
-  ],
+  "walls": [],
   "player": [
-    0,
-    0
+    2,
+    2
   ],
   "centers": [
     {
       "pos": [
-        3,
+        1,
         2
       ],
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "green"
+        "S": "green",
+        "W": "yellow"
       },
-      "leaving": "E",
-      "kind": "trigonal",
-      "ejects": true
-    }
-  ],
-  "groups": [
-    {
-      "pos": [
-        1,
-        0
-      ],
-      "color": "yellow"
-    }
-  ],
-  "goals": [
-    {
-      "center": 0,
-      "arm": "N",
-      "color": "green"
+      "leaving": "W"
     },
     {
-      "center": 0,
-      "arm": "W",
-      "color": "yellow"
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S",
+      "shieldUntilStage": 2
     }
   ],
-  "par": 5
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 3
 }

@@ -1,20 +1,28 @@
 {
   "id": "109.5°-22",
-  "name": "光路接力",
-  "hint": "照光开位，染色改链。第一段的翻转也许顺路就完成了下一段。",
+  "name": "空穴断路器",
+  "hint": "缺口朝着哪一侧，链就断在哪一侧。翻动缺口，链的路径也随之改变。",
   "width": 5,
-  "height": 4,
-  "walls": [
-    [
-      1,
-      1
-    ]
-  ],
+  "height": 3,
+  "walls": [],
   "player": [
-    4,
-    3
+    2,
+    2
   ],
   "centers": [
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
     {
       "pos": [
         2,
@@ -22,11 +30,11 @@
       ],
       "arms": {
         "N": "red",
-        "E": "purple",
-        "S": "yellow",
-        "W": "green"
+        "E": "blue",
+        "S": "yellow"
       },
-      "leaving": "E"
+      "leaving": "N",
+      "kind": "trigonal"
     },
     {
       "pos": [
@@ -34,28 +42,13 @@
         1
       ],
       "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "yellow",
-        "W": "green"
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
       },
       "leaving": "E"
     }
-  ],
-  "groups": [
-    {
-      "pos": [
-        0,
-        3
-      ],
-      "color": "blue"
-    }
-  ],
-  "lights": [
-    [
-      0,
-      0
-    ]
   ],
   "stages": [
     {
@@ -63,19 +56,24 @@
         {
           "center": 0,
           "arm": "N",
-          "color": "blue"
+          "color": "green"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 1,
-          "arm": "E",
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "N",
           "color": "green"
         }
       ]
     }
   ],
-  "par": 10
+  "par": 3
 }

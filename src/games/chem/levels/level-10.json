@@ -1,80 +1,53 @@
 {
   "id": "109.5°-10",
-  "name": "三中心物流毕业",
-  "hint": "同一站位要兼顾上下。先想好三色接力的顺序，再动手。",
-  "width": 6,
+  "name": "第一次共振",
+  "hint": "相邻中心面对臂同色会连成亮键。一个翻转，震动会沿键传过去。",
+  "width": 5,
   "height": 5,
   "walls": [],
   "player": [
-    0,
+    1,
     2
   ],
   "centers": [
     {
       "pos": [
         2,
-        1
-      ],
-      "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "N"
-    },
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "green",
-        "W": "purple"
-      },
-      "leaving": "S"
-    },
-    {
-      "pos": [
-        4,
         2
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
+        "E": "green",
         "S": "yellow",
-        "W": "purple"
+        "W": "blue"
       },
       "leaving": "E"
-    }
-  ],
-  "groups": [
+    },
     {
       "pos": [
-        1,
+        3,
         2
       ],
-      "color": "purple"
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
   "goals": [
     {
       "center": 0,
-      "arm": "S",
-      "color": "purple"
+      "arm": "W",
+      "color": "green"
     },
     {
       "center": 1,
-      "arm": "N",
+      "arm": "E",
       "color": "blue"
-    },
-    {
-      "center": 2,
-      "arm": "W",
-      "color": "green"
     }
   ],
-  "par": 6
+  "par": 1
 }

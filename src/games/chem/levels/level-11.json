@@ -1,18 +1,18 @@
 {
   "id": "109.5°-11",
-  "name": "第一次共振",
-  "hint": "相邻中心面对臂同色会连成亮键。一个翻转，震动会沿键传过去。",
+  "name": "三级多米诺",
+  "hint": "震动到达一个中心后，它先翻转，再用翻转后的臂检查下一跳。",
   "width": 5,
   "height": 5,
   "walls": [],
   "player": [
-    1,
+    0,
     2
   ],
   "centers": [
     {
       "pos": [
-        2,
+        1,
         2
       ],
       "arms": {
@@ -25,13 +25,26 @@
     },
     {
       "pos": [
-        3,
+        2,
         2
       ],
       "arms": {
         "N": "yellow",
-        "E": "red",
-        "S": "green",
+        "E": "green",
+        "S": "red",
+        "W": "blue"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "green",
+        "E": "yellow",
+        "S": "red",
         "W": "blue"
       },
       "leaving": "E"
@@ -45,6 +58,11 @@
     },
     {
       "center": 1,
+      "arm": "N",
+      "color": "red"
+    },
+    {
+      "center": 2,
       "arm": "E",
       "color": "blue"
     }

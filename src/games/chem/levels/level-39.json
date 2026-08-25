@@ -1,41 +1,51 @@
 {
   "id": "109.5°-39",
-  "name": "罩内预调",
-  "hint": "护罩挡进攻与共振，不挡光。罩内开口可以在开罩前先调好。",
+  "name": "毕业：延迟喷流",
+  "hint": "光进得了护罩，珠进不了。开罩前先预调开口，开罩后珠才有用。",
   "width": 6,
-  "height": 4,
+  "height": 5,
   "walls": [],
   "player": [
-    0,
-    0
+    4,
+    1
   ],
   "centers": [
     {
       "pos": [
-        2,
-        1
+        3,
+        2
       ],
       "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "N": "purple",
+        "E": "red",
+        "S": "green"
       },
-      "leaving": "S"
+      "leaving": "N",
+      "kind": "trigonal",
+      "ejects": true,
+      "shieldUntilStage": 1
     },
     {
       "pos": [
         4,
-        1
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
+        "E": "yellow",
         "S": "green",
-        "W": "yellow"
+        "W": "blue"
       },
-      "leaving": "N",
-      "shieldUntilStage": 1
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "color": "blue"
     }
   ],
   "lights": [
@@ -48,7 +58,7 @@
     {
       "goals": [
         {
-          "center": 0,
+          "center": 1,
           "arm": "N",
           "color": "green"
         }
@@ -57,12 +67,17 @@
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
           "arm": "W",
           "color": "blue"
+        },
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 6
+  "par": 9
 }

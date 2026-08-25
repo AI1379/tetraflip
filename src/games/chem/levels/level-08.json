@@ -1,18 +1,18 @@
 {
   "id": "109.5°-08",
-  "name": "空手只有一次",
-  "hint": "空手撞是纯翻转；一旦拾珠，手就不会再空。A 的目标只能靠纯翻转达成。",
-  "width": 5,
-  "height": 3,
+  "name": "同一站位，两扇门",
+  "hint": "同一站位，向北与向南撞的是两个不同中心。已达标的那个，别碰。",
+  "width": 6,
+  "height": 5,
   "walls": [],
   "player": [
     0,
-    1
+    2
   ],
   "centers": [
     {
       "pos": [
-        1,
+        2,
         1
       ],
       "arms": {
@@ -20,43 +20,61 @@
         "E": "blue",
         "S": "green",
         "W": "yellow"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        4,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "yellow",
+        "W": "blue"
       },
       "leaving": "E"
     },
     {
       "pos": [
-        3,
-        1
+        2,
+        3
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
       },
-      "leaving": "E"
+      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
         0,
-        0
+        3
       ],
-      "color": "purple"
+      "color": "blue"
     }
   ],
   "goals": [
     {
       "center": 0,
-      "arm": "W",
-      "color": "blue"
+      "arm": "N",
+      "color": "red"
     },
     {
       "center": 1,
-      "arm": "W",
-      "color": "purple"
+      "arm": "E",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "blue"
     }
   ],
-  "par": 6
+  "par": 8
 }

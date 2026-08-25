@@ -1,92 +1,59 @@
 {
   "id": "109.5°-40",
-  "name": "开罩接空穴",
-  "hint": "第一击的连锁其实够得到罩内中心——被挡住正是设计。阶段推进后，罩内中心自会开放。",
-  "width": 5,
-  "height": 3,
-  "walls": [],
+  "name": "照光填槽",
+  "hint": "墙挡住初始进攻轴，光能把开口转出来。三臂中心被染色时，缺口同样随臂翻转。",
+  "width": 4,
+  "height": 4,
+  "walls": [
+    [
+      1,
+      2
+    ]
+  ],
   "player": [
     0,
-    1
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        1
+        2,
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
+        "E": "blue",
+        "S": "green"
       },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "green",
-        "E": "red",
-        "W": "blue"
-      },
-      "leaving": "N",
+      "leaving": "E",
       "kind": "trigonal"
-    },
-    {
-      "pos": [
-        3,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "N",
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        2,
-        0
-      ],
-      "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "N"
     }
   ],
-  "stages": [
+  "groups": [
     {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "yellow"
-        }
-      ]
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      1
+    ]
+  ],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
     },
     {
-      "goals": [
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "yellow"
-        },
-        {
-          "center": 3,
-          "arm": "S",
-          "color": "yellow"
-        }
-      ]
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
     }
   ],
   "par": 6

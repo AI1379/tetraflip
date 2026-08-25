@@ -5,6 +5,7 @@ export {
   render,
   setChemDecor,
   notifyChemImpact,
+  resetChemAnim,
   setChemPreview,
   setChemInspect,
   setChemMarks,
