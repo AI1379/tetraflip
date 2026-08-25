@@ -1,14 +1,14 @@
 {
-  "id": "109.5°-31",
-  "name": "飞珠再利用",
-  "hint": "先把紫珠撞进弹射中心；飞到左侧的绿珠会让手重新有货，再把它送进下方中心。",
+  "id": "109.5°-45",
+  "name": "双喷流接力",
+  "hint": "第一座弹射中心把绿珠送回左侧；拾起后再撞第二座弹射中心，连续两次用喷流恢复空手。",
   "width": 4,
   "height": 5,
   "walls": [],
   "player": [0, 0],
   "centers": [
     { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true },
-    { "pos": [1, 3], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "purple" }, "leaving": "S" }
+    { "pos": [1, 3], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "purple" }, "leaving": "S", "ejects": true }
   ],
   "groups": [{ "pos": [1, 0], "color": "purple" }],
   "goals": [

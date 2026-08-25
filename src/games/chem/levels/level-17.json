@@ -1,31 +1,22 @@
 {
   "id": "109.5°-17",
-  "name": "多米诺",
-  "hint": "震动沿连线一级一级传，而且每翻一个中心都会重新比对连线颜色：有的连接要等前面的中心翻过之后才接通。一击最多能翻几个中心？",
+  "name": "四级分叉",
+  "hint": "传播不是预先固定的线：中间中心翻过后会同时接通右侧与上方，两条支路在同一击中分叉。",
   "width": 5,
   "height": 5,
-  "walls": [[2, 0]],
-  "player": [4, 4],
+  "walls": [],
+  "player": [0, 2],
   "centers": [
-    {
-      "pos": [1, 2],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
-      "leaving": "E"
-    },
-    {
-      "pos": [2, 2],
-      "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" },
-      "leaving": "W"
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
-      "leaving": "E"
-    }
+    { "pos": [1, 2], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E" },
+    { "pos": [2, 2], "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" }, "leaving": "W" },
+    { "pos": [3, 2], "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" }, "leaving": "E" },
+    { "pos": [2, 1], "arms": { "N": "blue", "E": "green", "S": "red", "W": "yellow" }, "leaving": "N" }
   ],
   "goals": [
     { "center": 0, "arm": "W", "color": "green" },
     { "center": 1, "arm": "N", "color": "red" },
-    { "center": 2, "arm": "E", "color": "blue" }
-  ]
+    { "center": 2, "arm": "E", "color": "blue" },
+    { "center": 3, "arm": "N", "color": "red" }
+  ],
+  "par": 1
 }

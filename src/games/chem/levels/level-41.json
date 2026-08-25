@@ -1,0 +1,24 @@
+{
+  "id": "109.5°-41",
+  "name": "开罩接空穴",
+  "hint": "第一段让空穴保持断链并解除链尾护罩；随后从下方翻回空穴，新增节点才会进入第二段共振。",
+  "width": 5,
+  "height": 3,
+  "walls": [],
+  "player": [2, 2],
+  "centers": [
+    { "pos": [1, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S" },
+    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "yellow" }, "leaving": "N", "kind": "trigonal" },
+    { "pos": [3, 1], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" }, "leaving": "E", "shieldUntilStage": 1 }
+  ],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 0, "arm": "N", "color": "red" },
+        { "center": 2, "arm": "N", "color": "green" }
+      ]
+    }
+  ],
+  "par": 3
+}

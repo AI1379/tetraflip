@@ -30,7 +30,7 @@ function mechanismKey(s: ChemState): string {
     holding: s.holding,
     centers: s.centers.map((c) => ({ arms: c.arms, leaving: c.leaving })),
     groups: s.groups,
-    deprotected: s.deprotected,
+    stage: s.stage,
   })
 }
 

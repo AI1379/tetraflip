@@ -1,32 +1,19 @@
 {
   "id": "109.5°-37",
-  "name": "同时双响",
-  "hint": "两个目标离得很远，却只能在同一击里同时点亮——一击翻一个，震动顺着连线把另一个也翻过去。分开做是做不到的。",
+  "name": "迟一拍的链",
+  "hint": "第一击完成阶段时，护罩仍挡住那次连锁；解除后再从中间点火，右侧节点才会被纳入。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
-  "player": [0, 2],
+  "player": [0, 1],
   "centers": [
-    {
-      "pos": [1, 2],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
-      "leaving": "E"
-    },
-    {
-      "pos": [2, 2],
-      "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" },
-      "leaving": "E"
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
-      "leaving": "E"
-    }
+    { "pos": [1, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E" },
+    { "pos": [2, 1], "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" }, "leaving": "N", "shieldUntilStage": 1 },
+    { "pos": [3, 1], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" }, "leaving": "E" }
   ],
-  "groups": [{ "pos": [0, 0], "color": "purple" }],
-  "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 2, "arm": "E", "color": "blue" }
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "yellow" }] },
+    { "goals": [{ "center": 2, "arm": "N", "color": "green" }] }
   ],
   "par": 5
 }

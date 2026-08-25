@@ -1,26 +1,20 @@
 {
   "id": "109.5°-13",
-  "name": "一手交一手",
-  "hint": "连续染色时，手不会变空，只会换成原开口臂的颜色。每次撞入前问两件事：我会放进去什么？又会拿出来什么？左边需要的蓝色在右边，右边需要的绿色在左边，把两次交换接成一条颜色接力。",
+  "name": "点火之前",
+  "hint": "第一次进攻只配平连线，第二次染色才点火。先保留空手翻转机会，再确认手中色珠最终落臂。",
   "width": 5,
   "height": 4,
   "walls": [],
-  "player": [2, 3],
+  "player": [4, 1],
   "centers": [
-    {
-      "pos": [1, 2],
-      "arms": { "N": "red", "E": "purple", "S": "green", "W": "yellow" },
-      "leaving": "S"
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "blue", "E": "yellow", "S": "purple", "W": "red" },
-      "leaving": "N"
-    }
+    { "pos": [2, 1], "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "purple" }, "leaving": "W" },
+    { "pos": [2, 2], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" }, "leaving": "S" }
   ],
-  "groups": [{ "pos": [3, 3], "color": "purple" }],
+  "groups": [{ "pos": [3, 0], "color": "blue" }],
   "goals": [
+    { "center": 0, "arm": "W", "color": "blue" },
     { "center": 0, "arm": "N", "color": "blue" },
-    { "center": 1, "arm": "N", "color": "green" }
-  ]
+    { "center": 1, "arm": "W", "color": "yellow" }
+  ],
+  "par": 7
 }

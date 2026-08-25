@@ -1,27 +1,15 @@
 {
   "id": "109.5°-18",
-  "name": "点火之前",
-  "hint": "第一次进攻不会点燃连线——每次翻转后连接臂都会重新比色。同一个中心要进攻两次；第二次染色前，先确认手中色珠和光环预览的落点，别把目标臂染成错误颜色。",
-  "width": 5,
-  "height": 4,
-  "walls": [],
-  "player": [4, 1],
+  "name": "光的转向",
+  "hint": "走上金色光照格，所有中心的开口顺时针移到下一条真实臂；颜色臂本身不会转。",
+  "width": 4,
+  "height": 3,
+  "walls": [[2, 2]],
+  "player": [3, 2],
   "centers": [
-    {
-      "pos": [2, 1],
-      "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "purple" },
-      "leaving": "W"
-    },
-    {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
-      "leaving": "S"
-    }
+    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N" }
   ],
-  "groups": [{ "pos": [3, 0], "color": "blue" }],
-  "goals": [
-    { "center": 0, "arm": "W", "color": "blue" },
-    { "center": 0, "arm": "N", "color": "blue" },
-    { "center": 1, "arm": "W", "color": "yellow" }
-  ]
+  "lights": [[1, 0]],
+  "goals": [{ "center": 0, "arm": "W", "color": "blue" }],
+  "par": 6
 }

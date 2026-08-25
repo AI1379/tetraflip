@@ -14,8 +14,8 @@ export interface ChemCenterDef {
   leaving: Dir
   /** 三臂中心（v3.1）：与普通中心同样做 180° 翻转，缺口也随之转到对侧。缺省 tetra */
   kind?: CenterKind
-  /** 保护基（v3）：脱保护前进攻无效、共振传不进去 */
-  shielded?: boolean
+  /** 阶段护罩（v3.2）：当前 stage 小于该值时，阻挡直接进攻与共振 */
+  shieldUntilStage?: number
   /** 弹射中心（v3）：持珠进攻时，被顶出的基团沿攻击反方向飞出（不入手） */
   ejects?: boolean
 }
@@ -36,11 +36,6 @@ export interface ChemGroupDef {
   color: string
 }
 
-export interface ChemLauncherDef {
-  pos: Vec
-  dir: Dir
-}
-
 export interface ChemLevel {
   id: string
   name?: string
@@ -55,11 +50,8 @@ export interface ChemLevel {
   groups: ChemGroupDef[]
   /** 分步目标（v3 规约化结果）：旧格式 `goals` 解析为单段 */
   stages: ChemStage[]
-  /** v3 特殊格（全部可行走；互不重叠） */
+  /** 光照格（可行走） */
   lights: Vec[]
-  disposals: Vec[]
-  deprotections: Vec[]
-  launchers: ChemLauncherDef[]
   /** 标准杆（设计最短解，纯展示） */
   par?: number
 }
@@ -89,20 +81,18 @@ const schema = z
           arms: z.record(dir, z.string().min(1)),
           leaving: dir,
           kind: z.enum(['tetra', 'trigonal']).optional(),
-          shielded: z.boolean().optional(),
+          shieldUntilStage: z.number().int().min(1).optional(),
           ejects: z.boolean().optional(),
-        }),
+        }).strict(),
       )
       .min(1),
     groups: z.array(z.object({ pos: vec, color: z.string().min(1) })).default([]),
     goals: z.array(goalSchema).min(1).optional(),
     stages: z.array(z.object({ goals: z.array(goalSchema).min(1) })).min(1).optional(),
     lights: z.array(vec).default([]),
-    disposals: z.array(vec).default([]),
-    deprotections: z.array(vec).default([]),
-    launchers: z.array(z.object({ pos: vec, dir })).default([]),
     par: z.number().int().min(1).optional(),
   })
+  .strict()
   .refine((l) => l.goals !== undefined || l.stages !== undefined, {
     message: 'goals 与 stages 至少提供一个',
   })
@@ -150,7 +140,7 @@ export function parseChemLevel(json: unknown): ChemLevel {
     if (new Set(colors).size !== colors.length) fail(`中心 ${c.pos} 的各臂颜色必须互不相同`)
   }
 
-  // 游离基团：不与墙 / 玩家 / 中心 / 其他基团 / 特殊格重叠
+  // 游离基团：不与墙 / 玩家 / 中心 / 其他基团 / 光照格重叠
   const groupSet = new Set<string>()
   const specialCells = new Set<string>()
   const registerSpecial = (v: Vec, what: string): void => {
@@ -161,9 +151,6 @@ export function parseChemLevel(json: unknown): ChemLevel {
     specialCells.add(key)
   }
   for (const v of raw.lights) registerSpecial(v, '光照格')
-  for (const v of raw.disposals) registerSpecial(v, '回收格')
-  for (const v of raw.deprotections) registerSpecial(v, '脱保护格')
-  for (const l of raw.launchers) registerSpecial(l.pos, '弹射台')
 
   for (const g of raw.groups) {
     inBounds(g.pos, '游离基团')
@@ -178,6 +165,14 @@ export function parseChemLevel(json: unknown): ChemLevel {
   const stages: ChemStage[] = raw.stages
     ? raw.stages.map((s) => ({ goals: [...s.goals] }))
     : [{ goals: [...(raw.goals ?? [])] }]
+
+  for (const c of raw.centers) {
+    if (c.shieldUntilStage !== undefined && c.shieldUntilStage >= stages.length) {
+      fail(
+        `中心 ${c.pos} 的阶段护罩阈值 ${c.shieldUntilStage} 必须小于总段数 ${stages.length}`,
+      )
+    }
+  }
 
   // 目标校验：四臂中心的目标臂必须初始存在；三臂中心的缺口会翻到对侧，允许目标指向初始缺失槽。
   const palette = new Set<string>([
@@ -210,15 +205,12 @@ export function parseChemLevel(json: unknown): ChemLevel {
       arms: { ...c.arms },
       leaving: c.leaving,
       kind: c.kind ?? 'tetra',
-      shielded: c.shielded ?? false,
+      shieldUntilStage: c.shieldUntilStage,
       ejects: c.ejects ?? false,
     })),
     groups: raw.groups,
     stages,
     lights: raw.lights,
-    disposals: raw.disposals,
-    deprotections: raw.deprotections,
-    launchers: raw.launchers,
     par: raw.par,
   }
 }

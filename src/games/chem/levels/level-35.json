@@ -1,24 +1,18 @@
 {
   "id": "109.5°-35",
-  "name": "狙击",
-  "hint": "三臂中心被墙夹住了，但弹射台仍能染色。飞入的珠装进开口后，会和缺口一起翻到对侧。",
+  "name": "空穴喷流",
+  "hint": "三臂弹射中心会让色珠、空穴和喷流方向一起翻面；身后障碍把被顶出珠截在指定落点。",
   "width": 5,
   "height": 5,
-  "walls": [[2, 1], [2, 3]],
-  "player": [1, 0],
+  "walls": [[0, 2], [2, 1], [2, 3]],
+  "player": [0, 0],
   "centers": [
-    {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green" },
-      "leaving": "E",
-      "kind": "trigonal"
-    }
+    { "pos": [3, 2], "arms": { "N": "red", "E": "blue", "S": "green" }, "leaving": "E", "kind": "trigonal", "ejects": true }
   ],
-  "groups": [{ "pos": [0, 0], "color": "blue" }],
-  "launchers": [{ "pos": [0, 2], "dir": "E" }],
+  "groups": [{ "pos": [1, 0], "color": "yellow" }],
   "goals": [
     { "center": 0, "arm": "N", "color": "green" },
-    { "center": 0, "arm": "W", "color": "blue" }
+    { "center": 0, "arm": "W", "color": "yellow" }
   ],
-  "par": 3
+  "par": 5
 }

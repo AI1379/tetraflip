@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { solve } from '../../core/solver'
 import type { Dir, Vec } from '../../core/protocol'
-import { initialState, step, chemGame, stateKey, peekFlip } from './engine'
-import type { ChemLauncherDef } from './level'
+import {
+  chemGame,
+  getEjectionPreview,
+  initialState,
+  isShielded,
+  peekFlip,
+  stateKey,
+  step,
+} from './engine'
 import type { ChemLevel } from './level'
 import level01 from './levels/level-01.json'
 
 /** ChemLevel 字面量的 v3 缺省字段（测试只关注各自机制） */
 const V3_DEFAULTS = {
   lights: [] as Vec[],
-  disposals: [] as Vec[],
-  deprotections: [] as Vec[],
-  launchers: [] as ChemLauncherDef[],
 }
 
 describe('chem（Inversion）引擎', () => {
@@ -22,28 +26,28 @@ describe('chem（Inversion）引擎', () => {
   it('非背面进攻无效果（不消耗回合）', () => {
     // 绕到中心东侧再向西撞：移动方向 W ≠ 开口臂 E → 无效
     let s = initialState(chemGame.parseLevel(level01))
-    for (const d of ['N', 'E', 'E', 'S'] as const) s = step(s, d) // (1,2)→(3,2)
+    for (const d of ['N', 'E', 'E', 'S'] as const) s = step(s, d) // (0,1)→(2,1)
     const bumped = step(s, 'W')
     expect(bumped).toBe(s) // 原样返回，未消耗回合
   })
 
   it('背面进攻触发 180° 翻转且开口臂翻到对侧', () => {
     const s0 = initialState(chemGame.parseLevel(level01))
-    const s = step(s0, 'E') // 玩家在 (1,2)，向 E 撞入 = 从开口臂 E 的背面进攻
+    const s = step(s0, 'E') // 玩家在 (0,1)，向 E 撞入 = 从开口臂 E 的背面进攻
     const c = s.centers[0]
     expect(c.arms).toEqual({ N: 'green', E: 'yellow', S: 'blue', W: 'red' })
     expect(c.leaving).toBe('W')
-    expect(s.player).toEqual([1, 2]) // 攻击者留在原地
+    expect(s.player).toEqual([0, 1]) // 攻击者留在原地
     expect(s.moves).toBe(1)
     expect(s.won).toBe(true) // level-01 目标：N 臂为 green
   })
 
   it('撞墙 / 撞边界无效果（不消耗回合）', () => {
-    const s0 = initialState(chemGame.parseLevel(level01))
-    const s1 = step(s0, 'N') // (1,1)
-    const s2 = step(s1, 'N') // (1,0)
-    expect(step(s2, 'N')).toBe(s2) // 撞边界
-    expect(step(s2, 'E')).toBe(s2) // (2,0) 是墙
+    const level = chemGame.parseLevel({ ...level01, id: 'test-wall', walls: [[1, 0]] })
+    const s0 = initialState(level)
+    expect(step(s0, 'W')).toBe(s0) // 撞边界
+    const s1 = step(s0, 'N') // (0,0)
+    expect(step(s1, 'E')).toBe(s1) // (1,0) 是墙
   })
 
   it('solver 1 步解出 level-01', () => {
@@ -261,7 +265,7 @@ describe('chem v2 共振传导引擎', () => {
   })
 })
 
-/** v3 机制群（design §5）：光照转轴 / 回收格 / 保护基 / 分步目标 / 弹射 / 弹射台 / 三臂中心 */
+/** v3.2 机制群（design §5）：光照转轴 / 阶段护罩 / 分步目标 / 弹射中心 / 三臂中心 */
 describe('chem v3 机制群引擎', () => {
   it('光照格：开口顺时针移到下一条现存臂，三臂中心跳过缺口', () => {
     const level: ChemLevel = {
@@ -282,9 +286,6 @@ describe('chem v3 机制群引擎', () => {
       groups: [],
       stages: [{ goals: [{ center: 0, arm: 'N', color: 'blue' }] }],
       lights: [[0, 0]],
-      disposals: [],
-      deprotections: [],
-      launchers: [],
     }
     const s0 = initialState(level)
     const s = step(s0, 'W') // (1,0) → (0,0) 光照格
@@ -361,121 +362,153 @@ describe('chem v3 机制群引擎', () => {
     expect(s.won).toBe(true)
   })
 
-  it('回收格：手持走入销毁色珠；空手走入无效果', () => {
+  it('两个相对空穴没有颜色，不会因 undefined 相等而形成共振键', () => {
     const level: ChemLevel = {
-      id: 'test-disposal',
-      width: 3,
-      height: 1,
-      walls: [],
-      player: [0, 0],
-      centers: [{ pos: [2, 0], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'W' }],
-      groups: [{ pos: [1, 0], color: 'purple' }],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'blue' }] }],
-      ...V3_DEFAULTS,
-      disposals: [[1, 0]],
-    }
-    // 校验：游离基团不能放特殊格上 ⇒ 上面这关应被拒绝；回收格测试用独立布局
-    expect(() => chemGame.parseLevel(level)).toThrow()
-
-    const ok: ChemLevel = { ...level, groups: [], disposals: [[1, 0]] }
-    let s = initialState(ok)
-    s = step(s, 'E') // 空手走上回收格
-    expect(s.holding).toBe(null)
-    expect(s.player).toEqual([1, 0])
-  })
-
-  it('回收格 + 拾取绕行：手持色珠走上回收格 ⇒ 手变空（打破手持不变式）', () => {
-    const level: ChemLevel = {
-      id: 'test-disposal-2',
-      width: 3,
-      height: 2,
-      walls: [],
-      player: [0, 0],
-      centers: [{ pos: [2, 1], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'W' }],
-      groups: [{ pos: [1, 0], color: 'purple' }],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'blue' }] }],
-      ...V3_DEFAULTS,
-      disposals: [[2, 0]],
-    }
-    let s = step(initialState(level), 'E') // (1,0) 拾取 purple
-    expect(s.holding).toBe('purple')
-    s = step(s, 'E') // (2,0) 回收格：销毁
-    expect(s.holding).toBe(null)
-    expect(s.groups.length).toBe(0)
-  })
-
-  it('保护基：受保护中心进攻无效；脱保护格永久解除；保护罩挡住共振（链闸）', () => {
-    const level: ChemLevel = {
-      id: 'test-shield',
+      id: 'test-two-facing-holes',
       width: 4,
+      height: 3,
+      walls: [],
+      player: [1, 0],
+      centers: [
+        {
+          pos: [1, 1],
+          arms: { N: 'red', E: 'blue', S: 'green' },
+          leaving: 'S',
+          kind: 'trigonal',
+        },
+        {
+          pos: [2, 1],
+          arms: { N: 'red', E: 'blue', S: 'green' },
+          leaving: 'E',
+          kind: 'trigonal',
+        },
+      ],
+      groups: [],
+      // A 翻后缺口 E，正对 B 的缺口 W；若误把 undefined 当同色，B 会翻转并错误达标。
+      stages: [{ goals: [{ center: 1, arm: 'N', color: 'green' }] }],
+      ...V3_DEFAULTS,
+    }
+    const s0 = initialState(level)
+    const s = step(s0, 'S')
+    expect(s.centers[0].arms.E).toBeUndefined()
+    expect(s.centers[1].arms.W).toBeUndefined()
+    expect(s.centers[1].arms).toEqual(s0.centers[1].arms)
+    expect(s.won).toBe(false)
+  })
+
+  it('阶段护罩：阶段前阻挡直接进攻与共振；完成阶段当步不追溯，下一次攻击可传播', () => {
+    const level: ChemLevel = {
+      id: 'test-stage-shield',
+      width: 5,
       height: 3,
       walls: [],
       player: [0, 1],
       centers: [
         { pos: [1, 1], arms: { N: 'red', E: 'green', S: 'yellow', W: 'blue' }, leaving: 'E' },
-        // Y 与 X 相邻；X 翻后 armE=blue == Y.armW=blue ⇒ 无罩时会传导
         {
           pos: [2, 1],
           arms: { N: 'yellow', E: 'red', S: 'green', W: 'blue' },
           leaving: 'N',
-          shielded: true,
+          shieldUntilStage: 1,
         },
+        { pos: [3, 1], arms: { N: 'red', E: 'yellow', S: 'green', W: 'blue' }, leaving: 'E' },
       ],
       groups: [],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'yellow' }] }],
-      lights: [],
-      disposals: [],
-      deprotections: [[0, 0]],
-      launchers: [],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'yellow' }] },
+        { goals: [{ center: 2, arm: 'N', color: 'green' }] },
+      ],
+      ...V3_DEFAULTS,
     }
     const s0 = initialState(level)
-    // 绕到 Y 南侧 (2,2)：受保护中心进攻无效（不消耗回合）
+    expect(isShielded(s0, s0.centers[1])).toBe(true)
+
     let sh = step(s0, 'S')
     sh = step(sh, 'E')
     sh = step(sh, 'E')
-    expect(sh.player).toEqual([2, 2])
-    const bumped = step(sh, 'N') // dir=N=Y.leaving，但 Y 受保护
-    expect(bumped).toBe(sh)
+    expect(step(sh, 'N')).toBe(sh)
 
-    // 攻击 X：X 翻转，但传导被 Y 的保护罩挡住
-    const s = step(s0, 'E') // 玩家 (0,1) 向 E：(1,1) 是 X，dir=E=X.leaving ✓
-    expect(s.centers[0].arms.E).toBe('blue') // X 翻了
-    expect(s.centers[1].arms).toEqual(s0.centers[1].arms) // Y 没被传导
-    expect(s.centers[1].leaving).toBe('N')
+    // A 翻后 E=blue 与 B.W=blue 接通；传播仍按动作开始时的 stage=0 结算，B 不追溯翻转。
+    let s = step(s0, 'E')
+    expect(s.stage).toBe(1)
+    expect(s.centers[1].arms).toEqual(s0.centers[1].arms)
+    expect(isShielded(s, s.centers[1])).toBe(false)
 
-    // 脱保护是永久状态位（进攻验证在独立用例）
-    const t = step(s0, 'N') // (0,0) 脱保护格
-    expect(t.deprotected).toBe(true)
-    expect(stateKey(t)).not.toBe(stateKey(s0))
+    // 下一动作进攻 B：B 翻后 E=blue 与 C.W=blue 接通，C 被传播翻转。
+    for (const d of ['S', 'E', 'E'] as const) s = step(s, d)
+    const propagated = step(s, 'N')
+    expect(propagated.centers[1].arms.N).toBe('green')
+    expect(propagated.centers[2].arms.N).toBe('green')
+    expect(propagated.won).toBe(true)
   })
 
-  it('脱保护后进攻受保护中心有效', () => {
+  it('光照穿透阶段护罩：只移动罩内开口，不构成进攻或共振', () => {
     const level: ChemLevel = {
-      id: 'test-unshield',
+      id: 'test-shield-light',
       width: 3,
       height: 3,
       walls: [],
-      player: [0, 1],
+      player: [0, 0],
       centers: [
         {
           pos: [1, 1],
           arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
-          leaving: 'E',
-          shielded: true,
+          leaving: 'N',
+          shieldUntilStage: 1,
         },
       ],
       groups: [],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'green' }] }],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'green' }] },
+        { goals: [{ center: 0, arm: 'N', color: 'red' }] },
+      ],
+      lights: [[1, 0]],
+    }
+    const s = step(initialState(level), 'E')
+    expect(s.stage).toBe(0)
+    expect(isShielded(s, s.centers[0])).toBe(true)
+    expect(s.centers[0].leaving).toBe('E')
+    expect(s.centers[0].arms).toEqual({ N: 'red', E: 'blue', S: 'green', W: 'yellow' })
+  })
+
+  it('多个阶段护罩按各自阈值依次解除', () => {
+    const level: ChemLevel = {
+      id: 'test-multi-stage-shield',
+      width: 5,
+      height: 4,
+      walls: [],
+      player: [0, 1],
+      centers: [
+        { pos: [1, 1], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'E' },
+        {
+          pos: [3, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'N',
+          shieldUntilStage: 1,
+        },
+        {
+          pos: [3, 2],
+          arms: { N: 'yellow', E: 'red', S: 'blue', W: 'green' },
+          leaving: 'N',
+          shieldUntilStage: 2,
+        },
+      ],
+      groups: [],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'green' }] },
+        { goals: [{ center: 0, arm: 'N', color: 'red' }] },
+        { goals: [{ center: 2, arm: 'E', color: 'green' }] },
+      ],
       ...V3_DEFAULTS,
-      deprotections: [[0, 0]],
     }
     let s = initialState(level)
-    expect(step(s, 'E')).toBe(s) // 保护中：进攻无效
-    s = step(s, 'N') // 脱保护
-    s = step(s, 'S')
-    const attacked = step(s, 'E')
-    expect(attacked.centers[0].arms).toEqual({ N: 'green', E: 'yellow', S: 'red', W: 'blue' })
-    expect(attacked.won).toBe(true)
+    expect(s.centers.map((c) => isShielded(s, c))).toEqual([false, true, true])
+    s = step(s, 'E')
+    expect(s.stage).toBe(1)
+    expect(s.centers.map((c) => isShielded(s, c))).toEqual([false, false, true])
+    for (const d of ['N', 'E', 'E', 'S', 'W'] as const) s = step(s, d)
+    expect(s.stage).toBe(2)
+    expect(s.centers.map((c) => isShielded(s, c))).toEqual([false, false, false])
   })
 
   it('分步目标：按段推进；后段条件提前满足不跳段；一步可连进多段', () => {
@@ -534,6 +567,14 @@ describe('chem v3 机制群引擎', () => {
     let s = step(initialState(mk([])), 'E')
     expect(s.holding).toBe('purple')
     s = step(s, 'S')
+    expect(getEjectionPreview(s, 0)).toEqual({
+      center: 0,
+      from: [1, 1],
+      dir: 'W',
+      color: 'green',
+      path: [[0, 1]],
+      landing: [0, 1],
+    })
     s = step(s, 'E') // 进攻
     expect(s.holding).toBe(null) // 携带珠已注入 ⇒ 手变空
     expect(s.centers[0].arms.W).toBe('purple') // 携带物照常装入
@@ -543,6 +584,7 @@ describe('chem v3 机制群引擎', () => {
     // 身后第一格是墙 ⇒ 进攻无效
     let t = step(initialState(mk([[0, 1]])), 'E')
     t = step(t, 'S')
+    expect(getEjectionPreview(t, 0)).toMatchObject({ path: [], landing: null, color: 'green' })
     const bumped = step(t, 'E')
     expect(bumped).toBe(t)
   })
@@ -630,86 +672,36 @@ describe('chem v3 机制群引擎', () => {
     expect(s.holding).toBe('green') // 提取开口臂
     // 手持珠先装入 S，整体翻转后落到 N；原 E 臂连同缺口一起转到 W。
     expect(s.centers[0].arms).toEqual({ N: 'yellow', W: 'blue', S: 'red' })
+    expect(Object.values(s.centers[0].arms)).toHaveLength(3) // 空穴不会被注入或填补
     expect(s.won).toBe(true)
   })
 
-  it('弹射台：手持走入发射——命中开口一致的中心发生远程取代（触发共振），否则落珠', () => {
-    const mk = (leaving: Dir, shielded = false): ChemLevel => ({
-      id: 'test-launcher',
-      width: 5,
+  it('旧外围字段被 schema 拒绝，stateKey 只保留会影响转移的 stage', () => {
+    const base = {
+      id: 'test-legacy-fields',
+      width: 3,
       height: 3,
       walls: [],
-      player: [1, 0],
+      player: [0, 1],
       centers: [
-        {
-          pos: [3, 1],
-          arms: { N: 'red', E: 'green', S: 'yellow', W: 'blue' },
-          leaving,
-          shielded,
-        },
+        { pos: [1, 1], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'W' },
       ],
-      groups: [{ pos: [0, 0], color: 'purple' }],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'purple' }] }],
-      ...V3_DEFAULTS,
-      launchers: [{ pos: [0, 1], dir: 'E' }],
-    })
-    // 命中（开口 E）：远程取代 + 被顶出的 green 落回 (2,1)
-    let s = step(initialState(mk('E')), 'W') // 拾取 purple
-    s = step(s, 'S') // 走上弹射台 ⇒ 发射
-    expect(s.holding).toBe(null)
-    expect(s.player).toEqual([0, 1])
-    expect(s.centers[0].arms).toEqual({ N: 'yellow', E: 'blue', S: 'red', W: 'purple' })
-    expect(s.centers[0].leaving).toBe('W')
-    expect(s.groups).toContainEqual({ pos: [2, 1], color: 'green' })
-    expect(s.moves).toBe(2)
-
-    // 方向不合：色珠停在中心前一格，中心不变
-    let t = step(initialState(mk('N')), 'W')
-    t = step(t, 'S')
-    expect(t.centers[0].arms).toEqual({ N: 'red', E: 'green', S: 'yellow', W: 'blue' })
-    expect(t.groups).toContainEqual({ pos: [2, 1], color: 'purple' })
-
-    // 保护罩：同样挡住远程取代
-    let u = step(initialState(mk('E', true)), 'W')
-    u = step(u, 'S')
-    expect(u.centers[0].arms).toEqual({ N: 'red', E: 'green', S: 'yellow', W: 'blue' })
-    expect(u.groups).toContainEqual({ pos: [2, 1], color: 'purple' })
-  })
-
-  it('弹射台：撞墙停在墙前；飞出棋盘停在最后一格；空手走上只是移动', () => {
-    const base: ChemLevel = {
-      id: 'test-launcher-fly',
-      width: 5,
-      height: 3,
-      walls: [],
-      player: [1, 0],
-      centers: [
-        { pos: [4, 2], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'N' },
+      groups: [],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'green' }] },
+        { goals: [{ center: 0, arm: 'N', color: 'red' }] },
       ],
-      groups: [{ pos: [0, 0], color: 'purple' }],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'purple' }] }],
-      ...V3_DEFAULTS,
-      launchers: [{ pos: [0, 1], dir: 'E' }],
+      lights: [],
     }
-    // 飞出棋盘：射线全程无阻碍 ⇒ 停在最后一格 (4,1)
-    let s = step(initialState(base), 'W')
-    s = step(s, 'S')
-    expect(s.groups).toContainEqual({ pos: [4, 1], color: 'purple' })
+    for (const legacy of [
+      { disposals: [[0, 0]] },
+      { deprotections: [[0, 0]] },
+      { launchers: [{ pos: [0, 0], dir: 'E' }] },
+      { centers: [{ ...base.centers[0], shielded: true }] },
+    ]) {
+      expect(() => chemGame.parseLevel({ ...base, ...legacy })).toThrow()
+    }
 
-    // 撞墙：停在墙前一格
-    const walled: ChemLevel = { ...base, walls: [[2, 1]] }
-    let t = step(initialState(walled), 'W')
-    t = step(t, 'S')
-    expect(t.groups).toContainEqual({ pos: [1, 1], color: 'purple' })
-
-    // 空手走上弹射台：只是移动（不发射）
-    const u = step(step(initialState(base), 'S'), 'W')
-    expect(u.player).toEqual([0, 1])
-    expect(u.holding).toBe(null)
-    expect(u.groups.length).toBe(1) // 色珠原封不动
-  })
-
-  it('stateKey 区分 stage 与 deprotected（solver 去重依赖）', () => {
     const level: ChemLevel = {
       id: 'test-key',
       width: 3,
@@ -720,14 +712,16 @@ describe('chem v3 机制群引擎', () => {
         { pos: [1, 1], arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' }, leaving: 'W' },
       ],
       groups: [],
-      stages: [{ goals: [{ center: 0, arm: 'N', color: 'green' }] }],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'green' }] },
+        { goals: [{ center: 0, arm: 'N', color: 'red' }] },
+      ],
       ...V3_DEFAULTS,
-      deprotections: [[0, 0]],
     }
     const s0 = initialState(level)
-    expect(stateKey(s0)).toContain('D0|T0')
-    const s1 = step(s0, 'N') // 脱保护格
-    expect(stateKey(s1)).toContain('D1')
+    expect(stateKey(s0)).toContain('|T0|')
+    expect(stateKey(s0)).not.toContain('|D')
+    const s1 = { ...s0, stage: 1 }
     expect(stateKey(s0)).not.toBe(stateKey(s1))
   })
 })
@@ -739,7 +733,6 @@ describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
       arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
       leaving: 'W' as Dir,
       kind: 'tetra' as const,
-      shielded: false,
       ejects: false,
     }
     const once = peekFlip(center)
@@ -757,7 +750,6 @@ describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
       arms: { N: 'red', E: 'blue', S: 'green' },
       leaving: 'N' as Dir,
       kind: 'trigonal' as const,
-      shielded: false,
       ejects: false,
     }
     const once = peekFlip(center)

@@ -381,6 +381,20 @@ canvas {
 }
 .shortcut-hint { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: 0.03em; text-align: center; }
 
+/* 真人视觉盲测入口（?game=chem&level=XX&blind=1）：只保留棋盘，避免标题 / hint 泄露机制。 */
+#app.visual-blind .app-header,
+#app.visual-blind .level-header,
+#app.visual-blind .status-bar,
+#app.visual-blind .level-brief,
+#app.visual-blind .controls,
+#app.visual-blind .shortcut-hint {
+  display: none;
+}
+
+#app.visual-blind canvas {
+  pointer-events: none;
+}
+
 .picker-backdrop {
   position: fixed;
   inset: 0;

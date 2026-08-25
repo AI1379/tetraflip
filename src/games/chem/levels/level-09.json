@@ -1,31 +1,33 @@
 {
   "id": "109.5°-09",
-  "name": "两个房间，三个中心",
-  "hint": "三个中心分在两个房间，墙只留了一扇门。先定进攻顺序，再找门。",
-  "width": 8,
-  "height": 8,
-  "walls": [[4, 0], [4, 1], [4, 2], [4, 3], [4, 5], [4, 6], [4, 7]],
-  "player": [0, 0],
+  "name": "同一站位，两扇门",
+  "hint": "中间站位向北、向南会撞不同中心。北边已经达标，别碰它；取蓝珠后只染南边，再完成右侧奇偶目标。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [0, 2],
   "centers": [
     {
-      "pos": [1, 2],
+      "pos": [2, 1],
       "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "E"
-    },
-    {
-      "pos": [2, 6],
-      "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "green" },
       "leaving": "N"
     },
     {
-      "pos": [6, 5],
-      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "pos": [4, 1],
+      "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 3],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
       "leaving": "S"
     }
   ],
+  "groups": [{ "pos": [0, 3], "color": "blue" }],
   "goals": [
-    { "center": 0, "arm": "E", "color": "yellow" },
-    { "center": 1, "arm": "N", "color": "red" },
+    { "center": 0, "arm": "N", "color": "red" },
+    { "center": 1, "arm": "E", "color": "blue" },
     { "center": 2, "arm": "N", "color": "blue" }
-  ]
+  ],
+  "par": 8
 }

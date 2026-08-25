@@ -1,19 +1,18 @@
 {
   "id": "109.5°-21",
-  "name": "光的转向",
-  "hint": "走上有放射纹的光照格，所有中心的开口会顺时针转一个方向。开口在哪边，就得从哪边的对面撞进去——转对了方向，路就开了。",
+  "name": "照亮两步",
+  "hint": "先照光换进攻轴完成第一段；翻转后的开口落在轴另一侧，第二段要换边再撞回来。",
   "width": 4,
-  "height": 3,
-  "walls": [[2, 2]],
-  "player": [3, 2],
+  "height": 4,
+  "walls": [[2, 3]],
+  "player": [0, 0],
   "centers": [
-    {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "N"
-    }
+    { "pos": [2, 2], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N" }
   ],
   "lights": [[1, 0]],
-  "goals": [{ "center": 0, "arm": "W", "color": "blue" }],
-  "par": 6
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    { "goals": [{ "center": 0, "arm": "N", "color": "red" }] }
+  ],
+  "par": 9
 }

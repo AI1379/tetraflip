@@ -1,17 +1,18 @@
 {
   "id": "109.5°-01",
   "name": "第一次背面进攻",
-  "hint": "方向键 / WASD 移动。白色箭头指出中心的「开口」方向：朝箭头方向移动撞上中心即进攻成功，四臂会 180° 翻转。这关只需按 → 撞入，让 N 臂变成绿色（虚线圈）。",
-  "width": 5,
-  "height": 5,
-  "walls": [[2, 0], [2, 4]],
-  "player": [1, 2],
+  "hint": "白色箭头指向开口。朝箭头方向撞入中心：玩家留在原地，四条臂整体翻到对侧。按 → 完成第一击。",
+  "width": 3,
+  "height": 3,
+  "walls": [],
+  "player": [0, 1],
   "centers": [
     {
-      "pos": [2, 2],
+      "pos": [1, 1],
       "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" },
       "leaving": "E"
     }
   ],
-  "goals": [{ "center": 0, "arm": "N", "color": "green" }]
+  "goals": [{ "center": 0, "arm": "N", "color": "green" }],
+  "par": 1
 }

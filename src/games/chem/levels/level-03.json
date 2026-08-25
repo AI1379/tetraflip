@@ -1,17 +1,19 @@
 {
   "id": "109.5°-03",
-  "name": "开口朝上",
-  "hint": "开口朝北（↑）：站到中心的南边，按 ↑ 向上撞入。先看箭头指向，再找路。",
-  "width": 5,
-  "height": 5,
+  "name": "把珠撞进去",
+  "hint": "先走上紫珠拾取，再向下撞入。手中紫珠会装进开口臂，并随中心翻到目标圈：你撞进去一个。",
+  "width": 3,
+  "height": 3,
   "walls": [],
-  "player": [0, 4],
+  "player": [0, 0],
   "centers": [
     {
-      "pos": [2, 2],
-      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
-      "leaving": "N"
+      "pos": [1, 1],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "S"
     }
   ],
-  "goals": [{ "center": 0, "arm": "S", "color": "green" }]
+  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "goals": [{ "center": 0, "arm": "N", "color": "purple" }],
+  "par": 2
 }

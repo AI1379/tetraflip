@@ -1,31 +1,33 @@
 {
   "id": "109.5°-10",
-  "name": "毕业题",
-  "hint": "三个中心，三个开口。先把整条路线规划完，再动手。",
-  "width": 8,
-  "height": 8,
-  "walls": [[4, 4], [4, 5], [4, 6]],
-  "player": [0, 7],
+  "name": "三中心物流毕业",
+  "hint": "紫珠启动颜色接力：共享站位先向上取出蓝珠，再向下送入并取出绿珠，最后把绿珠送到右侧中心。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [0, 2],
   "centers": [
     {
       "pos": [2, 1],
-      "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" },
+      "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" },
+      "leaving": "N"
+    },
+    {
+      "pos": [2, 3],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "purple" },
       "leaving": "S"
     },
     {
-      "pos": [5, 2],
-      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
-      "leaving": "W"
-    },
-    {
-      "pos": [2, 5],
-      "arms": { "N": "green", "E": "yellow", "S": "blue", "W": "red" },
-      "leaving": "N"
+      "pos": [4, 2],
+      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "purple" },
+      "leaving": "E"
     }
   ],
+  "groups": [{ "pos": [1, 2], "color": "purple" }],
   "goals": [
-    { "center": 0, "arm": "N", "color": "red" },
-    { "center": 1, "arm": "E", "color": "green" },
-    { "center": 2, "arm": "N", "color": "blue" }
-  ]
+    { "center": 0, "arm": "S", "color": "purple" },
+    { "center": 1, "arm": "N", "color": "blue" },
+    { "center": 2, "arm": "W", "color": "green" }
+  ],
+  "par": 6
 }

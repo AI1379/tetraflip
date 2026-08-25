@@ -1,37 +1,37 @@
 {
   "id": "109.5°-28",
-  "name": "分段共振",
-  "hint": "第一段先做出中间体；第二段交给连锁——撞对中心，震动会替你把产物做出来。顺序到了，目标会自动推进。",
+  "name": "南北换路",
+  "hint": "中间中心的空穴只会在南北两侧切换：第一次翻转接通北路并切断南路，第二次恰好相反。",
   "width": 5,
   "height": 5,
   "walls": [],
-  "player": [0, 1],
+  "player": [1, 2],
   "centers": [
     {
-      "pos": [1, 3],
-      "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" },
-      "leaving": "S"
+      "pos": [2, 2],
+      "arms": { "E": "red", "S": "blue", "W": "green" },
+      "leaving": "E",
+      "kind": "trigonal"
     },
     {
       "pos": [2, 1],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
-      "leaving": "E"
+      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
+      "leaving": "N"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "purple" },
-      "leaving": "E"
+      "pos": [2, 3],
+      "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" },
+      "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [0, 0], "color": "blue" }],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "red" }] },
+    { "goals": [{ "center": 1, "arm": "N", "color": "blue" }] },
     {
       "goals": [
-        { "center": 1, "arm": "W", "color": "blue" },
-        { "center": 2, "arm": "E", "color": "purple" }
+        { "center": 1, "arm": "N", "color": "blue" },
+        { "center": 2, "arm": "S", "color": "blue" }
       ]
     }
   ],
-  "par": 9
+  "par": 8
 }

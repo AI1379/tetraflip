@@ -1,23 +1,38 @@
 {
   "id": "109.5°-29",
-  "name": "光与缺口",
-  "hint": "光照会把箭头移到下一条现存的臂，自动跳过缺口。先用光绕开被墙堵住的进攻位，再让缺口翻到另一侧。",
-  "width": 4,
-  "height": 4,
-  "walls": [[1, 2]],
-  "player": [0, 0],
+  "name": "开罩接链",
+  "hint": "第一段让空穴保持断链，护罩会在结算后解除。随后先翻空穴，再点火，新增节点才会在第二段接入。",
+  "width": 5,
+  "height": 3,
+  "walls": [],
+  "player": [2, 2],
   "centers": [
     {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green" },
-      "leaving": "E",
+      "pos": [1, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "S"
+    },
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "yellow" },
+      "leaving": "N",
       "kind": "trigonal"
+    },
+    {
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
+      "leaving": "E",
+      "shieldUntilStage": 1
     }
   ],
-  "lights": [[0, 1]],
-  "goals": [
-    { "center": 0, "arm": "N", "color": "green" },
-    { "center": 0, "arm": "W", "color": "blue" }
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 0, "arm": "N", "color": "red" },
+        { "center": 2, "arm": "N", "color": "green" }
+      ]
+    }
   ],
-  "par": 4
+  "par": 3
 }

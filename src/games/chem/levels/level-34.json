@@ -1,29 +1,19 @@
 {
   "id": "109.5°-34",
-  "name": "一击三果",
-  "hint": "这一击会同时发生三件事：中心翻转、震动传到邻居、被顶出的基团从你身后飞出去。算好了再撞。",
+  "name": "转轴再喷流",
+  "hint": "光照会改变弹射中心的合法进攻轴，也随之改变喷流方向。先转轴，再把紫珠送到正确背面。",
   "width": 5,
-  "height": 5,
-  "walls": [],
-  "player": [0, 0],
+  "height": 4,
+  "walls": [[3, 3]],
+  "player": [1, 0],
   "centers": [
-    {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
-      "leaving": "E",
-      "ejects": true
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "purple" },
-      "leaving": "E"
-    }
+    { "pos": [3, 2], "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" }, "leaving": "N", "ejects": true }
   ],
-  "groups": [{ "pos": [0, 2], "color": "blue" }],
+  "groups": [{ "pos": [0, 1], "color": "purple" }],
+  "lights": [[0, 0]],
   "goals": [
-    { "center": 0, "arm": "W", "color": "blue" },
-    { "center": 0, "arm": "S", "color": "red" },
-    { "center": 1, "arm": "E", "color": "purple" }
+    { "center": 0, "arm": "W", "color": "purple" },
+    { "center": 0, "arm": "N", "color": "yellow" }
   ],
-  "par": 4
+  "par": 6
 }

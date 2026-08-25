@@ -1,8 +1,9 @@
 import { DIR_VEC, cellKey, opposite } from '../../core/protocol'
 import type { Dir, Vec } from '../../core/protocol'
 import { Tweens, easeInOutQuad, easeOutCubic } from '../../core/tween'
-import { peekFlip, stateKey } from './engine'
+import { getEjectionPreview, isShielded, peekFlip, stateKey } from './engine'
 import type { ChemCenterState, ChemState } from './engine'
+import type { ChemEjectionPreview } from './engine'
 import type { CenterKind } from './level'
 
 /**
@@ -11,8 +12,8 @@ import type { CenterKind } from './level'
  * - 中心画成分子骨架风格：细键线 + 原子点（中心原子 + 臂原子）；三臂中心以三角核区分。
  * - 开口以中心核内的白色短箭头标记（指向进攻方向；固定在旋转中心上，避免被进攻位玩家遮挡）。
  * - 相邻中心画「共轭键」：面对臂同色时点亮（共振可传导），否则暗色（v2 玩法信息）。
- * - v3 特殊格：光照格（金色放射纹）/ 回收格（下箭头井口）/ 脱保护格（打开的锁）/ 弹射台（双箭头）；
- *   保护罩中心画六边形罩；分步目标当前段正常虚线圈、未来段淡圈预告。
+ * - v3.2 特殊信息：光照格（金色放射纹）；阶段护罩中心画六边形罩；
+ *   分步目标当前段正常虚线圈、未来段淡圈预告。
  * - 背景：极低透明度的四面体线框（标题《109.5°》的几何本体，纯装饰，缓慢自转）。
  * - 可读性：色珠同时使用颜色与内部纹样编码；玩家用亮环暗芯轮廓，与色珠 / 中心 / 目标区分。
  * - 手感：行走补间、整体 180° 翻转动画（连锁时按传播距离阶梯延迟；三臂中心的缺口也随骨架转动）、
@@ -25,8 +26,8 @@ import type { CenterKind } from './level'
  * 认知外置层（design §11，2026-08-24）：
  * - **按住预演**（`setChemPreview`，壳层注入 step(当前态, 按住方向)）：棋盘压暗，变化的中心以正式执行同款
  *   翻转动画过渡到「动作后构型」ghost 态（虚线晕圈标记尚未发生），共振链按相邻 BFS 距离标 ①②③；
- *   手持换出物 / 场上珠增减画 ghost；目标 ✓ 锁定圈按预演后状态判定。弹射台 / 光照格 / 回收 /
- *   保护罩全部走通用 diff，规则零特判。
+ *   手持换出物 / 场上珠增减画 ghost；目标 ✓ 锁定圈按预演后状态判定。光照格与阶段护罩
+ *   全部走通用 diff，规则零特判。
  * - **Inspect**（`setChemInspect` + `chemHitTest`）：点按中心显示完整模 2 构型周期——现在 / 翻一次后，
  *   三臂中心同时显示缺口移动，当前态高亮（读引擎纯函数 peekFlip）。
  * - **标记**（`setChemMarks`）：玩家自笔记——中心顺序标 ①–⑤，任意格 ★/？/×；常显、不进引擎状态。
@@ -51,6 +52,8 @@ const FLIP_MS = 260 // 翻转旋转动画时长
 const WALK_MS = 110 // 行走补间时长
 const SHAKE_MS = 240 // 无效进攻抖动时长
 const HOP_MS = 90 // 共振连锁：每传播一级的动画延迟
+const EJECT_MS_PER_CELL = 90 // 弹射飞珠每格时长
+const SHIELD_BURST_MS = 420 // 阶段护罩解除碎裂时长
 const ARM_LEN = 0.46 // 普通臂长（格）：收在中心附近，避免与进攻位上的玩家重叠
 const ARM_LEN_SHORT = 0.34 // 相邻中心侧进一步缩短，留出共振键
 const TETRA_SPIN = 0.00012 // 背景四面体自转（rad/ms）
@@ -135,6 +138,14 @@ interface CenterPose {
   armRot?: Partial<Record<Dir, number>>
 }
 
+interface EjectionAnim {
+  start: number
+  from: Vec
+  color: string
+  path: readonly Vec[]
+  landing: Vec
+}
+
 let lastKey = ''
 let lastState: ChemState | null = null
 let lastDims = ''
@@ -142,6 +153,8 @@ let walk = new Tweens()
 const flips = new Map<number, FlipAnim>()
 let shake: { start: number; dir: Dir } | null = null
 let handPulse: { start: number; color: string | null } | null = null
+let ejectionAnim: EjectionAnim | null = null
+const shieldBursts = new Map<number, number>()
 
 /** 无效进攻 / 撞墙反馈入口：shell 在 step 无效果（stateKey 不变）时调用 */
 export function notifyChemImpact(dir: Dir): void {
@@ -199,6 +212,8 @@ function sync(s: ChemState, now: number): void {
     flips.clear()
     shake = null
     handPulse = null
+    ejectionAnim = null
+    shieldBursts.clear()
   }
   const key = stateKey(s)
   if (lastState && key !== lastKey) {
@@ -252,11 +267,36 @@ function sync(s: ChemState, now: number): void {
           })
         }
       }
+      const ejectIndex = prev.centers.findIndex((c, i) => {
+        const plan = getEjectionPreview(prev, i)
+        return c.ejects && plan?.landing != null && prev.centers[i].arms !== s.centers[i]?.arms
+      })
+      if (ejectIndex >= 0) {
+        const plan = getEjectionPreview(prev, ejectIndex)
+        if (plan?.landing) {
+          ejectionAnim = {
+            start: now,
+            from: prev.player,
+            color: plan.color,
+            path: plan.path,
+            landing: plan.landing,
+          }
+        }
+      }
+      for (let i = 0; i < s.centers.length; i++) {
+        const before = prev.centers[i]
+        const after = s.centers[i]
+        if (before && after && isShielded(prev, before) && !isShielded(s, after)) {
+          shieldBursts.set(i, now)
+        }
+      }
       if (s.holding !== prev.holding) handPulse = { start: now, color: s.holding }
     } else {
       walk = new Tweens()
       flips.clear()
       handPulse = null
+      ejectionAnim = null
+      shieldBursts.clear()
     }
   }
   lastState = s
@@ -334,38 +374,30 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     g: { center: number; arm: Dir; color: string },
     alpha: number,
     view: ChemState = s,
+    stageIndex = view.stage,
   ): void => {
     const c = view.centers[g.center]
     // ✓ 已经承担“完成”提示；已满足目标圈退后，避免同一信息在局部重复抢眼。
     const ringAlpha = c.arms[g.arm] === g.color ? alpha * 0.3 : alpha
+    let gx: number
+    let gy: number
     if (neighborIdx(g.center, g.arm) >= 0) {
       const [dx, dy] = DIR_VEC[g.arm]
-      dashedCircle(
-        ctx,
-        cx(c.pos[0]) + dx * cell * 0.5,
-        cy(c.pos[1]) + dy * cell * 0.5,
-        cell * 0.17,
-        colorOf(g.color),
-        ringAlpha,
-        goalDash(g.color),
-      )
+      gx = cx(c.pos[0]) + dx * cell * 0.5
+      gy = cy(c.pos[1]) + dy * cell * 0.5
+      dashedCircle(ctx, gx, gy, cell * 0.17, colorOf(g.color), ringAlpha, goalDash(g.color))
     } else {
       const [dx, dy] = DIR_VEC[g.arm]
-      dashedCircle(
-        ctx,
-        cx(c.pos[0]) + dx * cell * ARM_LEN,
-        cy(c.pos[1]) + dy * cell * ARM_LEN,
-        cell * 0.25,
-        colorOf(g.color),
-        ringAlpha,
-        goalDash(g.color),
-      )
+      gx = cx(c.pos[0]) + dx * cell * ARM_LEN
+      gy = cy(c.pos[1]) + dy * cell * ARM_LEN
+      dashedCircle(ctx, gx, gy, cell * 0.25, colorOf(g.color), ringAlpha, goalDash(g.color))
     }
+    if (view.stages.length > 1) drawStageBadge(ctx, gx, gy, cell, stageIndex, alpha)
   }
   s.stages.forEach((st, si) => {
     if (si < s.stage) return // 已完成的段不再显示
     const alpha = si === s.stage ? 0.85 : 0.22
-    for (const g of st.goals) drawGoal(g, alpha)
+    for (const g of st.goals) drawGoal(g, alpha, s, si)
   })
 
   // 共轭键（v2）：相邻中心之间的连接。面对臂同色 = 点亮（共振可传导）；否则暗色。
@@ -400,7 +432,19 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   }
 
   // 游离色珠（v1 基团搬运）：小原子点 + 虚线外圈（拾取物标记）
+  const flightDuration = ejectionAnim
+    ? Math.max(1, ejectionAnim.path.length) * EJECT_MS_PER_CELL
+    : 0
+  if (ejectionAnim && now - ejectionAnim.start >= flightDuration) ejectionAnim = null
   for (const g of s.groups) {
+    if (
+      ejectionAnim &&
+      g.color === ejectionAnim.color &&
+      g.pos[0] === ejectionAnim.landing[0] &&
+      g.pos[1] === ejectionAnim.landing[1]
+    ) {
+      continue
+    }
     const gx = cx(g.pos[0])
     const gy = cy(g.pos[1])
     dashedCircle(ctx, gx, gy, cell * 0.26, colorOf(g.color))
@@ -411,11 +455,13 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   // 预演（design §11）：将变化的中心会在预演层整体切换为「动作后构型」ghost，
   // 常规管线里这些中心的落点预览 / 锁定圈跳过（避免画两遍、口径不一）。
   const previewChanged: number[] = []
+  const previewShieldReleased: number[] = []
   if (preview && !s.won) {
     for (let i = 0; i < s.centers.length && i < preview.centers.length; i++) {
       const p = preview.centers[i]
       const c = s.centers[i]
       if (p && c && (p.arms !== c.arms || p.leaving !== c.leaving)) previewChanged.push(i)
+      if (p && c && isShielded(s, c) && !isShielded(preview, p)) previewShieldReleased.push(i)
     }
   }
   for (let i = 0; i < s.centers.length; i++) {
@@ -440,32 +486,43 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         armRot = pose.armRot
       }
     }
-    drawCenter(ctx, px, py, cell, arms, leaving, rot, neighborsOf(i), c.kind, armRot)
+    drawCenter(ctx, px, py, cell, arms, leaving, rot, neighborsOf(i), c.kind, c.ejects, armRot)
 
     // 持珠且已经站到合法进攻位：用手持色预览本次染色最终落到哪条臂。
     // 只做渲染提示，不提前计算或修改游戏状态。（ghost 中心改由预演层绘制）
-    if (!ghosted && s.holding !== null && !(c.shielded && !s.deprotected)) {
+    if (!ghosted && s.holding !== null && !isShielded(s, c)) {
       const [adx, ady] = DIR_VEC[c.leaving]
       const ready = s.player[0] + adx === c.pos[0] && s.player[1] + ady === c.pos[1]
       if (ready) {
+        const ejection = getEjectionPreview(s, i)
         const landing = opposite(c.leaving)
         const [ldx, ldy] = DIR_VEC[landing]
         const len = neighborsOf(i)[landing] ? ARM_LEN_SHORT : ARM_LEN
-        drawLandingPreview(
-          ctx,
-          cx(s.player[0]),
-          cy(s.player[1]),
-          px + ldx * cell * len,
-          py + ldy * cell * len,
-          cell,
-          s.holding,
-          now,
-        )
+        // 喷口受阻时整次进攻无效，不伪造“手持珠已进入中心”的落点。
+        if (!c.ejects || ejection?.landing != null) {
+          drawLandingPreview(
+            ctx,
+            cx(s.player[0]),
+            cy(s.player[1]),
+            px + ldx * cell * len,
+            py + ldy * cell * len,
+            cell,
+            s.holding,
+            now,
+          )
+        }
+        if (ejection) drawEjectionTrajectory(ctx, ejection, cx, cy, cell, now)
       }
     }
 
-    // 保护罩（v3）：六边形罩 + 微填充；脱保护后消失
-    if (c.shielded && !s.deprotected) drawShield(ctx, px, py, cell)
+    // 阶段护罩（v3.2）：六边形罩 + 微填充；到达阈值阶段后消失
+    if (isShielded(s, c)) drawShield(ctx, px, py, cell, c.shieldUntilStage!)
+    const burstAt = shieldBursts.get(i)
+    if (burstAt !== undefined) {
+      const progress = (now - burstAt) / SHIELD_BURST_MS
+      if (progress >= 1) shieldBursts.delete(i)
+      else drawShieldBurst(ctx, px, py, cell, c.shieldUntilStage!, progress)
+    }
 
     // 已达标锁定圈 + ✓ 徽标（当前段中该中心的所有目标均已满足且至少有一个）
     // 预演中变化的中心由预演层按「动作后」状态判定（design §11）
@@ -486,19 +543,27 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           (cc) => cc.pos[0] === lastState!.player[0] + dx && cc.pos[1] === lastState!.player[1] + dy,
         )
         if (target && target.pos[0] === c.pos[0] && target.pos[1] === c.pos[1]) {
-          const a = ARM_ANGLE[opposite(shake.dir)]
-          ctx.save()
-          ctx.strokeStyle = FLASH
-          ctx.globalAlpha = 1 - age / SHAKE_MS
-          ctx.lineWidth = 3
-          ctx.beginPath()
-          ctx.arc(px, py, cell * 0.44, a - 0.55, a + 0.55)
-          ctx.stroke()
-          ctx.restore()
+          const targetIndex = lastState.centers.indexOf(target)
+          const blockedEjection = getEjectionPreview(lastState, targetIndex)?.landing === null
+          if (blockedEjection) {
+            drawBlockedNozzle(ctx, lastState, target, cx, cy, cell, 1 - age / SHAKE_MS)
+          } else {
+            const a = ARM_ANGLE[opposite(shake.dir)]
+            ctx.save()
+            ctx.strokeStyle = FLASH
+            ctx.globalAlpha = 1 - age / SHAKE_MS
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            ctx.arc(px, py, cell * 0.44, a - 0.55, a + 0.55)
+            ctx.stroke()
+            ctx.restore()
+          }
         }
       }
     }
   }
+
+  if (ejectionAnim) drawEjectionFlight(ctx, ejectionAnim, cx, cy, cell, now)
 
   // 玩家（最后画）：行走补间 + 无效进攻抖动 + 手持色珠
   let px = walk.value('px', now)
@@ -510,12 +575,22 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   if (shake) {
     const age = now - shake.start
     if (age < SHAKE_MS) {
-      const t = age / SHAKE_MS
-      const amp = (1 - easeOutCubic(t)) * cell * 0.12
       const [dx, dy] = DIR_VEC[shake.dir]
-      const off = amp * Math.sin(t * Math.PI * 4)
-      sx += dx * off
-      sy += dy * off
+      const blockedCenter = lastState?.centers.findIndex(
+        (c) => c.pos[0] === lastState!.player[0] + dx && c.pos[1] === lastState!.player[1] + dy,
+      )
+      const nozzleBlocked =
+        lastState !== null &&
+        blockedCenter !== undefined &&
+        blockedCenter >= 0 &&
+        getEjectionPreview(lastState, blockedCenter)?.landing === null
+      if (!nozzleBlocked) {
+        const t = age / SHAKE_MS
+        const amp = (1 - easeOutCubic(t)) * cell * 0.12
+        const off = amp * Math.sin(t * Math.PI * 4)
+        sx += dx * off
+        sy += dy * off
+      }
     } else {
       shake = null
     }
@@ -580,7 +655,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 
     // 预演后的当前段目标（分步关卡一步连进多段时，直接展示新段目标）
     if (p.stage < p.stages.length) {
-      for (const g of p.stages[p.stage].goals) drawGoal(g, 0.7, p)
+      for (const g of p.stages[p.stage].goals) drawGoal(g, 0.7, p, p.stage)
     }
 
     // 变化的中心：切换为「动作后构型」ghost + 共振链 ①②③
@@ -642,9 +717,10 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           pose.rot,
           neighborsOf(i),
           pc.kind,
+          pc.ejects,
           pose.armRot,
         )
-        if (pc.shielded && !p.deprotected) drawShield(ctx, gx, gy, cell)
+        if (isShielded(p, pc)) drawShield(ctx, gx, gy, cell, pc.shieldUntilStage!)
         // 动作后的锁定圈（预演态判定：这一步之后谁达标）
         const goals =
           s.stage < s.stages.length
@@ -654,27 +730,44 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           drawLockRing(ctx, gx, gy, cell)
         }
         // 染色落点预览（被进攻的中心；落点由当前开口决定）
-        if (s.holding !== null && !(c.shielded && !s.deprotected)) {
+        if (s.holding !== null && !isShielded(s, c)) {
           const [adx, ady] = DIR_VEC[c.leaving]
           if (s.player[0] + adx === c.pos[0] && s.player[1] + ady === c.pos[1]) {
+            const ejection = getEjectionPreview(s, i)
             const landing = opposite(c.leaving)
             const [ldx, ldy] = DIR_VEC[landing]
             const len = neighborsOf(i)[landing] ? ARM_LEN_SHORT : ARM_LEN
-            drawLandingPreview(
-              ctx,
-              cx(s.player[0]),
-              cy(s.player[1]),
-              gx + ldx * cell * len,
-              gy + ldy * cell * len,
-              cell,
-              s.holding,
-              now,
-            )
+            if (!c.ejects || ejection?.landing != null) {
+              drawLandingPreview(
+                ctx,
+                cx(s.player[0]),
+                cy(s.player[1]),
+                gx + ldx * cell * len,
+                gy + ldy * cell * len,
+                cell,
+                s.holding,
+                now,
+              )
+            }
+            if (ejection) drawEjectionTrajectory(ctx, ejection, cx, cy, cell, now, true)
           }
         }
         // 共振链徽标 ①②③（≥2 个中心变化才有链可言）
         if (ordered.length >= 2) drawChainBadge(ctx, gx, gy, cell, n)
       })
+    }
+
+    // 若预演动作完成当前阶段，单独显示护罩将解除；中心不会被追加进同回合连锁。
+    for (const i of previewShieldReleased) {
+      const c = s.centers[i]
+      drawShieldReleasePreview(
+        ctx,
+        cx(c.pos[0]),
+        cy(c.pos[1]),
+        cell,
+        c.shieldUntilStage!,
+        now,
+      )
     }
 
     // 场上珠增减 ghost：新出现的珠（换落 / 弹射落点）半透明画出
@@ -696,7 +789,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       if (!nxt) dashedCircle(ctx, cx(g.pos[0]), cy(g.pos[1]), cell * 0.26, INK, 0.35)
     }
 
-    // 玩家 ghost：移动 / 走上弹射台
+    // 玩家 ghost：移动
     if (p.player[0] !== s.player[0] || p.player[1] !== s.player[1]) {
       const gx = cx(p.player[0])
       const gy = cy(p.player[1])
@@ -739,7 +832,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       ctx.restore()
     }
 
-    // 手持变化 ghost：换出物（进攻 / 换珠）或清空（回收 / 弹射 / 注入）
+    // 手持变化 ghost：换出物（进攻 / 换珠）或清空（弹射中心注入）
     if (p.holding !== s.holding) {
       const hx = sx + cell * 0.34
       const hy = sy - cell * 0.34
@@ -777,25 +870,148 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   }
 }
 
-/** 保护罩（v3）：六边形罩 + 微填充（常规与预演共用） */
-function drawShield(ctx: CanvasRenderingContext2D, px: number, py: number, cell: number): void {
+const STAGE_TONES = ['#f0c65a', '#63b3ff', '#c084fc', '#58d68d', '#ff8f70'] as const
+const stageTone = (stageIndex: number): string => STAGE_TONES[stageIndex % STAGE_TONES.length]
+
+/** 分步目标的阶段牌：与相同阈值的护罩共用编号与颜色。 */
+function drawStageBadge(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  stageIndex: number,
+  alpha: number,
+): void {
+  const r = cell * 0.09
+  const bx = px + cell * 0.2
+  const by = py - cell * 0.2
   ctx.save()
-  ctx.strokeStyle = INK
-  ctx.globalAlpha = 0.55
-  ctx.lineWidth = 2
+  ctx.fillStyle = '#10161f'
+  ctx.strokeStyle = stageTone(stageIndex)
+  ctx.globalAlpha = Math.max(0.35, alpha)
+  ctx.lineWidth = Math.max(1.5, cell * 0.025)
   ctx.beginPath()
+  ctx.arc(bx, by, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = stageTone(stageIndex)
+  ctx.font = `700 ${Math.max(8, Math.floor(cell * 0.12))}px ui-monospace, Menlo, monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(stageIndex + 1), bx, by + 0.5)
+  ctx.restore()
+}
+
+/** 阶段护罩：强六边形双轮廓 + 解锁阶段编号（常规与预演共用）。 */
+function drawShield(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  unlockStage: number,
+): void {
+  const tone = stageTone(unlockStage)
+  ctx.save()
+  for (const [radius, alpha, width] of [
+    [0.57, 0.92, 0.045],
+    [0.5, 0.42, 0.022],
+  ] as const) {
+    ctx.strokeStyle = tone
+    ctx.globalAlpha = alpha
+    ctx.lineWidth = Math.max(1.5, cell * width)
+    ctx.beginPath()
+    for (let k = 0; k < 6; k++) {
+      const a = -Math.PI / 2 + (k * Math.PI) / 3
+      const hx = px + Math.cos(a) * cell * radius
+      const hy = py + Math.sin(a) * cell * radius
+      if (k === 0) ctx.moveTo(hx, hy)
+      else ctx.lineTo(hx, hy)
+    }
+    ctx.closePath()
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 0.1
+  ctx.fillStyle = tone
+  ctx.fill()
+  const r = cell * 0.14
+  const bx = px + cell * 0.43
+  const by = py - cell * 0.43
+  ctx.globalAlpha = 0.96
+  ctx.fillStyle = '#10161f'
+  ctx.strokeStyle = tone
+  ctx.lineWidth = Math.max(1.5, cell * 0.025)
+  ctx.beginPath()
+  ctx.arc(bx, by, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = tone
+  ctx.font = `800 ${Math.max(10, Math.floor(cell * 0.18))}px ui-monospace, Menlo, monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(unlockStage + 1), bx, by + 0.5)
+  ctx.restore()
+}
+
+/** 阶段推进后的护罩碎裂 / 消散反馈。 */
+function drawShieldBurst(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  unlockStage: number,
+  progress: number,
+): void {
+  const tone = stageTone(unlockStage)
+  const radius = cell * (0.52 + progress * 0.24)
+  ctx.save()
+  ctx.strokeStyle = tone
+  ctx.globalAlpha = 1 - progress
+  ctx.lineWidth = Math.max(1.5, cell * 0.035 * (1 - progress * 0.5))
   for (let k = 0; k < 6; k++) {
     const a = -Math.PI / 2 + (k * Math.PI) / 3
-    const hx = px + Math.cos(a) * cell * 0.54
-    const hy = py + Math.sin(a) * cell * 0.54
-    if (k === 0) ctx.moveTo(hx, hy)
-    else ctx.lineTo(hx, hy)
+    const a2 = a + Math.PI / 3
+    const mx = px + Math.cos((a + a2) / 2) * radius * 1.08
+    const my = py + Math.sin((a + a2) / 2) * radius * 1.08
+    line(
+      ctx,
+      px + Math.cos(a) * radius,
+      py + Math.sin(a) * radius,
+      mx,
+      my,
+    )
+    line(
+      ctx,
+      mx,
+      my,
+      px + Math.cos(a2) * radius,
+      py + Math.sin(a2) * radius,
+    )
   }
-  ctx.closePath()
-  ctx.stroke()
-  ctx.globalAlpha = 0.06
-  ctx.fillStyle = INK
-  ctx.fill()
+  ctx.restore()
+}
+
+/** 按住预演中显示“本步结算后护罩解除”；只画碎纹，不追加任何共振 ghost。 */
+function drawShieldReleasePreview(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  unlockStage: number,
+  now: number,
+): void {
+  const pulse = 0.65 + 0.2 * Math.sin(now / 150)
+  drawShieldBurst(ctx, px, py, cell, unlockStage, 0.22)
+  ctx.save()
+  ctx.strokeStyle = stageTone(unlockStage)
+  ctx.globalAlpha = pulse
+  ctx.lineWidth = Math.max(1.5, cell * 0.03)
+  for (const angle of [-0.7, 0.2, 1.15]) {
+    const x1 = px + Math.cos(angle) * cell * 0.28
+    const y1 = py + Math.sin(angle) * cell * 0.28
+    const x2 = px + Math.cos(angle + 0.3) * cell * 0.52
+    const y2 = py + Math.sin(angle + 0.3) * cell * 0.52
+    line(ctx, x1, y1, x2, y2)
+  }
   ctx.restore()
 }
 
@@ -986,7 +1202,7 @@ function drawInspectPanel(
       ctx.stroke()
       ctx.globalAlpha = 1
     }
-    drawMiniCenter(ctx, mx, my, cfg.arms, cfg.leaving, cfg.kind, isCurrent)
+    drawMiniCenter(ctx, mx, my, cfg.arms, cfg.leaving, cfg.kind, cfg.ejects, isCurrent)
     ctx.fillStyle = isCurrent ? '#f0c65a' : '#8d9aab'
     ctx.font = '10px ui-monospace, Menlo, monospace'
     ctx.textAlign = 'center'
@@ -1003,6 +1219,7 @@ function drawMiniCenter(
   arms: Partial<Record<Dir, string>>,
   leaving: Dir,
   kind: CenterKind,
+  ejects: boolean,
   bright: boolean,
 ): void {
   const dirs = (['N', 'E', 'S', 'W'] as const).filter((d) => arms[d] !== undefined)
@@ -1021,7 +1238,16 @@ function drawMiniCenter(
     const [ax, ay] = ARM_VEC[d]
     drawAtom(ctx, px + ax * len, py + ay * len, 6, color)
   }
-  if (kind === 'trigonal') {
+  if (ejects) {
+    ctx.beginPath()
+    ctx.moveTo(px, py - 7)
+    ctx.lineTo(px + 7, py)
+    ctx.lineTo(px, py + 7)
+    ctx.lineTo(px - 7, py)
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+  } else if (kind === 'trigonal') {
     const missing = (['N', 'E', 'S', 'W'] as const).find((d) => arms[d] === undefined)
     if (missing) {
       const [ax, ay] = ARM_VEC[missing]
@@ -1057,6 +1283,7 @@ function drawMiniCenter(
     ctx.fill()
     ctx.stroke()
   }
+  if (ejects) drawEjectOutlet(ctx, px, py, 40, ARM_ANGLE[leaving] + Math.PI)
   drawCenterDirection(ctx, px, py, 40, ARM_ANGLE[leaving])
   ctx.restore()
 }
@@ -1076,6 +1303,7 @@ function drawCenter(
   rot: number,
   neighbors: Record<Dir, boolean>,
   kind: CenterKind,
+  ejects: boolean,
   armRot?: Partial<Record<Dir, number>>,
 ): void {
   const dirs = (['N', 'E', 'S', 'W'] as const).filter((d) => arms[d] !== undefined)
@@ -1123,11 +1351,28 @@ function drawCenter(
     }
   }
 
-  // 中心原子（三臂中心画三角）
+  // 中心原子：弹射中心用菱形喷嘴核；普通三臂用三角，普通四臂用圆形。
   ctx.fillStyle = FAINT
   ctx.strokeStyle = '#8b95a5'
   ctx.lineWidth = 1
-  if (kind === 'trigonal') {
+  if (ejects) {
+    const r = cell * 0.18
+    ctx.beginPath()
+    ctx.moveTo(px, py - r)
+    ctx.lineTo(px + r, py)
+    ctx.lineTo(px, py + r)
+    ctx.lineTo(px - r, py)
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+    ctx.strokeStyle = '#f0c65a'
+    ctx.globalAlpha = 0.72
+    ctx.lineWidth = Math.max(1.5, cell * 0.025)
+    ctx.beginPath()
+    ctx.arc(px, py, cell * 0.1, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.globalAlpha = 1
+  } else if (kind === 'trigonal') {
     ctx.beginPath()
     for (let k = 0; k < 3; k++) {
       const a = -Math.PI / 2 + rot + (k * 2 * Math.PI) / 3
@@ -1149,7 +1394,47 @@ function drawCenter(
   // 方向提示固定在中心核内并最后绘制：玩家、目标圈和相邻中心都不会再遮住它。
   // 动画中沿用开口臂的即时角度，因此会跟随四臂 / 三臂中心整体翻转。
   const directionAngle = ARM_ANGLE[leaving] + rot + (armRot?.[leaving] ?? 0)
+  if (ejects) drawEjectOutlet(ctx, px, py, cell, directionAngle + Math.PI)
   drawCenterDirection(ctx, px, py, cell, directionAngle)
+}
+
+/** 弹射中心常驻喷流标记：在开口对侧画短尾迹 + 双箭头，随开口轴一起转动。 */
+function drawEjectOutlet(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+  angle: number,
+): void {
+  const ux = Math.cos(angle)
+  const uy = Math.sin(angle)
+  const vx = -uy
+  const vy = ux
+  ctx.save()
+  ctx.strokeStyle = '#f0c65a'
+  ctx.globalAlpha = 0.88
+  ctx.lineWidth = Math.max(1.5, cell * 0.03)
+  ctx.lineCap = 'round'
+  for (const distance of [0.24, 0.34]) {
+    const tx = px + ux * cell * distance
+    const ty = py + uy * cell * distance
+    const back = cell * 0.08
+    const wing = cell * 0.055
+    ctx.beginPath()
+    ctx.moveTo(tx - ux * back + vx * wing, ty - uy * back + vy * wing)
+    ctx.lineTo(tx, ty)
+    ctx.lineTo(tx - ux * back - vx * wing, ty - uy * back - vy * wing)
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 0.35
+  line(
+    ctx,
+    px + ux * cell * 0.16,
+    py + uy * cell * 0.16,
+    px + ux * cell * 0.42,
+    py + uy * cell * 0.42,
+  )
+  ctx.restore()
 }
 
 /** 中心核内的进攻方向短箭头：不占用臂端和相邻格空间。 */
@@ -1275,7 +1560,125 @@ function drawLandingPreview(
   ctx.restore()
 }
 
-/** v3 特殊格：光照（金色放射纹）/ 回收（井口下箭头）/ 脱保护（开锁）/ 弹射台（双箭头） */
+/** 弹射中心完整弹道：被顶出珠颜色、逐格射线和最终落点；空路径显示喷口受阻。 */
+function drawEjectionTrajectory(
+  ctx: CanvasRenderingContext2D,
+  plan: ChemEjectionPreview,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  now: number,
+  ghost = false,
+): void {
+  const [dx, dy] = DIR_VEC[plan.dir]
+  const startX = cx(plan.from[0]) + dx * cell * 0.26
+  const startY = cy(plan.from[1]) + dy * cell * 0.26
+  if (plan.path.length === 0) {
+    const bx = cx(plan.from[0]) + dx * cell * 0.72
+    const by = cy(plan.from[1]) + dy * cell * 0.72
+    ctx.save()
+    ctx.strokeStyle = FLASH
+    ctx.globalAlpha = 0.78 + 0.18 * Math.sin(now / 110)
+    ctx.lineWidth = Math.max(2, cell * 0.045)
+    const r = cell * 0.14
+    line(ctx, bx - r, by - r, bx + r, by + r)
+    line(ctx, bx - r, by + r, bx + r, by - r)
+    ctx.restore()
+    return
+  }
+
+  const landing = plan.landing!
+  const endX = cx(landing[0])
+  const endY = cy(landing[1])
+  const tone = colorOf(plan.color)
+  ctx.save()
+  ctx.strokeStyle = tone
+  ctx.fillStyle = tone
+  ctx.globalAlpha = ghost ? 0.92 : 0.72 + 0.16 * Math.sin(now / 170)
+  ctx.lineWidth = Math.max(2, cell * 0.035)
+  ctx.setLineDash([cell * 0.1, cell * 0.08])
+  line(ctx, startX, startY, endX, endY)
+  ctx.setLineDash([])
+  for (const [x, y] of plan.path) {
+    ctx.globalAlpha = ghost ? 0.62 : 0.38
+    ctx.beginPath()
+    ctx.arc(cx(x), cy(y), cell * 0.035, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.globalAlpha = ghost ? 0.94 : 0.82
+  dashedCircle(ctx, endX, endY, cell * 0.25, tone, 0.9, goalDash(plan.color))
+  drawAtom(ctx, endX, endY, cell * 0.13, plan.color)
+  const arrowX = endX - dx * cell * 0.26
+  const arrowY = endY - dy * cell * 0.26
+  const px = -dy
+  const py = dx
+  ctx.beginPath()
+  ctx.moveTo(arrowX, arrowY)
+  ctx.lineTo(arrowX - dx * cell * 0.12 + px * cell * 0.08, arrowY - dy * cell * 0.12 + py * cell * 0.08)
+  ctx.lineTo(arrowX - dx * cell * 0.12 - px * cell * 0.08, arrowY - dy * cell * 0.12 - py * cell * 0.08)
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+/** 正式执行：被顶出珠沿与预演相同的逐格路径飞到落点。 */
+function drawEjectionFlight(
+  ctx: CanvasRenderingContext2D,
+  anim: EjectionAnim,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  now: number,
+): void {
+  const points = [anim.from, ...anim.path]
+  const duration = Math.max(1, anim.path.length) * EJECT_MS_PER_CELL
+  const scaled = Math.min(0.999, Math.max(0, (now - anim.start) / duration)) * (points.length - 1)
+  const segment = Math.min(points.length - 2, Math.floor(scaled))
+  const local = scaled - segment
+  const a = points[segment]
+  const b = points[segment + 1]
+  const x = cx(a[0]) + (cx(b[0]) - cx(a[0])) * local
+  const y = cy(a[1]) + (cy(b[1]) - cy(a[1])) * local
+  ctx.save()
+  ctx.globalAlpha = 0.32
+  ctx.strokeStyle = colorOf(anim.color)
+  ctx.lineWidth = Math.max(2, cell * 0.05)
+  line(ctx, cx(anim.from[0]), cy(anim.from[1]), x, y)
+  ctx.globalAlpha = 1
+  drawAtom(ctx, x, y, cell * 0.14, anim.color)
+  ctx.restore()
+}
+
+/** 喷口身后第一格被堵：在堵塞侧显示交叉火花，替代普通“撞错面”弧线。 */
+function drawBlockedNozzle(
+  ctx: CanvasRenderingContext2D,
+  state: ChemState,
+  target: ChemCenterState,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  alpha: number,
+): void {
+  const index = state.centers.indexOf(target)
+  const plan = getEjectionPreview(state, index)
+  if (!plan) return
+  const [dx, dy] = DIR_VEC[plan.dir]
+  const bx = cx(plan.from[0]) + dx * cell * 0.72
+  const by = cy(plan.from[1]) + dy * cell * 0.72
+  const r = cell * 0.16
+  ctx.save()
+  ctx.strokeStyle = FLASH
+  ctx.globalAlpha = alpha
+  ctx.lineWidth = Math.max(2.5, cell * 0.055)
+  line(ctx, bx - r, by - r, bx + r, by + r)
+  line(ctx, bx - r, by + r, bx + r, by - r)
+  ctx.beginPath()
+  ctx.arc(bx, by, cell * 0.24, -0.8, 0.8)
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** v3.2 特殊格：仅保留光照（金色放射纹）。 */
 function drawSpecialCells(
   ctx: CanvasRenderingContext2D,
   s: ChemState,
@@ -1305,60 +1708,6 @@ function drawSpecialCells(
         px + Math.cos(a) * cell * 0.32,
         py + Math.sin(a) * cell * 0.32,
       )
-    }
-    ctx.restore()
-  }
-  // 回收格：虚线圈 + 向下箭头（东西放进去就没了）
-  for (const [x, y] of s.disposals) {
-    const px = cx(x)
-    const py = cy(y)
-    dashedCircle(ctx, px, py, cell * 0.32, BOND, 0.9)
-    ctx.save()
-    ctx.strokeStyle = INK
-    ctx.globalAlpha = 0.6
-    ctx.lineWidth = Math.max(1.5, cell * 0.05)
-    line(ctx, px, py - cell * 0.16, px, py + cell * 0.12)
-    ctx.beginPath()
-    ctx.moveTo(px - cell * 0.1, py + cell * 0.02)
-    ctx.lineTo(px, py + cell * 0.16)
-    ctx.lineTo(px + cell * 0.1, py + cell * 0.02)
-    ctx.stroke()
-    ctx.restore()
-  }
-  // 脱保护格：打开的锁（锁体 + 掀开的锁环）
-  for (const [x, y] of s.deprotections) {
-    const px = cx(x)
-    const py = cy(y)
-    ctx.save()
-    ctx.strokeStyle = '#46a758'
-    ctx.globalAlpha = 0.85
-    ctx.lineWidth = Math.max(1.5, cell * 0.05)
-    ctx.strokeRect(px - cell * 0.16, py - cell * 0.02, cell * 0.32, cell * 0.24)
-    ctx.beginPath()
-    ctx.arc(px - cell * 0.02, py - cell * 0.12, cell * 0.13, Math.PI, Math.PI * 1.9)
-    ctx.stroke()
-    ctx.restore()
-  }
-  // 弹射台：指向台面方向的双箭头
-  for (const l of s.launchers) {
-    const px = cx(l.pos[0])
-    const py = cy(l.pos[1])
-    const [dx, dy] = DIR_VEC[l.dir]
-    ctx.save()
-    ctx.strokeStyle = INK
-    ctx.globalAlpha = 0.7
-    ctx.lineWidth = Math.max(1.5, cell * 0.055)
-    for (const off of [-0.12, 0.08]) {
-      const bx = px + dx * cell * off
-      const by = py + dy * cell * off
-      // 「>」形箭头：两条斜线汇向方向
-      const pxp = -dy // 垂直方向单位
-      const pyp = dx
-      ctx.beginPath()
-      ctx.moveTo(bx - dx * cell * 0.12 + pxp * cell * 0.14, by - dy * cell * 0.12 + pyp * cell * 0.14)
-      ctx.lineTo(bx + dx * cell * 0.06, by + dy * cell * 0.06)
-      ctx.lineTo(bx - dx * cell * 0.12 - pxp * cell * 0.14, by - dy * cell * 0.12 - pyp * cell * 0.14)
-      ctx.stroke()
     }
     ctx.restore()
   }

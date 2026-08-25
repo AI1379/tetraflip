@@ -1,0 +1,24 @@
+{
+  "id": "109.5°-43",
+  "name": "东西换路",
+  "hint": "中间空穴在 E/W 两侧切换：第一次只让左支路共振，换到另一侧再撞，第二次只让右支路共振。",
+  "width": 5,
+  "height": 5,
+  "walls": [],
+  "player": [2, 1],
+  "centers": [
+    { "pos": [2, 2], "arms": { "N": "red", "E": "blue", "S": "green" }, "leaving": "S", "kind": "trigonal" },
+    { "pos": [1, 2], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "W" },
+    { "pos": [3, 2], "arms": { "N": "yellow", "E": "green", "S": "red", "W": "blue" }, "leaving": "E" }
+  ],
+  "stages": [
+    { "goals": [{ "center": 1, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 1, "arm": "N", "color": "green" },
+        { "center": 2, "arm": "N", "color": "red" }
+      ]
+    }
+  ],
+  "par": 8
+}

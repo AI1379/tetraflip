@@ -1,32 +1,24 @@
 {
   "id": "109.5°-14",
-  "name": "两种目标",
-  "hint": "空手撞入只会翻转；持珠撞入才会染色（交换 + 翻转）。一旦拾起色珠，普通交换只会换色，手不会再空。左边中心需要一次纯翻转，所以先完成它，再去拿珠。",
-  "width": 6,
-  "height": 5,
-  "walls": [],
-  "player": [0, 2],
+  "name": "安全点火",
+  "hint": "上方链尾已经正确。先选不会把中间与链尾接成蓝键的色珠，再撞左侧点火；颜色选择决定是否误烧。",
+  "width": 4,
+  "height": 4,
+  "walls": [[1, 1]],
+  "player": [2, 3],
   "centers": [
-    {
-      "pos": [1, 2],
-      "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
-      "leaving": "E"
-    },
-    {
-      "pos": [2, 3],
-      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
-      "leaving": "S"
-    },
-    {
-      "pos": [4, 2],
-      "arms": { "N": "purple", "E": "yellow", "S": "green", "W": "red" },
-      "leaving": "S"
-    }
+    { "pos": [1, 2], "arms": { "N": "yellow", "E": "green", "S": "blue", "W": "red" }, "leaving": "E" },
+    { "pos": [2, 2], "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" }, "leaving": "N" },
+    { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" }, "leaving": "E" }
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
+  "groups": [
+    { "pos": [1, 3], "color": "red" },
+    { "pos": [3, 3], "color": "blue" }
+  ],
   "goals": [
-    { "center": 0, "arm": "E", "color": "blue" },
-    { "center": 0, "arm": "W", "color": "red" },
-    { "center": 2, "arm": "N", "color": "blue" }
-  ]
+    { "center": 0, "arm": "W", "color": "blue" },
+    { "center": 1, "arm": "N", "color": "red" },
+    { "center": 2, "arm": "N", "color": "red" }
+  ],
+  "par": 7
 }

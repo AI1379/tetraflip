@@ -12,12 +12,16 @@ import {
 import type { ChemMark } from './render'
 import type { ChemLevel } from './level'
 import level01 from './levels/level-01.json'
+import level03 from './levels/level-03.json'
+import level05 from './levels/level-05.json'
 import level09 from './levels/level-09.json'
 import level11 from './levels/level-11.json'
 import level15 from './levels/level-15.json'
 import level16 from './levels/level-16.json'
 import level17 from './levels/level-17.json'
 import level20 from './levels/level-20.json'
+import level32 from './levels/level-32.json'
+import level36 from './levels/level-36.json'
 
 /**
  * 渲染冒烟测试：用 Proxy 桩画布验证 render 可无异常执行。
@@ -31,6 +35,18 @@ import level20 from './levels/level-20.json'
 function stubCtx(): CanvasRenderingContext2D {
   return new Proxy({} as CanvasRenderingContext2D, {
     get() {
+      return (..._args: unknown[]) => undefined
+    },
+    set() {
+      return true
+    },
+  })
+}
+
+function recordingCtx(texts: string[]): CanvasRenderingContext2D {
+  return new Proxy({} as CanvasRenderingContext2D, {
+    get(_target, key) {
+      if (key === 'fillText') return (value: string) => texts.push(String(value))
       return (..._args: unknown[]) => undefined
     },
     set() {
@@ -54,24 +70,25 @@ describe('chem（109.5°）渲染冒烟', () => {
 
   it('状态转移（移动 / 拾取 / 进攻 / 无效进攻反馈）驱动的动画帧不抛错', () => {
     const ctx = stubCtx()
-    const level = chemGame.parseLevel(level11)
+    const level = chemGame.parseLevel(level05)
     let s = initialState(level)
     render(s, ctx, 480, 480)
     // 行走 + 拾取（动画转移）
-    s = step(s, 'S')
-    s = step(s, 'S')
-    expect(s.holding).toBe('red')
+    s = step(s, 'E')
+    expect(s.holding).toBe('purple')
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
     // 无效进攻反馈（抖动 + 红闪路径）
     notifyChemImpact('N')
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
-    // 背面进攻：翻转动画转移（(0,4) → (1,4) → (2,4) → (2,3) → 向北撞入）
-    s = step(s, 'E')
-    s = step(s, 'E')
-    s = step(s, 'N')
-    // 持珠站在合法进攻位：覆盖染色落点预览路径
+    // 第一次持珠进攻：紫珠进入 A，开口蓝珠换到手中。
+    s = step(s, 'S')
+    expect(s.holding).toBe('blue')
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
-    const attacked = step(s, 'N')
+    // 搬到 B 的背面；持珠站在合法进攻位时覆盖染色落点预览路径。
+    s = step(s, 'E')
+    s = step(s, 'E')
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    const attacked = step(s, 'S')
     expect(attacked.won).toBe(true)
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
     // 已胜利状态重复渲染（锁定圈路径）
@@ -87,11 +104,10 @@ describe('chem（109.5°）渲染冒烟', () => {
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
       setChemDecor(true)
     }
-    // 连锁翻转转移：level-17 一击翻三个中心（阶梯动画路径，路线 = ↑ ← ← ← ← ↑ →）
+    // 连锁翻转转移：level-17 一击分叉到四个中心。
     const level = chemGame.parseLevel(level17)
     let s = initialState(level)
     render(s, ctx, 480, 480)
-    for (const d of ['N', 'W', 'W', 'W', 'W', 'N'] as const) s = step(s, d)
     const attacked = step(s, 'E')
     expect(attacked.won).toBe(true)
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
@@ -99,7 +115,7 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
   })
 
-  it('v3 机制群（特殊格 / 保护罩 / 三臂整体翻转动画 / 分步目标）渲染不抛错', () => {
+  it('v3.2 机制群（光照格 / 阶段护罩 / 弹射中心 / 三臂整体翻转动画 / 分步目标）渲染不抛错', () => {
     const ctx = stubCtx()
     const level: ChemLevel = {
       id: 'render-v3',
@@ -112,7 +128,7 @@ describe('chem（109.5°）渲染冒烟', () => {
           pos: [2, 2],
           arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
           leaving: 'E',
-          shielded: true,
+          shieldUntilStage: 1,
         },
         { pos: [3, 2], arms: { N: 'red', E: 'green', S: 'yellow' }, leaving: 'S', kind: 'trigonal' },
         {
@@ -128,9 +144,6 @@ describe('chem（109.5°）渲染冒烟', () => {
         { goals: [{ center: 1, arm: 'E', color: 'yellow' }] },
       ],
       lights: [[0, 2]],
-      disposals: [[5, 4]],
-      deprotections: [[0, 4]],
-      launchers: [{ pos: [1, 1], dir: 'E' }],
       par: 20,
     }
     let s = initialState(level)
@@ -146,11 +159,57 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
 
     // 三臂中心整体翻转动画帧：光照后开口 S→N（跳过缺口 W），站位改在南侧 (3,3)
-    // 路线：S S（(0,4)，顺路经过回收格旁）E E E（(3,4)，(1,4) 拾取 blue）N（(3,3)）再 N = 进攻
+    // 路线：S S（到 (0,4)）E E E（到 (3,4)，(1,4) 拾取 blue）N（(3,3)）再 N = 进攻
     for (const d of ['S', 'S', 'E', 'E', 'E', 'N'] as const) s = step(s, d)
     const attacked = step(s, 'N')
     expect(attacked.centers[1].leaving).toBe('S') // 整体翻转（N→S），缺口 W→E
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
+  })
+
+  it('弹射中心：静态轮廓、就位弹道、按住预演、执行飞珠与喷口受阻反馈均可渲染', () => {
+    const ctx = stubCtx()
+    let s = initialState(chemGame.parseLevel(level32))
+    expect(() => render(s, ctx, 480, 480)).not.toThrow() // 静态菱形喷嘴核 + 常驻双箭头
+    s = step(s, 'S')
+    s = step(s, 'S') // 拾取 blue
+    s = step(s, 'E') // 到合法进攻位；常态渲染完整弹道
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    const next = step(s, 'E')
+    setChemPreview(next)
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    setChemPreview(null)
+    expect(() => render(next, ctx, 480, 480)).not.toThrow() // 正式执行飞珠
+    expect(() => render(next, ctx, 480, 480)).not.toThrow()
+
+    const blocked = chemGame.parseLevel({
+      ...level32,
+      id: 'render-eject-blocked',
+      player: [0, 1],
+      groups: [{ pos: [1, 1], color: 'blue' }],
+      walls: [[0, 2]],
+    })
+    let b = initialState(blocked)
+    b = step(b, 'E')
+    b = step(b, 'S')
+    notifyChemImpact('E')
+    expect(() => render(b, ctx, 480, 480)).not.toThrow() // 交叉火花，不走普通撞面弧
+  })
+
+  it('阶段护罩：与未来段目标共享“2”号编码，预演解除与正式碎裂均可渲染', () => {
+    const texts: string[] = []
+    const ctx = recordingCtx(texts)
+    let s = initialState(chemGame.parseLevel(level36))
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    expect(texts).toContain('2')
+
+    s = step(s, 'W') // 到第一段中心的合法进攻位
+    const next = step(s, 'S') // 完成第一段，护罩将在结算后解除
+    expect(next.stage).toBe(1)
+    expect(next.centers[1].arms).toEqual(s.centers[1].arms) // 不伪造同回合追加变化
+    setChemPreview(next)
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    setChemPreview(null)
+    expect(() => render(next, ctx, 480, 480)).not.toThrow() // 正式护罩碎裂
   })
 })
 
@@ -173,10 +232,10 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
     reset()
 
     // 拾取预演（游离珠消失 + 手持出现）
-    const l11 = chemGame.parseLevel(level11)
-    const s11 = initialState(l11)
-    setChemPreview(step(s11, 'S'))
-    expect(() => render(s11, ctx, 480, 480)).not.toThrow()
+    const l03 = chemGame.parseLevel(level03)
+    const s03 = initialState(l03)
+    setChemPreview(step(s03, 'E'))
+    expect(() => render(s03, ctx, 480, 480)).not.toThrow()
     reset()
 
     // 已胜局面下注入预演（应被忽略，不抛错）
@@ -190,7 +249,6 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
   it('共振链预演：多中心连锁（level-17 一击翻三个）渲染不抛错', () => {
     const ctx = stubCtx()
     let s = initialState(chemGame.parseLevel(level17))
-    for (const d of ['N', 'W', 'W', 'W', 'W', 'N'] as const) s = step(s, d)
     const next = step(s, 'E')
     // 该攻击引发连锁（≥2 个中心变化）⇒ 走对应翻转动画 + 阶梯延迟 + ①②③ 徽标路径
     const changed = s.centers.filter(
@@ -224,9 +282,6 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
       groups: [],
       stages: [{ goals: [{ center: 0, arm: 'N', color: 'blue' }] }],
       lights: [],
-      disposals: [],
-      deprotections: [],
-      launchers: [],
     }
     const sg = initialState(chemGame.parseLevel(trig))
     setChemInspect(0)
@@ -256,10 +311,10 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
 
   it('chemHitTest：命中中心 / 普通格 / 棋盘外', () => {
     const st = initialState(chemGame.parseLevel(level01))
-    // 中心在 (2,2)，棋盘 5×5，pad=28 ⇒ cell=floor((480-56)/5)=84，ox=oy=30
-    const hit = chemHitTest(st, 30 + 2 * 84 + 40, 30 + 2 * 84 + 40, 480, 480)
+    // 中心在 (1,1)，棋盘 3×3，pad=28 ⇒ cell=floor((480-56)/3)=141，ox=oy=28
+    const hit = chemHitTest(st, 28 + 141 + 70, 28 + 141 + 70, 480, 480)
     expect(hit).toEqual({ kind: 'center', index: 0 })
-    const cell = chemHitTest(st, 30 + 40, 30 + 40, 480, 480) // (0,0)
+    const cell = chemHitTest(st, 28 + 70, 28 + 70, 480, 480) // (0,0)
     expect(cell).toEqual({ kind: 'cell', x: 0, y: 0 })
     expect(chemHitTest(st, 5, 5, 480, 480)).toBeNull() // 棋盘外
   })

@@ -1,17 +1,18 @@
 {
   "id": "109.5°-02",
-  "name": "站到对面去",
-  "hint": "进攻方向必须等于开口方向。开口朝东（→）：你得先绕到中心的西侧，再按 → 撞入。正面撞是没有用的。",
-  "width": 5,
-  "height": 5,
+  "name": "站到背面",
+  "hint": "你在开口正面，直接撞不会动。绕到中心左侧，再朝开口箭头方向撞入；这里只考读方向，不考迷宫。",
+  "width": 3,
+  "height": 3,
   "walls": [],
-  "player": [3, 2],
+  "player": [2, 1],
   "centers": [
     {
-      "pos": [2, 2],
+      "pos": [1, 1],
       "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
       "leaving": "E"
     }
   ],
-  "goals": [{ "center": 0, "arm": "E", "color": "green" }]
+  "goals": [{ "center": 0, "arm": "E", "color": "green" }],
+  "par": 5
 }

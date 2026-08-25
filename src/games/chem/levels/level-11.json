@@ -1,18 +1,18 @@
 {
   "id": "109.5°-11",
-  "name": "带上它",
-  "hint": "第一次染色：先拾取红珠，再从中心下方向上撞入。观察两个去向——手中红珠进入中心并随四臂翻转；原开口臂的蓝珠换到你手中。彩色光环会提前显示红珠最终落在哪条臂。",
+  "name": "第一次共振",
+  "hint": "相邻中心面对臂同色时会连成亮键。撞翻左边中心后，震动会沿键传到右边，把两个中心一起翻转。",
   "width": 5,
   "height": 5,
-  "walls": [[2, 0]],
-  "player": [0, 2],
+  "walls": [],
+  "player": [1, 2],
   "centers": [
-    {
-      "pos": [2, 2],
-      "arms": { "N": "blue", "E": "green", "S": "yellow", "W": "red" },
-      "leaving": "N"
-    }
+    { "pos": [2, 2], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E" },
+    { "pos": [3, 2], "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" }, "leaving": "E" }
   ],
-  "groups": [{ "pos": [0, 4], "color": "red" }],
-  "goals": [{ "center": 0, "arm": "S", "color": "red" }]
+  "goals": [
+    { "center": 0, "arm": "W", "color": "green" },
+    { "center": 1, "arm": "E", "color": "blue" }
+  ],
+  "par": 1
 }

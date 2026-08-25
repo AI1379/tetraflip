@@ -1,20 +1,20 @@
 {
   "id": "109.5°-32",
-  "name": "弹射台",
-  "hint": "手里拿着基团走上双箭头台面：它会沿箭头方向飞出去，远远地撞进开口。被顶出来的基团会落在它刚才经过的格子里。",
-  "width": 6,
+  "name": "一击三果",
+  "hint": "同一击会注入蓝珠、沿亮键翻转邻居，并把原开口绿珠弹到身后；三个结果必须一起预测。",
+  "width": 5,
   "height": 5,
   "walls": [],
-  "player": [1, 0],
+  "player": [0, 0],
   "centers": [
-    {
-      "pos": [4, 2],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
-      "leaving": "E"
-    }
+    { "pos": [2, 2], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" }, "leaving": "E", "ejects": true },
+    { "pos": [3, 2], "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "purple" }, "leaving": "E" }
   ],
-  "groups": [{ "pos": [0, 0], "color": "purple" }],
-  "launchers": [{ "pos": [0, 2], "dir": "E" }],
-  "goals": [{ "center": 0, "arm": "W", "color": "purple" }],
-  "par": 3
+  "groups": [{ "pos": [0, 2], "color": "blue" }],
+  "goals": [
+    { "center": 0, "arm": "W", "color": "blue" },
+    { "center": 0, "arm": "S", "color": "red" },
+    { "center": 1, "arm": "E", "color": "purple" }
+  ],
+  "par": 4
 }

@@ -1,28 +1,15 @@
 {
   "id": "109.5°-30",
-  "name": "毕业：光之路",
-  "hint": "先照光把开口转出来，再带着基团撞进去——连锁会替你把第二段做完。想清楚每一段的顺序。",
+  "name": "第一次弹出",
+  "hint": "菱形核是弹射中心。持珠撞入后手会变空，原开口珠从身后沿虚线弹道飞到最后空格。",
   "width": 5,
-  "height": 4,
-  "walls": [[1, 1]],
-  "player": [4, 3],
+  "height": 3,
+  "walls": [],
+  "player": [0, 0],
   "centers": [
-    {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "purple", "S": "yellow", "W": "green" },
-      "leaving": "E"
-    },
-    {
-      "pos": [3, 1],
-      "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" },
-      "leaving": "E"
-    }
+    { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true }
   ],
-  "groups": [{ "pos": [0, 3], "color": "blue" }],
-  "lights": [[0, 0]],
-  "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "blue" }] },
-    { "goals": [{ "center": 1, "arm": "E", "color": "green" }] }
-  ],
-  "par": 10
+  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "goals": [{ "center": 0, "arm": "W", "color": "purple" }],
+  "par": 3
 }

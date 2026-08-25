@@ -1,34 +1,18 @@
 {
   "id": "109.5°-36",
-  "name": "链闸",
-  "hint": "罩子不光挡进攻——震动传到罩子前也会停下。什么时候开锁，连锁就从什么时候通。注意：这个中心要撞两次，第二次才接通。",
+  "name": "第二阶段开放",
+  "hint": "护罩标着 2：先完成第 1 段，它在整次结算后解除；下一步才可撞入罩内中心。",
   "width": 5,
   "height": 5,
   "walls": [],
-  "player": [0, 1],
+  "player": [3, 2],
   "centers": [
-    {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
-      "leaving": "E"
-    },
-    {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
-      "leaving": "N",
-      "shielded": true
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
-      "leaving": "W"
-    }
+    { "pos": [2, 3], "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" }, "leaving": "S" },
+    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "E", "shieldUntilStage": 1 }
   ],
-  "deprotections": [[4, 4]],
-  "goals": [
-    { "center": 0, "arm": "S", "color": "red" },
-    { "center": 1, "arm": "S", "color": "red" },
-    { "center": 2, "arm": "E", "color": "green" }
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "red" }] },
+    { "goals": [{ "center": 1, "arm": "W", "color": "blue" }] }
   ],
-  "par": 11
+  "par": 5
 }

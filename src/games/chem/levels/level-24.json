@@ -1,21 +1,37 @@
 {
   "id": "109.5°-24",
-  "name": "两步反应",
-  "hint": "这一关分两段：先做出「中间体」（亮着的虚线圈），再做出「产物」。淡色的圈是下一段的目标——顺序到了自然会计入。",
+  "name": "空穴断路器",
+  "hint": "第一击时空穴朝左，震动进不了中间。先把空穴翻到右边，再次点火时，它会翻回左边并把震动送到链尾。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
-  "player": [0, 2],
+  "player": [2, 2],
   "centers": [
     {
-      "pos": [2, 2],
+      "pos": [1, 1],
       "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "S"
+    },
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "yellow" },
+      "leaving": "N",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
       "leaving": "E"
     }
   ],
   "stages": [
     { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 0, "arm": "E", "color": "blue" }] }
+    {
+      "goals": [
+        { "center": 0, "arm": "N", "color": "red" },
+        { "center": 2, "arm": "N", "color": "green" }
+      ]
+    }
   ],
-  "par": 7
+  "par": 3
 }

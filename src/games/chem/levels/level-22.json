@@ -1,28 +1,20 @@
 {
   "id": "109.5°-22",
-  "name": "回收站",
-  "hint": "带着基团撞上中心，手里会换出新东西；可有些中心必须空手撞。带下箭头的那口井能吞掉手里的基团——需要空手的时候，先去井边。",
-  "width": 6,
+  "name": "光路接力",
+  "hint": "照光开出进攻位，再带蓝珠染色；第一段完成后，翻转形成的共振会替你完成下一段。",
+  "width": 5,
   "height": 4,
-  "walls": [],
-  "player": [2, 2],
+  "walls": [[1, 1]],
+  "player": [4, 3],
   "centers": [
-    {
-      "pos": [1, 1],
-      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
-      "leaving": "E"
-    },
-    {
-      "pos": [4, 2],
-      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
-      "leaving": "W"
-    }
+    { "pos": [2, 1], "arms": { "N": "red", "E": "purple", "S": "yellow", "W": "green" }, "leaving": "E" },
+    { "pos": [3, 1], "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" }, "leaving": "E" }
   ],
-  "groups": [{ "pos": [0, 2], "color": "purple" }],
-  "disposals": [[3, 1]],
-  "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 1, "arm": "E", "color": "blue" }
+  "groups": [{ "pos": [0, 3], "color": "blue" }],
+  "lights": [[0, 0]],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "blue" }] },
+    { "goals": [{ "center": 1, "arm": "E", "color": "green" }] }
   ],
-  "par": 13
+  "par": 10
 }

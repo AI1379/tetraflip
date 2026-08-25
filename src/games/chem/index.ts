@@ -1,5 +1,5 @@
-export { chemGame, peekFlip } from './engine'
-export type { ChemState, ChemCenterState } from './engine'
+export { chemGame, getEjectionPreview, peekFlip } from './engine'
+export type { ChemState, ChemCenterState, ChemEjectionPreview } from './engine'
 export type { ChemLevel } from './level'
 export {
   render,

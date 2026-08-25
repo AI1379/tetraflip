@@ -1,25 +1,33 @@
 {
   "id": "109.5°-06",
-  "name": "两个中心",
-  "hint": "两个中心各有自己的开口方向。规划一条顺路，把它们依次撞翻。",
+  "name": "手不会自己变空",
+  "hint": "连续三次交换：紫进 A、蓝进 B、绿进 C。每次手里只会换成开口原珠，不会自然变空；沿着上方站位把颜色接力到底。",
   "width": 7,
-  "height": 7,
-  "walls": [[3, 3]],
+  "height": 3,
+  "walls": [],
   "player": [0, 0],
   "centers": [
     {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "E"
+      "pos": [1, 1],
+      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "leaving": "S"
     },
     {
-      "pos": [4, 4],
-      "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "green" },
-      "leaving": "W"
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "purple" },
+      "leaving": "S"
+    },
+    {
+      "pos": [5, 1],
+      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "purple" },
+      "leaving": "S"
     }
   ],
+  "groups": [{ "pos": [1, 0], "color": "purple" }],
   "goals": [
-    { "center": 0, "arm": "N", "color": "green" },
-    { "center": 1, "arm": "E", "color": "green" }
-  ]
+    { "center": 0, "arm": "N", "color": "purple" },
+    { "center": 1, "arm": "N", "color": "blue" },
+    { "center": 2, "arm": "N", "color": "green" }
+  ],
+  "par": 8
 }

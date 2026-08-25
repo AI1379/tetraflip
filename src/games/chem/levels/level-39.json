@@ -1,24 +1,19 @@
 {
   "id": "109.5°-39",
-  "name": "转向再狙",
-  "hint": "弹射台只会沿箭头方向打。中心的开口不朝着那条线？先去照光，把开口转到射线上，再回来开火。",
-  "width": 5,
-  "height": 5,
-  "walls": [[3, 3]],
-  "player": [1, 0],
+  "name": "罩内预调",
+  "hint": "护罩只挡撞击与共振，不挡光。先照光把罩内开口从 N 预调到 E，再完成第 1 段，开罩后直接从西侧撞入。",
+  "width": 6,
+  "height": 4,
+  "walls": [],
+  "player": [0, 0],
   "centers": [
-    {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
-      "leaving": "N"
-    }
+    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S" },
+    { "pos": [4, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N", "shieldUntilStage": 1 }
   ],
-  "groups": [{ "pos": [0, 4], "color": "purple" }],
-  "lights": [[0, 0]],
-  "launchers": [{ "pos": [0, 2], "dir": "E" }],
-  "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 0, "arm": "N", "color": "yellow" }
+  "lights": [[1, 0]],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    { "goals": [{ "center": 1, "arm": "W", "color": "blue" }] }
   ],
-  "par": 7
+  "par": 6
 }

@@ -73,6 +73,8 @@ function filesFor(gameId: string): Record<string, unknown> {
 // ---------- DOM ----------
 
 const app = document.querySelector('#app') as HTMLElement
+const searchParams = new URLSearchParams(window.location.search)
+const visualBlindMode = searchParams.get('blind') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
@@ -170,6 +172,7 @@ app.innerHTML = `
     </section>
   </div>
 `
+app.classList.toggle('visual-blind', visualBlindMode)
 
 const canvas = app.querySelector('#board') as HTMLCanvasElement
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
@@ -797,6 +800,10 @@ canvas.addEventListener('pointercancel', () => {
 markBtn.addEventListener('click', toggleMarkMode)
 
 window.addEventListener('keydown', (e) => {
+  if (visualBlindMode) {
+    e.preventDefault()
+    return
+  }
   if (!pickerBackdrop.classList.contains('hidden')) {
     if (e.key === 'Escape') closePicker()
     return
@@ -854,6 +861,10 @@ window.addEventListener('keydown', (e) => {
 
 // 方向键松开：快速点按 / 预演后的「松开即执行」
 window.addEventListener('keyup', (e) => {
+  if (visualBlindMode) {
+    e.preventDefault()
+    return
+  }
   const dir = dirFromKey(e)
   if (dir) {
     e.preventDefault()
@@ -864,5 +875,9 @@ window.addEventListener('keyup', (e) => {
 // 失焦：清掉按住状态，避免回来后误执行
 window.addEventListener('blur', cancelPending)
 
-loadGame('t3')
+const requestedGame = searchParams.get('game')
+const initialGame = requestedGame !== null && Object.hasOwn(bundles, requestedGame) ? requestedGame : 't3'
+const requestedLevel = Number.parseInt(searchParams.get('level') ?? '', 10)
+if (Number.isFinite(requestedLevel)) gameIndices[initialGame] = Math.max(0, requestedLevel - 1)
+loadGame(initialGame)
 requestAnimationFrame(frame)
