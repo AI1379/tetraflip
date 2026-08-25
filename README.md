@@ -40,6 +40,16 @@ docs/
 - [docs/iteration.md](docs/iteration.md) — 迭代演进：按时间记录的每次设计/实现迭代
 - [AGENTS.md](AGENTS.md) — 协作规范（AI 代理与人类协作者必读，含文档维护硬性要求）
 
+## 通关反馈收集（可选，默认关闭）
+
+默认构建**无任何联网行为**。想收集通关后的难度 / 趣味评分（各 1–5）：
+
+1. 起后端：`pip install -r server/requirements.txt && uvicorn app:app --app-dir server --port 8787`（或 `python server/app.py`）
+2. dev 下已默认开启；生产构建用 `VITE_FEEDBACK_ENDPOINT=<地址> pnpm build` 开启
+3. 公网收集：`cloudflared tunnel --url http://127.0.0.1:8787`，用返回的 https 地址重建前端；隧道地址变化时也可用 `?fb=<url>` 临时覆盖，免重建
+
+详见 [server/README.md](server/README.md)。
+
 ## 技术栈
 
 vanilla TypeScript + Vite + Canvas 2D，唯一运行时依赖 `zod`（关卡校验）。

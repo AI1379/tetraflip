@@ -263,12 +263,13 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
   it('按住预演：进攻 / 拾取 / 无效动作（含已胜局面）均不抛错', () => {
     const ctx = stubCtx()
     const s = initialState(chemGame.parseLevel(level01))
+    const positioned = step(s, 'S')
     // 进攻预演（player 在开口背面，按 E 撞入 ⇒ 中心构型变化）
-    setChemPreview(step(s, 'E'))
-    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    setChemPreview(step(positioned, 'E'))
+    expect(() => render(positioned, ctx, 480, 480)).not.toThrow()
     // 无效动作预演（step 返回原状态 ⇒ 无变化中心，仅压暗 + 提示条）
-    setChemPreview(step(s, 'S'))
-    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    setChemPreview(step(positioned, 'W'))
+    expect(() => render(positioned, ctx, 480, 480)).not.toThrow()
     reset()
 
     // 拾取预演（游离珠消失 + 手持出现）
@@ -279,7 +280,7 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
     reset()
 
     // 已胜局面下注入预演（应被忽略，不抛错）
-    const won = step(s, 'E')
+    const won = step(positioned, 'E')
     expect(won.won).toBe(true)
     setChemPreview(won)
     expect(() => render(won, ctx, 480, 480)).not.toThrow()
@@ -357,5 +358,18 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
     const cell = chemHitTest(st, 28 + 70, 28 + 70, 480, 480) // (0,0)
     expect(cell).toEqual({ kind: 'cell', x: 0, y: 0 })
     expect(chemHitTest(st, 5, 5, 480, 480)).toBeNull() // 棋盘外
+  })
+
+  it('矩形外围仍按等比例格子渲染，并以同一矩形布局命中中心', () => {
+    const st = initialState(chemGame.parseLevel(level01))
+    const ctx = stubCtx()
+    expect(() => render(st, ctx, 480, 280)).not.toThrow()
+
+    // 3×3：cell=floor((280-56)/3)=74，ox=(480-222)/2=129，oy=29；中心在 (1,1)。
+    expect(chemHitTest(st, 129 + 74 + 37, 29 + 74 + 37, 480, 280)).toEqual({
+      kind: 'center',
+      index: 0,
+    })
+    expect(chemHitTest(st, 20, 20, 480, 280)).toBeNull()
   })
 })

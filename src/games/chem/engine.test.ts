@@ -26,19 +26,20 @@ describe('chem（Inversion）引擎', () => {
   it('非背面进攻无效果（不消耗回合）', () => {
     // 绕到中心东侧再向西撞：移动方向 W ≠ 开口臂 E → 无效
     let s = initialState(chemGame.parseLevel(level01))
-    for (const d of ['N', 'E', 'E', 'S'] as const) s = step(s, d) // (0,1)→(2,1)
+    for (const d of ['E', 'E', 'S'] as const) s = step(s, d) // (0,0)→(2,1)
     const bumped = step(s, 'W')
     expect(bumped).toBe(s) // 原样返回，未消耗回合
   })
 
   it('背面进攻触发 180° 翻转且开口臂翻到对侧', () => {
     const s0 = initialState(chemGame.parseLevel(level01))
-    const s = step(s0, 'E') // 玩家在 (0,1)，向 E 撞入 = 从开口臂 E 的背面进攻
+    const positioned = step(s0, 'S') // 新手滑动教学：先到固定进攻位 (0,1)
+    const s = step(positioned, 'E') // 向 E 撞入 = 从开口臂 E 的背面进攻
     const c = s.centers[0]
     expect(c.arms).toEqual({ N: 'green', E: 'yellow', S: 'blue', W: 'red' })
     expect(c.leaving).toBe('W')
     expect(s.player).toEqual([0, 1]) // 攻击者留在原地
-    expect(s.moves).toBe(1)
+    expect(s.moves).toBe(2)
     expect(s.won).toBe(true) // level-01 目标：N 臂为 green
   })
 
@@ -46,14 +47,13 @@ describe('chem（Inversion）引擎', () => {
     const level = chemGame.parseLevel({ ...level01, id: 'test-wall', walls: [[1, 0]] })
     const s0 = initialState(level)
     expect(step(s0, 'W')).toBe(s0) // 撞边界
-    const s1 = step(s0, 'N') // (0,0)
-    expect(step(s1, 'E')).toBe(s1) // (1,0) 是墙
+    expect(step(s0, 'E')).toBe(s0) // (1,0) 是墙
   })
 
-  it('solver 1 步解出 level-01', () => {
+  it('solver 以“滑到站位 → 撞入”2 步解出 level-01', () => {
     const result = solve(chemGame, chemGame.parseLevel(level01), { maxDepth: 10 })
     expect(result.solved).toBe(true)
-    expect(result.solution).toEqual(['E'])
+    expect(result.solution).toEqual(['S', 'E'])
   })
 })
 

@@ -5,3 +5,8 @@ coverage/
 .pnpm-store/
 *.local
 .DS_Store
+
+# 反馈收集服务运行数据
+server/data/
+__pycache__/
+*.py[cod]

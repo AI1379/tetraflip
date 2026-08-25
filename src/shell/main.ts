@@ -4,7 +4,7 @@ import { loadLevels } from '../core/levels'
 import type { LoadedLevel } from '../core/levels'
 import { History } from '../core/undo'
 import { solveFrom } from '../core/solver'
-import { cellKey } from '../core/protocol'
+import { DIR_VEC, cellKey } from '../core/protocol'
 import type { AnyGame, Dir } from '../core/protocol'
 import { t3Game, render as renderT3, setT3Preview } from '../games/t3'
 import {
@@ -20,6 +20,24 @@ import {
   chemHitTest,
 } from '../games/chem'
 import type { ChemMark } from '../games/chem'
+import {
+  getChemTutorial,
+  initialTutorialInputMode,
+  tutorialColorText,
+  tutorialDirText,
+  tutorialInputModeFromPointerType,
+  tutorialKeyForDir,
+} from './tutorial'
+import type { TutorialEvent, TutorialInputMode } from './tutorial'
+import { mountFeedback } from './feedback'
+import { logicalCanvasSize } from './viewport'
+import {
+  addCompleted,
+  emptyProgress,
+  loadProgress,
+  saveProgress,
+  setCurrentLevel,
+} from './progress'
 
 /**
  * 《109.5°》正式浏览器壳：关卡导航、HUD、撤销/重开、画布宿主。
@@ -118,26 +136,53 @@ app.innerHTML = `
   <details id="level-brief" class="level-brief" open>
     <summary>
       <span class="brief-mark">?</span>
-      <span id="brief-label">本关提示</span>
+      <span>本关提示</span>
       <span class="brief-toggle" aria-hidden="true"></span>
     </summary>
     <p id="level-hint"></p>
-    <div id="mechanic-note" class="mechanic-note hidden">
-      <strong>染色 = 交换 + 翻转</strong>
-      <span><i class="flow-dot carried"></i>手中色珠 → 进入中心，并随中心翻转</span>
-      <span><i class="flow-dot extracted"></i>开口臂原来的色珠 → 换到手中</span>
-      <small>持珠站到正确进攻位时，棋盘上的彩色光环会预览落点。</small>
-    </div>
   </details>
 
   <main class="stage">
     <canvas id="board" aria-label="游戏棋盘，支持方向滑动"></canvas>
+    <div id="board-guide" class="board-guide hidden" aria-live="polite">
+      <div id="guide-spotlight" class="guide-spotlight hidden" aria-hidden="true"></div>
+      <div id="guide-gesture" class="guide-gesture hidden" aria-hidden="true">
+        <span class="gesture-track"></span>
+        <span class="gesture-finger"><i></i></span>
+      </div>
+      <div id="guide-key" class="guide-key hidden" aria-hidden="true">
+        <kbd id="guide-key-label">S</kbd>
+        <span id="guide-key-action">PRESS</span>
+      </div>
+      <section class="board-guide-card" aria-label="操作引导">
+        <small id="tutorial-kicker">CORE INPUT · 01 / 05</small>
+        <strong id="tutorial-title"></strong>
+        <p id="tutorial-body"></p>
+        <div id="tutorial-forecast" class="tutorial-forecast hidden" aria-label="本次进攻的交换预报">
+          <div class="forecast-row">
+            <span class="forecast-label inject">放入</span>
+            <i id="forecast-in-dot" class="forecast-dot" aria-hidden="true"></i>
+            <strong id="forecast-in-color"></strong>
+            <span id="forecast-in-target" class="forecast-target"></span>
+          </div>
+          <div id="forecast-out-row" class="forecast-row">
+            <span class="forecast-label extract">换出</span>
+            <i id="forecast-out-dot" class="forecast-dot" aria-hidden="true"></i>
+            <strong id="forecast-out-color"></strong>
+            <span class="forecast-target">→ 手中</span>
+          </div>
+        </div>
+        <div id="tutorial-feedback" class="tutorial-feedback hidden" role="status"></div>
+        <span id="tutorial-tip" class="tutorial-tip"></span>
+      </section>
+    </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <div id="overlay" class="overlay hidden" aria-hidden="true">
       <div class="overlay-card">
         <div class="win-mark"><span>✓</span> 关卡完成</div>
         <strong id="win-title" class="win-title"></strong>
         <div id="win-stats" class="win-stats"></div>
+        <div id="feedback-panel" class="feedback-panel hidden"></div>
         <div class="win-actions">
           <button id="replay-after-win" class="secondary-button">再玩一次</button>
           <button id="view-after-win" class="secondary-button">查看棋盘</button>
@@ -177,7 +222,10 @@ app.innerHTML = `
     </button>
   </section>
 
-  <footer class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开执行，Esc 取消） · Z 撤销 · R 重开 · H 提示 · M 标记</footer>
+  <footer class="app-footer">
+    <div class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开执行，Esc 取消） · Z 撤销 · R 重开 · H 提示 · M 标记</div>
+    <div class="copyright">© 2026 <a href="https://github.com/AI1379" target="_blank" rel="noopener noreferrer" aria-label="Renatus Madrigal 的 GitHub 主页">Renatus Madrigal</a></div>
+  </footer>
 
   <div id="picker-backdrop" class="picker-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="picker-title">
     <section class="picker-panel">
@@ -201,6 +249,7 @@ const gameStats = app.querySelector('#game-stats') as HTMLElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
+const feedbackPanel = app.querySelector('#feedback-panel') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const replayAfterWin = app.querySelector('#replay-after-win') as HTMLButtonElement
 const viewAfterWin = app.querySelector('#view-after-win') as HTMLButtonElement
@@ -211,8 +260,24 @@ const winbarNext = app.querySelector('#winbar-next') as HTMLButtonElement
 const winbarClose = app.querySelector('#winbar-close') as HTMLButtonElement
 const hintEl = app.querySelector('#level-hint') as HTMLElement
 const briefEl = app.querySelector('#level-brief') as HTMLDetailsElement
-const briefLabel = app.querySelector('#brief-label') as HTMLElement
-const mechanicNote = app.querySelector('#mechanic-note') as HTMLElement
+const boardGuide = app.querySelector('#board-guide') as HTMLElement
+const guideSpotlight = app.querySelector('#guide-spotlight') as HTMLElement
+const guideGesture = app.querySelector('#guide-gesture') as HTMLElement
+const guideKey = app.querySelector('#guide-key') as HTMLElement
+const guideKeyLabel = app.querySelector('#guide-key-label') as HTMLElement
+const guideKeyAction = app.querySelector('#guide-key-action') as HTMLElement
+const tutorialKicker = app.querySelector('#tutorial-kicker') as HTMLElement
+const tutorialTitle = app.querySelector('#tutorial-title') as HTMLElement
+const tutorialBody = app.querySelector('#tutorial-body') as HTMLElement
+const tutorialForecast = app.querySelector('#tutorial-forecast') as HTMLElement
+const forecastInDot = app.querySelector('#forecast-in-dot') as HTMLElement
+const forecastInColor = app.querySelector('#forecast-in-color') as HTMLElement
+const forecastInTarget = app.querySelector('#forecast-in-target') as HTMLElement
+const forecastOutRow = app.querySelector('#forecast-out-row') as HTMLElement
+const forecastOutDot = app.querySelector('#forecast-out-dot') as HTMLElement
+const forecastOutColor = app.querySelector('#forecast-out-color') as HTMLElement
+const tutorialFeedback = app.querySelector('#tutorial-feedback') as HTMLElement
+const tutorialTip = app.querySelector('#tutorial-tip') as HTMLElement
 const toastEl = app.querySelector('#toast') as HTMLElement
 const pickerEl = app.querySelector('#level-picker') as HTMLElement
 const pickerBackdrop = app.querySelector('#picker-backdrop') as HTMLElement
@@ -229,8 +294,29 @@ let current: Bundle = bundles.chem
 let levels: LoadedLevel<any>[] = []
 let index = 0
 let hist: History<any> = new History(undefined)
-const completed = new Set<string>()
-const gameIndices: Record<string, number> = { t3: 0, chem: 0 }
+const progressStore = (() => {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+})()
+const savedProgress = progressStore ? loadProgress(progressStore) : emptyProgress()
+const completed = new Set<string>(savedProgress.completed)
+const gameIndices: Record<string, number> = {
+  t3: savedProgress.current.t3 ?? 0,
+  chem: savedProgress.current.chem ?? 0,
+}
+let progress = savedProgress
+
+function persistProgress(): void {
+  if (progressStore) saveProgress(progressStore, progress)
+}
+let tutorialInputMode: TutorialInputMode = initialTutorialInputMode({
+  coarsePrimaryPointer: window.matchMedia('(pointer: coarse)').matches,
+  maxTouchPoints: navigator.maxTouchPoints,
+})
+app.dataset.inputMode = tutorialInputMode
 
 // ---------- 认知外置层（design §11）：预演 / 标记 / Inspect 的壳层状态 ----------
 
@@ -241,6 +327,8 @@ const WIN_SETTLE_MS = 360
 /** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost */
 let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
+/** 01–05 引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
+let tutorialEvent: TutorialEvent = null
 
 /** 标记模式（仅 chem）；标记按「游戏:关卡」存会话内，撤销 / 重开不丢失 */
 let markMode = false
@@ -260,15 +348,37 @@ const COLOR_TEXT: Record<string, string> = {
   purple: '紫',
 }
 
+/** 棋盘内对象揭示优先于静态 hint；hint 仍可由玩家手动展开复习。 */
+const BOARD_GUIDE_LEVELS = new Set([0, 1, 2, 3, 4, 9, 15, 16, 20, 26, 32, 40, 42])
+
+function setTutorialInputMode(next: TutorialInputMode): void {
+  if (tutorialInputMode === next) return
+  tutorialInputMode = next
+  app.dataset.inputMode = next
+  if (hist.current !== undefined) updateTutorial()
+}
+
+function observePointerInput(event: PointerEvent): void {
+  const next = tutorialInputModeFromPointerType(event.pointerType)
+  if (next) setTutorialInputMode(next)
+}
+
+function currentCanvasSize(): { width: number; height: number } {
+  const rect = canvas.getBoundingClientRect()
+  return logicalCanvasSize(rect.width, rect.height, LOGICAL)
+}
+
 function draw(): void {
   const dpr = window.devicePixelRatio || 1
-  const size = Math.round(LOGICAL * dpr)
-  if (canvas.width !== size || canvas.height !== size) {
-    canvas.width = size
-    canvas.height = size
+  const logical = currentCanvasSize()
+  const pixelWidth = Math.round(logical.width * dpr)
+  const pixelHeight = Math.round(logical.height * dpr)
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth
+    canvas.height = pixelHeight
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  current.render(hist.current, ctx, LOGICAL, LOGICAL)
+  current.render(hist.current, ctx, logical.width, logical.height)
 }
 
 // 渲染循环：补间动画 / 背景自转 / 无效进攻反馈需要连续重绘（棋盘小，开销可忽略）；
@@ -286,6 +396,11 @@ function levelMeta(): { id?: string; name?: string; hint?: string } {
   return (levels[index]?.level ?? {}) as { id?: string; name?: string; hint?: string }
 }
 
+function levelProgressKey(game: string, levelIndex: number): string {
+  const meta = (levels[levelIndex]?.level ?? {}) as { id?: string }
+  return `${game}:${meta.id ?? levelIndex}`
+}
+
 function appendStat(label: string, value: string, tone?: string): void {
   const item = document.createElement('div')
   item.className = 'stat'
@@ -299,10 +414,153 @@ function appendStat(label: string, value: string, tone?: string): void {
   gameStats.appendChild(item)
 }
 
+function setForecastDot(el: HTMLElement, color: string): void {
+  el.dataset.tone = color
+}
+
+function boardPoint(
+  state: Parameters<typeof getChemTutorial>[1],
+  pos: readonly [number, number],
+): { x: number; y: number; cell: number; logicalWidth: number; logicalHeight: number } {
+  const logical = currentCanvasSize()
+  const pad = 28
+  const cell = Math.max(
+    8,
+    Math.floor(Math.min(
+      (logical.width - pad * 2) / state.width,
+      (logical.height - pad * 2) / state.height,
+    )),
+  )
+  const ox = Math.floor((logical.width - cell * state.width) / 2)
+  const oy = Math.floor((logical.height - cell * state.height) / 2)
+  return {
+    x: ((ox + (pos[0] + 0.5) * cell) / logical.width) * 100,
+    y: ((oy + (pos[1] + 0.5) * cell) / logical.height) * 100,
+    cell,
+    logicalWidth: logical.width,
+    logicalHeight: logical.height,
+  }
+}
+
+function positionBoardGuide(
+  state: Parameters<typeof getChemTutorial>[1],
+  guide: NonNullable<ReturnType<typeof getChemTutorial>>,
+): void {
+  const spotlight = guide.spotlight
+  guideSpotlight.classList.toggle('hidden', spotlight === undefined)
+  let anchorY = 50
+  if (spotlight) {
+    const point = boardPoint(state, spotlight.pos)
+    const width = ((point.cell * spotlight.radiusCells * 2) / point.logicalWidth) * 100
+    const height = ((point.cell * spotlight.radiusCells * 2) / point.logicalHeight) * 100
+    guideSpotlight.style.left = `${point.x}%`
+    guideSpotlight.style.top = `${point.y}%`
+    guideSpotlight.style.width = `${width}%`
+    guideSpotlight.style.height = `${height}%`
+    anchorY = point.y
+  }
+
+  const gesture = guide.gesture
+  const showKeyboardCue = gesture !== undefined && tutorialInputMode === 'keyboard'
+  guideGesture.classList.toggle('hidden', gesture === undefined || showKeyboardCue)
+  guideKey.classList.toggle('hidden', gesture === undefined || !showKeyboardCue)
+  if (gesture) {
+    const gestureAction = gesture.hold ? 'hold' : 'move'
+    guideGesture.dataset.action = gestureAction
+    guideKey.dataset.action = gestureAction
+    const start = boardPoint(state, gesture.from)
+    const [dx, dy] = DIR_VEC[gesture.dir]
+    const distanceX = (start.cell * gesture.distanceCells) / start.logicalWidth * 100
+    const distanceY = (start.cell * gesture.distanceCells) / start.logicalHeight * 100
+    const endX = start.x + dx * distanceX
+    const endY = start.y + dy * distanceY
+    guideGesture.style.setProperty('--gesture-x0', `${start.x}%`)
+    guideGesture.style.setProperty('--gesture-y0', `${start.y}%`)
+    guideGesture.style.setProperty('--gesture-x1', `${endX}%`)
+    guideGesture.style.setProperty('--gesture-y1', `${endY}%`)
+    guideGesture.style.setProperty('--gesture-length', `${distanceX}%`)
+    guideGesture.style.setProperty('--gesture-angle', `${Math.atan2(dy, dx)}rad`)
+    if (showKeyboardCue) {
+      const offsetX = (start.cell / start.logicalWidth) * 100 * 0.68
+      const offsetY = (start.cell / start.logicalHeight) * 100 * 0.68
+      const keyX = start.x + (dy === 0 ? 0 : start.x > 50 ? -offsetX : offsetX)
+      const keyY = start.y + (dx === 0 ? 0 : start.y > 50 ? -offsetY : offsetY)
+      guideKey.style.left = `${keyX}%`
+      guideKey.style.top = `${keyY}%`
+      guideKeyLabel.textContent = tutorialKeyForDir(gesture.dir)
+      guideKeyAction.textContent = gesture.hold ? 'HOLD' : 'PRESS'
+    }
+    if (!spotlight) anchorY = start.y
+  }
+  boardGuide.dataset.placement = anchorY < 50 ? 'bottom' : 'top'
+}
+
+/**
+ * 01–05 状态驱动操作引导：只把纯模型投影到 DOM，并高亮眼前已相邻的可执行方向。
+ * 多步路线不在这里求解，06 起整个模块退出界面。
+ */
+function updateTutorial(): void {
+  const state = hist.current as Parameters<typeof getChemTutorial>[1]
+  const guide = current.id === 'chem'
+    ? getChemTutorial(index, state, tutorialEvent, tutorialInputMode)
+    : null
+
+  for (const button of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
+    button.classList.remove('tutorial-focus')
+  }
+
+  const hasBoardCue = guide !== null && (
+    guide.spotlight !== undefined ||
+    guide.gesture !== undefined ||
+    guide.forecast !== null ||
+    guide.feedback !== null
+  )
+  if (!guide || !hasBoardCue || visualBlindMode) {
+    boardGuide.classList.add('hidden')
+    return
+  }
+
+  boardGuide.classList.remove('hidden')
+  tutorialKicker.textContent = guide.kicker
+  tutorialTitle.textContent = guide.title
+  tutorialBody.textContent = guide.body
+  tutorialTip.textContent = guide.tip
+  boardGuide.dataset.tone = guide.feedbackTone
+  positionBoardGuide(state, guide)
+
+  if (tutorialInputMode === 'touch') {
+    for (const dir of guide.focusDirs) {
+      app.querySelector<HTMLButtonElement>(`.dpad-key[data-dir="${dir}"]`)?.classList.add('tutorial-focus')
+    }
+  }
+
+  const forecast = guide.forecast
+  tutorialForecast.classList.toggle('hidden', forecast === null)
+  if (forecast) {
+    const injected = `${tutorialColorText(forecast.injected)}珠`
+    forecastInColor.textContent = injected
+    forecastInTarget.textContent = `→ 当前中心 · 翻转后${tutorialDirText(forecast.landingArm)}侧`
+    setForecastDot(forecastInDot, forecast.injected)
+
+    const showExtraction = forecast.showExtraction && forecast.extracted !== null
+    forecastOutRow.classList.toggle('hidden', !showExtraction)
+    if (showExtraction && forecast.extracted !== null) {
+      forecastOutColor.textContent = `${tutorialColorText(forecast.extracted)}珠`
+      setForecastDot(forecastOutDot, forecast.extracted)
+    }
+  }
+
+  tutorialFeedback.classList.toggle('hidden', guide.feedback === null)
+  tutorialFeedback.textContent = guide.feedback ?? ''
+}
+
+// 旋转屏幕或视口高度变化时，Canvas 会从正方形变为矩形；教程锚点必须同步重算。
+new ResizeObserver(() => {
+  if (hist.current !== undefined) updateTutorial()
+}).observe(canvas)
+
 function updateHud(): void {
   const meta = levelMeta()
-  const rawLevel = (levels[index]?.level ?? {}) as { groups?: readonly unknown[] }
-  const hasColoring = current.id === 'chem' && (rawLevel.groups?.length ?? 0) > 0
   levelNumber.textContent = levels.length > 0
     ? `LEVEL ${String(index + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`
     : 'LEVEL —'
@@ -336,8 +594,6 @@ function updateHud(): void {
   nextBtn.disabled = index >= levels.length - 1
   undoBtn.disabled = !hist.canUndo
   decorBtn.classList.toggle('hidden', current.setDecor === undefined)
-  mechanicNote.classList.toggle('hidden', !hasColoring)
-  briefLabel.textContent = hasColoring ? '本关提示 · 染色规则' : '本关提示'
 
   // 关卡 hint（教学/点拨文案）：纯展示，有则显示，无则隐藏
   if (meta.hint) {
@@ -347,6 +603,7 @@ function updateHud(): void {
     hintEl.textContent = ''
     briefEl.classList.add('hidden')
   }
+  updateTutorial()
 }
 
 function winResult(): string {
@@ -369,6 +626,15 @@ function showOverlay(): void {
   winbarText.textContent = `✓ 已通关 · ${result}`
   nextAfterWin.textContent = isLast ? '回到本关' : '下一关 →'
   winbarNext.textContent = isLast ? '回到本关' : '下一关 →'
+  // 可选通关反馈（构建期开关，design §8）：未启用时面板保持隐藏、零请求
+  const s = hist.current as { moves?: number; par?: number }
+  mountFeedback(feedbackPanel, {
+    game: current.id,
+    level: index + 1,
+    levelId: meta.id ?? String(index + 1),
+    moves: s.moves ?? hist.depth,
+    par: s.par,
+  })
   overlay.classList.remove('hidden')
   overlay.setAttribute('aria-hidden', 'false')
   viewAfterWin.focus()
@@ -384,7 +650,10 @@ function cancelWinReveal(): void {
 /** 动画完整结束，再停顿一小拍；期间若撤销 / 重开 / 换关，旧卡片不会穿越局面弹出。 */
 function scheduleWinOverlay(): void {
   cancelWinReveal()
-  completed.add(`${current.id}:${index}`)
+  const progressKey = levelProgressKey(current.id, index)
+  completed.add(progressKey)
+  progress = addCompleted(progress, progressKey)
+  persistProgress()
   const wonGame = current.id
   const wonLevel = index
   const wonKey = current.def.stateKey(hist.current)
@@ -415,9 +684,13 @@ function hideWinbar(): void {
 function openLevel(i: number): void {
   cancelWinReveal()
   index = Math.max(0, Math.min(i, levels.length - 1))
-  if (current.id === 'chem' && index === 9 && !completed.has('chem:9')) briefEl.open = true
+  gameIndices[current.id] = index
+  progress = setCurrentLevel(progress, current.id, index)
+  persistProgress()
+  if (current.id === 'chem' && BOARD_GUIDE_LEVELS.has(index)) briefEl.open = false
   current.resetAnim?.()
   hist = new History(current.def.initialState(levels[index].level))
+  tutorialEvent = null
   cancelPending()
   setChemInspect(null)
   clearInspectTimer()
@@ -459,8 +732,11 @@ function applyDir(dir: Dir): void {
   const next = def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
+    tutorialEvent = { kind: 'blocked', dir }
+    updateTutorial()
     return
   }
+  tutorialEvent = null
   setChemInspect(null) // 局面已变：Inspect 面板收起（design §11）
   clearInspectTimer()
   hist.push(next)
@@ -473,6 +749,7 @@ function doUndo(): void {
   if (!hist.canUndo) return
   cancelWinReveal()
   hist.undo()
+  tutorialEvent = null
   setChemInspect(null)
   clearInspectTimer()
   hideOverlay()
@@ -503,9 +780,12 @@ function showPreview(dir: Dir): void {
   const next = def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.setPreview?.(null)
+    tutorialEvent = null
   } else {
     current.setPreview?.(next)
+    tutorialEvent = { kind: 'preview', dir }
   }
+  updateTutorial()
 }
 
 function clearPreview(): void {
@@ -541,6 +821,8 @@ function commitPending(): void {
 function cancelPending(): void {
   pending = null
   clearPreview()
+  tutorialEvent = null
+  updateTutorial()
 }
 
 // ---------- Inspect（chem）：点按中心看构型周期，纯展示 ----------
@@ -620,9 +902,10 @@ function handleCanvasTap(clientX: number, clientY: number): void {
   if (current.id !== 'chem') return
   const rect = canvas.getBoundingClientRect()
   if (rect.width === 0 || rect.height === 0) return
-  const lx = (clientX - rect.left) * (LOGICAL / rect.width)
-  const ly = (clientY - rect.top) * (LOGICAL / rect.height)
-  const hit = chemHitTest(hist.current as any, lx, ly, LOGICAL, LOGICAL)
+  const logical = currentCanvasSize()
+  const lx = (clientX - rect.left) * (logical.width / rect.width)
+  const ly = (clientY - rect.top) * (logical.height / rect.height)
+  const hit = chemHitTest(hist.current as any, lx, ly, logical.width, logical.height)
   if (!hit) {
     setChemInspect(null)
     clearInspectTimer()
@@ -668,7 +951,7 @@ function buildPicker(): void {
     }
     const meta = l.level as { id?: string; name?: string }
     const btn = document.createElement('button')
-    const isComplete = completed.has(`${current.id}:${i}`)
+    const isComplete = completed.has(levelProgressKey(current.id, i))
     btn.className = ['level-item', i === index ? 'active' : '', isComplete ? 'complete' : '']
       .filter(Boolean)
       .join(' ')
@@ -820,6 +1103,7 @@ const dpadPointerAt = new WeakMap<HTMLButtonElement, number>()
 for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
   const dir = btn.dataset.dir as Dir
   btn.addEventListener('pointerdown', (e) => {
+    observePointerInput(e)
     e.preventDefault()
     btn.setPointerCapture(e.pointerId)
     dpadPointerAt.set(btn, performance.now())
@@ -837,6 +1121,7 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
     // pointer 路径已经处理过（600ms 内）则跳过；否则视为键盘激活，直接执行
     const at = dpadPointerAt.get(btn) ?? 0
     if (performance.now() - at < 600) return
+    setTutorialInputMode('keyboard')
     hideToast()
     applyDir(dir)
   })
@@ -852,6 +1137,7 @@ function swipeDir(dx: number, dy: number): Dir | null {
 }
 
 canvas.addEventListener('pointerdown', (e) => {
+  observePointerInput(e)
   swipeStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, engaged: false }
   canvas.setPointerCapture(e.pointerId)
 })
@@ -913,6 +1199,7 @@ window.addEventListener('keydown', (e) => {
   const dir = dirFromKey(e)
   if (dir) {
     e.preventDefault()
+    setTutorialInputMode('keyboard')
     if (!e.repeat) dirDown(dir)
     return
   }

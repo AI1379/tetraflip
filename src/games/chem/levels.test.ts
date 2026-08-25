@@ -23,7 +23,7 @@ const levelFiles = import.meta.glob('./levels/*.json', {
 
 /** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；含 51–60 综合候选池） */
 const baseline: Record<string, number> = {
-  './levels/level-01.json': 1, // 第一次撞入
+  './levels/level-01.json': 2, // 滑动到固定站位，再完成第一次撞入
   './levels/level-02.json': 5, // 从错误侧绕到背面
   './levels/level-03.json': 2, // 拾珠并第一次持珠取代
   './levels/level-04.json': 2, // 两步观察输入落臂与开口珠换手
