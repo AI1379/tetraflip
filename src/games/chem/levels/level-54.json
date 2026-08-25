@@ -1,0 +1,52 @@
+{
+  "id": "109.5°-54",
+  "name": "解锁撞链",
+  "hint": "撞核链起初被阶段罩隔离。先在共享站位完成一次空翻，再让弹射珠替你点燃整条链。",
+  "width": 5,
+  "height": 4,
+  "walls": [],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [0, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "W",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [0, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 3],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [1, 2],
+      "arms": { "N": "red", "E": "purple", "S": "green", "W": "yellow" },
+      "leaving": "S"
+    }
+  ],
+  "groups": [{ "pos": [2, 0], "color": "purple" }],
+  "lights": [],
+  "stages": [
+    { "goals": [{ "center": 4, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 1, "arm": "N", "color": "green" },
+        { "center": 2, "arm": "N", "color": "green" },
+        { "center": 3, "arm": "E", "color": "green" }
+      ]
+    }
+  ],
+  "par": 12
+}

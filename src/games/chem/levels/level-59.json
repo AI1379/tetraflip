@@ -1,0 +1,48 @@
+{
+  "id": "109.5°-59",
+  "name": "三响余料",
+  "hint": "开罩后的同一击会注入、共振并喷出离去珠；别在三响发生时停下，那颗余料还要投进最后一层。",
+  "width": 5,
+  "height": 4,
+  "walls": [],
+  "player": [2, 2],
+  "centers": [
+    {
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "N"
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "E": "blue", "S": "yellow", "W": "green" },
+      "leaving": "E",
+      "kind": "trigonal",
+      "ejects": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [4, 2],
+      "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" },
+      "leaving": "E"
+    },
+    {
+      "pos": [0, 0],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "N",
+      "shieldUntilStage": 2
+    }
+  ],
+  "groups": [{ "pos": [1, 2], "color": "purple" }],
+  "lights": [],
+  "stages": [
+    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 1, "arm": "W", "color": "purple" },
+        { "center": 2, "arm": "N", "color": "blue" }
+      ]
+    },
+    { "goals": [{ "center": 3, "arm": "S", "color": "blue" }] }
+  ],
+  "par": 8
+}

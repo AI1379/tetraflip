@@ -21,7 +21,7 @@ const levelFiles = import.meta.glob('./levels/*.json', {
   import: 'default',
 }) as Record<string, unknown>
 
-/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；分段与 50 关正式曲线一致） */
+/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；含 51–60 综合候选池） */
 const baseline: Record<string, number> = {
   './levels/level-01.json': 1, // 第一次撞入
   './levels/level-02.json': 5, // 从错误侧绕到背面
@@ -72,7 +72,17 @@ const baseline: Record<string, number> = {
   './levels/level-47.json': 10, // mastery：一束光转正两个开口后回收弹射珠
   './levels/level-48.json': 6, // mastery：光照预对齐三阶段护罩
   './levels/level-49.json': 7, // mastery：开罩接三路，奇偶复位后接通
-  './levels/level-50.json': 12, // 唯一终局：三阶段光照 × 搬运 × 弹射 × 护罩
+  './levels/level-50.json': 12, // mastery：三阶段光照 × 搬运 × 弹射 × 护罩
+  './levels/level-51.json': 9, // 候选：双锁开放后由三臂喷流撞翻远端中心
+  './levels/level-52.json': 10, // 候选：三臂控制闸门，关盾缓冲飞珠后复位
+  './levels/level-53.json': 4, // 候选：互补双闸在两个分步目标间交换通行权
+  './levels/level-54.json': 12, // 候选：阶段解锁后弹射撞核并接共振链
+  './levels/level-55.json': 14, // 候选：一束光预调两个喷口，飞珠连续接力
+  './levels/level-56.json': 12, // 候选：持珠取代逐层打开两道阶段罩
+  './levels/level-57.json': 11, // 候选：空穴分流、弹射余料与两层阶段罩闭环
+  './levels/level-58.json': 11, // 候选：光照预调后，三臂再生闸门开→关→开
+  './levels/level-59.json': 8, // 候选：开罩后三臂弹射、共振与余料终投
+  './levels/level-60.json': 12, // 候选终局：双锁、弹射撞核与飞珠回收
 }
 
 const entries = Object.entries(levelFiles).sort(([a], [b]) => a.localeCompare(b))
@@ -142,6 +152,76 @@ const centerChanged = (t: Transition, index: number): boolean =>
 const holeAt = (s: ChemState, index: number): Dir | undefined =>
   (['N', 'E', 'S', 'W'] as const).find((d) => s.centers[index].arms[d] === undefined)
 
+function attackedCenter(t: Transition): number {
+  if (t.before.player[0] !== t.after.player[0] || t.before.player[1] !== t.after.player[1]) return -1
+  const [dx, dy] = DIR_VEC[t.action]
+  return t.before.centers.findIndex(
+    (center) =>
+      center.pos[0] === t.before.player[0] + dx && center.pos[1] === t.before.player[1] + dy,
+  )
+}
+
+function isEjection(t: Transition, centerIndex = attackedCenter(t)): boolean {
+  return (
+    centerIndex >= 0 &&
+    t.before.centers[centerIndex].ejects === true &&
+    t.before.holding !== null &&
+    t.after.holding === null &&
+    centerChanged(t, centerIndex) &&
+    t.after.groups.length === t.before.groups.length + 1
+  )
+}
+
+function shortestMechanismEvents(file: string): Set<string> {
+  const level = chemGame.parseLevel(levelFiles[file])
+  const transitions = shortestTransitions(file)
+  const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
+  const events = new Set<string>()
+
+  for (const t of transitions) {
+    const moved = t.before.player[0] !== t.after.player[0] || t.before.player[1] !== t.after.player[1]
+    if (moved && lightKeys.has(cellKey(t.after.player[0], t.after.player[1]))) events.add('light')
+    if (t.after.stage > t.before.stage) events.add('stage')
+    if (t.before.holding !== t.after.holding) events.add('carry')
+
+    const changed = t.before.centers.flatMap((_, index) => (centerChanged(t, index) ? [index] : []))
+    if (changed.length > 1) events.add('multi-center')
+    if (
+      level.centers.some(
+        (center, index) =>
+          center.kind === 'trigonal' && holeAt(t.before, index) !== holeAt(t.after, index),
+      )
+    ) {
+      events.add('hole')
+    }
+    if (
+      level.centers.some(
+        (center, index) =>
+          center.shieldUntilStage !== undefined &&
+          isShielded(t.before, t.before.centers[index]) !== isShielded(t.after, t.after.centers[index]),
+      )
+    ) {
+      events.add('stage-shield')
+    }
+    if (
+      level.centers.some(
+        (center, index) =>
+          center.reactiveTo !== undefined &&
+          isShielded(t.before, t.before.centers[index]) !== isShielded(t.after, t.after.centers[index]),
+      )
+    ) {
+      events.add('reactive')
+    }
+
+    const launcher = attackedCenter(t)
+    if (isEjection(t, launcher)) {
+      events.add('eject')
+      if (changed.some((index) => index !== launcher)) events.add('hit-center')
+    }
+  }
+  return events
+}
+
 /**
  * 穷举到设计最短深度，并过滤掉某类关键语义转移。
  * 返回 false 表示：不发生该机制事件，就不存在等长（或更短）解。
@@ -171,10 +251,10 @@ function hasWinningPathAvoiding(
   return false
 }
 
-describe('chem（109.5°）正式关卡批次 01–50', () => {
+describe('chem（109.5°）正式 01–50 + 综合候选 51–60', () => {
   it('关卡数量与基线表一致', () => {
     expect(entries.map(([file]) => file)).toEqual(Object.keys(baseline))
-    expect(entries).toHaveLength(50)
+    expect(entries).toHaveLength(60)
   })
 
   it('文件序号与内部 id 一一对应', () => {
@@ -212,7 +292,7 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
         `level-${n} 应使用阶段护罩`,
       ).toBe(true)
     }
-    for (let n = 40; n <= 50; n++) {
+    for (let n = 40; n <= 60; n++) {
       const level = at(n)
       const usesMasteryMechanic =
         level.lights.length > 0 ||
@@ -243,9 +323,9 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
         `level-${n} 应回到既有规则综合，不再教学 v4 字段`,
       ).toBe(true)
     }
-    for (let n = 1; n < 50; n++) expect(at(n).name).not.toMatch(/^终局/)
-    expect(at(50).name).toMatch(/^终局/)
-    expect(at(50).stages).toHaveLength(3)
+    for (let n = 1; n < 60; n++) expect(at(n).name).not.toMatch(/^终局/)
+    expect(at(60).name).toMatch(/^终局/)
+    expect(at(60).stages).toHaveLength(3)
   })
 
   it.each(entries)('%s 通过关卡校验', (_file, json) => {
@@ -268,7 +348,7 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(level.par, `${file} 的 JSON 标准杆应与最短解基线一致`).toBe(baseline[file])
   })
 
-  it('10–50 每关带 hint 且不泄露解法箭头序列', () => {
+  it('10–60 每关带 hint 且不泄露解法箭头序列', () => {
     for (const [file, json] of entries.slice(9)) {
       const level = chemGame.parseLevel(json)
       expect(level.hint, `${file} 缺少教学 hint`).toBeTruthy()
@@ -430,6 +510,120 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     const noShield = solve(chemGame, chemGame.parseLevel(stripped), { maxDepth: 30 })
     expect(noShield.solved).toBe(true)
     expect(noShield.solution.length).toBeLessThan(baseline[file])
+  })
+
+  it.each([
+    [51, ['light', 'stage-shield', 'reactive', 'hole', 'eject', 'hit-center']],
+    [52, ['hole', 'reactive', 'eject', 'carry']],
+    [53, ['stage', 'reactive', 'multi-center']],
+    [54, ['stage-shield', 'eject', 'hit-center', 'multi-center', 'carry']],
+    [55, ['light', 'eject', 'carry']],
+    [56, ['light', 'stage-shield', 'carry', 'stage']],
+    [57, ['hole', 'stage-shield', 'eject', 'carry', 'multi-center']],
+    [58, ['light', 'hole', 'reactive', 'multi-center', 'stage']],
+    [59, ['hole', 'stage-shield', 'eject', 'carry', 'multi-center']],
+    [60, ['light', 'stage-shield', 'reactive', 'hole', 'eject', 'hit-center', 'carry']],
+  ] as const)('level-%s 综合候选的最短解实际使用全部设计机制', (number, expected) => {
+    const file = `./levels/level-${number}.json`
+    const events = shortestMechanismEvents(file)
+    expect(events.size, `${file} 至少应有三类实际机制事件`).toBeGreaterThanOrEqual(3)
+    for (const event of expected) expect(events, `${file} 缺少 ${event} 事件`).toContain(event)
+  })
+
+  it.each([
+    ['./levels/level-51.json', 0, 2],
+    ['./levels/level-54.json', 0, 1],
+    ['./levels/level-60.json', 1, 3],
+  ] as const)('%s 的最短解必须由弹射珠撞翻指定远端中心', (file, launcher, target) => {
+    const hitsTarget = (t: Transition): boolean =>
+      attackedCenter(t) === launcher && isEjection(t, launcher) && centerChanged(t, target)
+    const transitions = shortestTransitions(file)
+    expect(transitions.some(hitsTarget)).toBe(true)
+
+    const level = chemGame.parseLevel(levelFiles[file])
+    expect(hasWinningPathAvoiding(level, baseline[file], hitsTarget)).toBe(false)
+  })
+
+  it('level-52 缺口缓冲：三臂控制臂往返，关盾期间飞珠落地但不撞翻罩内中心', () => {
+    const file = './levels/level-52.json'
+    expect(reactiveShieldPhases(file)).toEqual([false, true, false])
+    const transitions = shortestTransitions(file)
+    const bufferedShot = transitions.find(
+      (t) => isEjection(t, 2) && isShielded(t.before, t.before.centers[1]),
+    )
+    expect(bufferedShot).toBeDefined()
+    expect(centerChanged(bufferedShot!, 1)).toBe(false)
+    expect(holeAt(transitions[2].before, 0)).toBe('W')
+    expect(holeAt(transitions[2].after, 0)).toBe('E')
+    expect(holeAt(transitions.at(-1)!.before, 0)).toBe('E')
+    expect(holeAt(transitions.at(-1)!.after, 0)).toBe('W')
+    expect(centerChanged(transitions.at(-1)!, 4), '缺口复位后必须接通新增链尾').toBe(true)
+
+    const opensTail = (t: Transition): boolean =>
+      holeAt(t.before, 0) === 'E' && holeAt(t.after, 0) === 'W' && centerChanged(t, 4)
+    const level = chemGame.parseLevel(levelFiles[file])
+    expect(hasWinningPathAvoiding(level, baseline[file], opensTail)).toBe(false)
+  })
+
+  it('level-53 双态闸门：同一控制臂把通行权从下闸交给上闸', () => {
+    const file = './levels/level-53.json'
+    const transitions = shortestTransitions(file)
+    const states = [transitions[0].before, ...transitions.map((t) => t.after)]
+    const lower = states.map((state) => isShielded(state, state.centers[2]))
+    const upper = states.map((state) => isShielded(state, state.centers[3]))
+    expect(lower[0]).toBe(false)
+    expect(upper[0]).toBe(true)
+    expect(lower.some((shielded, index) => shielded && !upper[index])).toBe(true)
+    expect(centerChanged(transitions[0], 2)).toBe(true)
+    expect(centerChanged(transitions.at(-1)!, 3)).toBe(true)
+  })
+
+  it('level-55 双喷口接力：两次喷流的输出依次成为下一次输入', () => {
+    expect(shortestInteractionTrace('./levels/level-55.json')).toEqual([
+      'carry:empty>purple',
+      'attack:0:purple',
+      'carry:empty>blue',
+      'attack:1:blue',
+      'carry:empty>green',
+      'attack:2:green',
+    ])
+  })
+
+  it('level-58 光启缺口：只预调一次光，三臂反馈令再生闸门开→关→开', () => {
+    const file = './levels/level-58.json'
+    const level = chemGame.parseLevel(levelFiles[file])
+    const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
+    const transitions = shortestTransitions(file)
+    expect(
+      transitions.filter(
+        (t) =>
+          (t.before.player[0] !== t.after.player[0] || t.before.player[1] !== t.after.player[1]) &&
+          lightKeys.has(cellKey(t.after.player[0], t.after.player[1])),
+      ),
+    ).toHaveLength(1)
+    expect(reactiveShieldPhases(file)).toEqual([true, false, true, false])
+
+    const opensGap = (t: Transition): boolean =>
+      holeAt(t.before, 2) === 'E' && holeAt(t.after, 2) === 'W'
+    const closesGap = (t: Transition): boolean =>
+      holeAt(t.before, 2) === 'W' && holeAt(t.after, 2) === 'E'
+    expect(transitions.some(opensGap)).toBe(true)
+    expect(transitions.some(closesGap)).toBe(true)
+    expect(hasWinningPathAvoiding(level, baseline[file], opensGap)).toBe(false)
+    expect(hasWinningPathAvoiding(level, baseline[file], closesGap)).toBe(false)
+  })
+
+  it.each([
+    ['./levels/level-57.json', ['attack:2:green', 'carry:empty>red', 'attack:4:red']],
+    ['./levels/level-59.json', ['attack:1:purple', 'carry:empty>blue', 'attack:3:blue']],
+    ['./levels/level-60.json', ['attack:1:blue', 'carry:empty>red', 'attack:2:red']],
+  ] as const)('%s 弹射余料必须被回收并投入终段', (file, requiredTail) => {
+    const trace = shortestInteractionTrace(file)
+    let cursor = 0
+    for (const event of trace) {
+      if (event === requiredTail[cursor]) cursor++
+    }
+    expect(cursor).toBe(requiredTail.length)
   })
 
   it('level-47 最短解不重复踏入同一光照格（无光格乒乓）', () => {

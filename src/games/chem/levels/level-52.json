@@ -1,0 +1,53 @@
+{
+  "id": "109.5°-52",
+  "name": "缺口缓冲",
+  "hint": "控制护罩的中心少了一条臂。两次修复会让缺口往返，也决定什么时候该关盾挡下飞珠。",
+  "width": 5,
+  "height": 4,
+  "walls": [],
+  "player": [1, 0],
+  "centers": [
+    {
+      "pos": [2, 2],
+      "arms": { "N": "green", "E": "blue", "S": "red" },
+      "leaving": "S",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [0, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "W",
+      "reactiveTo": { "center": 0, "arm": "N", "color": "green" }
+    },
+    {
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [0, 3],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "W"
+    }
+  ],
+  "groups": [{ "pos": [2, 0], "color": "purple" }],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        { "center": 0, "arm": "N", "color": "green" },
+        { "center": 1, "arm": "N", "color": "red" },
+        { "center": 3, "arm": "E", "color": "green" },
+        { "center": 4, "arm": "N", "color": "red" }
+      ]
+    }
+  ],
+  "par": 10
+}

@@ -1,0 +1,44 @@
+{
+  "id": "109.5°-51",
+  "name": "双锁撞核",
+  "hint": "第一击同时解除两种锁：阶段罩开放喷口，控制臂开放远端结构。先借光校轴，再让飞珠完成最后一次撞入。",
+  "width": 7,
+  "height": 5,
+  "walls": [],
+  "player": [5, 1],
+  "centers": [
+    {
+      "pos": [4, 2],
+      "arms": { "N": "purple", "E": "red", "S": "green" },
+      "leaving": "N",
+      "kind": "trigonal",
+      "ejects": true,
+      "hitCenters": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [5, 2],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
+      "leaving": "S"
+    },
+    {
+      "pos": [0, 2],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "leaving": "S",
+      "reactiveTo": { "center": 1, "arm": "N", "color": "green" }
+    }
+  ],
+  "groups": [{ "pos": [2, 2], "color": "blue" }],
+  "lights": [[2, 0]],
+  "stages": [
+    { "goals": [{ "center": 1, "arm": "N", "color": "green" }] },
+    {
+      "goals": [
+        { "center": 0, "arm": "W", "color": "blue" },
+        { "center": 0, "arm": "N", "color": "green" },
+        { "center": 2, "arm": "N", "color": "green" }
+      ]
+    }
+  ],
+  "par": 9
+}

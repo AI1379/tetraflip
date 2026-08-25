@@ -6,6 +6,7 @@ export {
   setChemDecor,
   notifyChemImpact,
   resetChemAnim,
+  getChemAnimationRemainingMs,
   setChemPreview,
   setChemInspect,
   setChemMarks,

@@ -61,6 +61,13 @@ const TETRA_SPIN = 0.00012 // 背景四面体自转（rad/ms）
 
 let decor = true
 
+/**
+ * Canvas 小字号不能依赖 Unicode 圈号或浏览器的等宽字体回退：不同系统会得到完全不同的字面框。
+ * 阶段 / 连锁编号统一使用窄体无衬线数字，中文说明统一走系统中文黑体栈。
+ */
+const CANVAS_NUM_FONT = '"Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif'
+const CANVAS_UI_FONT = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif'
+
 /** 装饰开关（design §10：包装可用一个开关整体关掉）。只关装饰，不关玩法信息。 */
 export function setChemDecor(v: boolean): void {
   decor = v
@@ -156,6 +163,15 @@ let shake: { start: number; dir: Dir } | null = null
 let handPulse: { start: number; color: string | null } | null = null
 let ejectionAnim: EjectionAnim | null = null
 const shieldBursts = new Map<number, number>()
+let animationEndsAt = 0
+
+/**
+ * 壳层用这个只读时钟等待棋盘动画结束后再展示通关卡片。
+ * 返回剩余毫秒数，不把 UI 时序写进引擎状态。
+ */
+export function getChemAnimationRemainingMs(now = performance.now()): number {
+  return Math.max(0, animationEndsAt - now)
+}
 
 /** 无效进攻 / 撞墙反馈入口：shell 在 step 无效果（stateKey 不变）时调用 */
 export function notifyChemImpact(dir: Dir): void {
@@ -173,6 +189,7 @@ export function resetChemAnim(): void {
   handPulse = null
   ejectionAnim = null
   shieldBursts.clear()
+  animationEndsAt = 0
 }
 
 const rotateArms = (arms: Partial<Record<Dir, string>>): Partial<Record<Dir, string>> => {
@@ -238,6 +255,7 @@ function sync(s: ChemState, now: number): void {
       if (s.player[0] !== prev.player[0] || s.player[1] !== prev.player[1]) {
         walk.set('px', s.player[0], now, WALK_MS)
         walk.set('py', s.player[1], now, WALK_MS)
+        animationEndsAt = Math.max(animationEndsAt, now + WALK_MS)
       }
       const changed = s.centers
         .map((c, i) => i)
@@ -274,11 +292,13 @@ function sync(s: ChemState, now: number): void {
           }
         }
         for (const i of changed) {
+          const delay = (hop.get(i) ?? 0) * HOP_MS
           flips.set(i, {
-            start: now + (hop.get(i) ?? 0) * HOP_MS,
+            start: now + delay,
             before: prev.centers[i],
             after: s.centers[i],
           })
+          animationEndsAt = Math.max(animationEndsAt, now + delay + FLIP_MS)
         }
       }
       const ejectIndex = prev.centers.findIndex((c, i) => {
@@ -295,6 +315,10 @@ function sync(s: ChemState, now: number): void {
             path: plan.path,
             landing: plan.landing,
           }
+          animationEndsAt = Math.max(
+            animationEndsAt,
+            now + Math.max(1, plan.path.length) * EJECT_MS_PER_CELL,
+          )
         }
       }
       for (let i = 0; i < s.centers.length; i++) {
@@ -302,15 +326,20 @@ function sync(s: ChemState, now: number): void {
         const after = s.centers[i]
         if (before && after && isShielded(prev, before) && !isShielded(s, after)) {
           shieldBursts.set(i, now)
+          animationEndsAt = Math.max(animationEndsAt, now + SHIELD_BURST_MS)
         }
       }
-      if (s.holding !== prev.holding) handPulse = { start: now, color: s.holding }
+      if (s.holding !== prev.holding) {
+        handPulse = { start: now, color: s.holding }
+        animationEndsAt = Math.max(animationEndsAt, now + 220)
+      }
     } else {
       walk = new Tweens()
       flips.clear()
       handPulse = null
       ejectionAnim = null
       shieldBursts.clear()
+      animationEndsAt = 0
     }
   }
   lastState = s
@@ -914,7 +943,50 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 const STAGE_TONES = ['#f0c65a', '#63b3ff', '#c084fc', '#58d68d', '#ff8f70'] as const
 const stageTone = (stageIndex: number): string => STAGE_TONES[stageIndex % STAGE_TONES.length]
 
-/** 分步目标的阶段牌：与相同阈值的护罩共用编号与颜色。 */
+/** 仪器式小标签：切角轮廓 + 普通数字，避免小圆里的粗等宽字在不同系统上挤压变形。 */
+function drawTelemetryTag(
+  ctx: CanvasRenderingContext2D,
+  bx: number,
+  by: number,
+  cell: number,
+  label: string,
+  tone: string,
+  alpha = 1,
+): void {
+  const w = cell * (label.length > 1 ? 0.34 : 0.28)
+  const h = cell * 0.2
+  const cut = Math.min(w, h) * 0.24
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.fillStyle = 'rgba(8, 14, 22, 0.96)'
+  ctx.strokeStyle = tone
+  ctx.lineWidth = Math.max(1.25, cell * 0.022)
+  ctx.beginPath()
+  ctx.moveTo(bx - w / 2 + cut, by - h / 2)
+  ctx.lineTo(bx + w / 2, by - h / 2)
+  ctx.lineTo(bx + w / 2, by + h / 2 - cut)
+  ctx.lineTo(bx + w / 2 - cut, by + h / 2)
+  ctx.lineTo(bx - w / 2, by + h / 2)
+  ctx.lineTo(bx - w / 2, by - h / 2 + cut)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  // 左侧短刻度强化“读数”而不是“气泡”的语义。
+  ctx.globalAlpha = alpha * 0.7
+  ctx.lineWidth = Math.max(1, cell * 0.016)
+  line(ctx, bx - w * 0.34, by - h * 0.18, bx - w * 0.34, by + h * 0.18)
+
+  ctx.globalAlpha = alpha
+  ctx.fillStyle = tone
+  ctx.font = `700 ${Math.max(8, Math.floor(cell * 0.125))}px ${CANVAS_NUM_FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, bx + cell * 0.018, by + 0.25, w * 0.72)
+  ctx.restore()
+}
+
+/** 分步目标的阶段牌：与相同阈值的护罩共用两位编号与颜色。 */
 function drawStageBadge(
   ctx: CanvasRenderingContext2D,
   px: number,
@@ -923,24 +995,15 @@ function drawStageBadge(
   stageIndex: number,
   alpha: number,
 ): void {
-  const r = cell * 0.09
-  const bx = px + cell * 0.2
-  const by = py - cell * 0.2
-  ctx.save()
-  ctx.fillStyle = '#10161f'
-  ctx.strokeStyle = stageTone(stageIndex)
-  ctx.globalAlpha = Math.max(0.35, alpha)
-  ctx.lineWidth = Math.max(1.5, cell * 0.025)
-  ctx.beginPath()
-  ctx.arc(bx, by, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-  ctx.fillStyle = stageTone(stageIndex)
-  ctx.font = `700 ${Math.max(8, Math.floor(cell * 0.12))}px ui-monospace, Menlo, monospace`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(String(stageIndex + 1), bx, by + 0.5)
-  ctx.restore()
+  drawTelemetryTag(
+    ctx,
+    px + cell * 0.23,
+    py - cell * 0.23,
+    cell,
+    String(stageIndex + 1).padStart(2, '0'),
+    stageTone(stageIndex),
+    Math.max(0.28, alpha),
+  )
 }
 
 /** 再生护罩到控制臂的常显因果线；亮度表达当前是闭合还是休眠。 */
@@ -1029,22 +1092,8 @@ function drawDormantReactiveShield(
     ctx.lineTo(x1 + (x2 - x1) * 0.68, y1 + (y2 - y1) * 0.68)
     ctx.stroke()
   }
-  const r = cell * 0.12
-  const bx = px + cell * 0.42
-  const by = py - cell * 0.42
-  ctx.globalAlpha = 0.72
-  ctx.fillStyle = '#10161f'
-  ctx.strokeStyle = tone
-  ctx.beginPath()
-  ctx.arc(bx, by, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-  ctx.fillStyle = tone
-  ctx.font = `800 ${Math.max(9, Math.floor(cell * 0.15))}px ui-monospace, Menlo, monospace`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('R', bx, by + 0.5)
   ctx.restore()
+  drawTelemetryTag(ctx, px + cell * 0.43, py - cell * 0.43, cell, 'R', tone, 0.72)
 }
 
 /** 阶段护罩 / 再生护罩：强六边形双轮廓 + 编号 / R（常规与预演共用）。 */
@@ -1078,23 +1127,9 @@ function drawShield(
   ctx.globalAlpha = 0.1
   ctx.fillStyle = tone
   ctx.fill()
-  const r = cell * 0.14
-  const bx = px + cell * 0.43
-  const by = py - cell * 0.43
-  ctx.globalAlpha = 0.96
-  ctx.fillStyle = '#10161f'
-  ctx.strokeStyle = tone
-  ctx.lineWidth = Math.max(1.5, cell * 0.025)
-  ctx.beginPath()
-  ctx.arc(bx, by, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-  ctx.fillStyle = tone
-  ctx.font = `800 ${Math.max(10, Math.floor(cell * 0.18))}px ui-monospace, Menlo, monospace`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(String(label), bx, by + 0.5)
   ctx.restore()
+  const displayLabel = typeof label === 'number' ? String(label).padStart(2, '0') : label
+  drawTelemetryTag(ctx, px + cell * 0.43, py - cell * 0.43, cell, displayLabel, tone)
 }
 
 /** 阶段推进后的护罩碎裂 / 消散反馈。 */
@@ -1187,8 +1222,7 @@ function drawLockRing(ctx: CanvasRenderingContext2D, px: number, py: number, cel
   ctx.stroke()
 }
 
-/** 共振链徽标：①②③…（按传播距离的渲染近似，与翻转阶梯动画同口径） */
-const CHAIN_GLYPHS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'] as const
+/** 共振链徽标：01/02/03…（按传播距离的渲染近似，与翻转阶梯动画同口径） */
 function drawChainBadge(
   ctx: CanvasRenderingContext2D,
   px: number,
@@ -1196,24 +1230,9 @@ function drawChainBadge(
   cell: number,
   order: number,
 ): void {
-  const glyph = CHAIN_GLYPHS[order] ?? String(order + 1)
-  const r = cell * 0.16
   const bx = px - cell * 0.46
   const by = py - cell * 0.46
-  ctx.save()
-  ctx.fillStyle = '#10161f'
-  ctx.strokeStyle = '#f0c65a'
-  ctx.lineWidth = 1.5
-  ctx.beginPath()
-  ctx.arc(bx, by, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-  ctx.fillStyle = '#f0c65a'
-  ctx.font = `${Math.max(10, Math.floor(cell * 0.2))}px ui-monospace, Menlo, monospace`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(glyph, bx, by + 0.5)
-  ctx.restore()
+  drawTelemetryTag(ctx, bx, by, cell, String(order + 1).padStart(2, '0'), '#f0c65a')
 }
 
 /** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性） */
@@ -1225,7 +1244,7 @@ function drawPreviewBanner(ctx: CanvasRenderingContext2D, W: number): void {
   const h = 24
   const x = Math.floor((W - w) / 2)
   ctx.save()
-  ctx.font = '12px ui-monospace, Menlo, monospace'
+  ctx.font = `500 12px ${CANVAS_UI_FONT}`
   ctx.fillStyle = 'rgba(13, 19, 28, 0.92)'
   ctx.strokeStyle = 'rgba(240, 198, 90, 0.55)'
   ctx.lineWidth = 1
@@ -1268,7 +1287,7 @@ function drawMarks(
     ctx.fill()
     ctx.stroke()
     ctx.fillStyle = seq ? '#f0c65a' : INK
-    ctx.font = `${Math.max(9, Math.floor(cell * (seq ? 0.16 : 0.19)))}px ui-monospace, Menlo, monospace`
+    ctx.font = `${seq ? 700 : 500} ${Math.max(9, Math.floor(cell * (seq ? 0.16 : 0.19)))}px ${seq ? CANVAS_NUM_FONT : CANVAS_UI_FONT}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(glyph, bx, by + 0.5)
@@ -1324,13 +1343,13 @@ function drawInspectPanel(
   ctx.fillStyle = INK
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.font = '700 12px ui-monospace, Menlo, monospace'
+  ctx.font = `600 12px ${CANVAS_UI_FONT}`
   ctx.fillText(
     `中心 ${String(index + 1).padStart(2, '0')}${c.kind === 'trigonal' ? ' · 三臂' : ''}`,
     x + padX,
     y + 18,
   )
-  ctx.font = '10px ui-monospace, Menlo, monospace'
+  ctx.font = `400 10px ${CANVAS_UI_FONT}`
   ctx.fillStyle = '#8d9aab'
   ctx.fillText('构型周期 · 进攻翻转', x + padX, y + 34)
 
@@ -1349,7 +1368,7 @@ function drawInspectPanel(
     }
     drawMiniCenter(ctx, mx, my, cfg.arms, cfg.leaving, cfg.kind, cfg.ejects, isCurrent)
     ctx.fillStyle = isCurrent ? '#f0c65a' : '#8d9aab'
-    ctx.font = '10px ui-monospace, Menlo, monospace'
+    ctx.font = `500 10px ${CANVAS_UI_FONT}`
     ctx.textAlign = 'center'
     ctx.fillText(labels[i], mx, y + 88)
   })

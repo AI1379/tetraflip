@@ -4,6 +4,8 @@ import {
   render,
   setChemDecor,
   notifyChemImpact,
+  resetChemAnim,
+  getChemAnimationRemainingMs,
   setChemPreview,
   setChemInspect,
   setChemMarks,
@@ -195,12 +197,12 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(b, ctx, 480, 480)).not.toThrow() // 交叉火花，不走普通撞面弧
   })
 
-  it('阶段护罩：与未来段目标共享“2”号编码，预演解除与正式碎裂均可渲染', () => {
+  it('阶段护罩：与未来段目标共享“02”两位编码，预演解除与正式碎裂均可渲染', () => {
     const texts: string[] = []
     const ctx = recordingCtx(texts)
     let s = initialState(chemGame.parseLevel(level33))
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
-    expect(texts).toContain('2')
+    expect(texts).toContain('02')
 
     s = step(s, 'W') // 到第一段中心的合法进攻位
     const next = step(s, 'S') // 完成第一段，护罩将在结算后解除
@@ -210,6 +212,19 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
     setChemPreview(null)
     expect(() => render(next, ctx, 480, 480)).not.toThrow() // 正式护罩碎裂
+  })
+
+  it('终局动画时钟覆盖实际翻转，并可在换关时立即清空', () => {
+    const ctx = stubCtx()
+    resetChemAnim()
+    const s = initialState(chemGame.parseLevel(level15))
+    render(s, ctx, 480, 480)
+    const won = step(s, 'E')
+    expect(won.won).toBe(true)
+    render(won, ctx, 480, 480)
+    expect(getChemAnimationRemainingMs()).toBeGreaterThan(200)
+    resetChemAnim()
+    expect(getChemAnimationRemainingMs()).toBe(0)
   })
 
   it('再生护罩：打开时常显休眠 R 与控制线，预演生成 / 消失均可渲染', () => {

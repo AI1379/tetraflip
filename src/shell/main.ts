@@ -13,6 +13,7 @@ import {
   setChemDecor,
   notifyChemImpact,
   resetChemAnim,
+  getChemAnimationRemainingMs,
   setChemPreview,
   setChemInspect,
   setChemMarks,
@@ -43,6 +44,8 @@ interface Bundle {
   onBlocked?: (dir: Dir) => void
   /** 换关 / 重开时重置渲染层动画状态；未实现则缺省 */
   resetAnim?: () => void
+  /** 当前棋盘动画还需多久结束；通关卡片据此避让终局反馈 */
+  animationRemainingMs?: () => number
   /** 按住预演（design §11）：注入 / 清除 step(当前, 方向) 的 ghost 态；未实现则缺省 */
   setPreview?: (state: any | null) => void
   /** 是否支持玩家标记（design §11 层 ③）；当前仅 chem（t3 的记忆负担由时间线完整外置） */
@@ -59,6 +62,7 @@ const bundles: Record<string, Bundle> = {
     setDecor: setChemDecor,
     onBlocked: notifyChemImpact,
     resetAnim: resetChemAnim,
+    animationRemainingMs: getChemAnimationRemainingMs,
     setPreview: setChemPreview,
     supportsMarks: true,
   },
@@ -89,7 +93,7 @@ app.innerHTML = `
     </div>
     <div class="header-tools">
       <div class="tabs ${showPrototypeSwitcher ? '' : 'hidden'}" id="tabs" role="tablist" aria-label="研发原型切换"></div>
-      <button id="decor" class="icon-button active" title="切换棋盘装饰" aria-label="关闭棋盘装饰">✦</button>
+      <button id="decor" class="icon-button active" title="切换棋盘装饰" aria-label="关闭棋盘装饰"><span class="decor-glyph" aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -152,13 +156,13 @@ app.innerHTML = `
   <section class="controls" aria-label="游戏操作">
     <div class="utility-actions">
       <button id="undo" class="control-button" title="撤销 (Z)">
-        <span class="control-icon">↶</span><span>撤销</span>
+        <span class="control-icon icon-undo" aria-hidden="true"></span><span>撤销</span>
       </button>
       <button id="restart" class="control-button" title="重开 (R)">
-        <span class="control-icon">↻</span><span>重开</span>
+        <span class="control-icon icon-restart" aria-hidden="true"></span><span>重开</span>
       </button>
       <button id="mark-mode" class="control-button hidden" title="标记模式 (M)：点按中心放 ①–⑤ 顺序标，点按格子放 ★/？/×">
-        <span class="control-icon">✎</span><span>标记</span>
+        <span class="control-icon icon-mark" aria-hidden="true"></span><span>标记</span>
       </button>
     </div>
     <div class="dpad" role="group" aria-label="方向控制">
@@ -169,7 +173,7 @@ app.innerHTML = `
       <button class="dpad-key south" data-dir="S" aria-label="向下">↓</button>
     </div>
     <button id="hint" class="control-button hint-button" title="下一步提示 (H)：不限次数">
-      <span class="control-icon">◇</span><span>提示一步</span>
+      <span class="control-icon icon-hint" aria-hidden="true"></span><span>提示一步</span>
     </button>
   </section>
 
@@ -232,8 +236,11 @@ const gameIndices: Record<string, number> = { t3: 0, chem: 0 }
 
 /** 按住预演的最小停留时间（毫秒）：≤ 阈值视为快速点按（松开即执行），超过进入预演 */
 const HOLD_MS = 280
+/** 棋盘动画结束后保留终局局面的短暂停顿，让玩家先看懂“为什么通关”。 */
+const WIN_SETTLE_MS = 360
 /** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost */
 let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
+let winRevealTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 标记模式（仅 chem）；标记按「游戏:关卡」存会话内，撤销 / 重开不丢失 */
 let markMode = false
@@ -355,7 +362,6 @@ function winResult(): string {
 
 function showOverlay(): void {
   const isLast = index >= levels.length - 1
-  completed.add(`${current.id}:${index}`)
   const meta = levelMeta()
   const result = winResult()
   winTitle.textContent = meta.name ?? meta.id ?? `第 ${index + 1} 关`
@@ -366,6 +372,29 @@ function showOverlay(): void {
   overlay.classList.remove('hidden')
   overlay.setAttribute('aria-hidden', 'false')
   viewAfterWin.focus()
+}
+
+function cancelWinReveal(): void {
+  if (winRevealTimer !== null) {
+    clearTimeout(winRevealTimer)
+    winRevealTimer = null
+  }
+}
+
+/** 动画完整结束，再停顿一小拍；期间若撤销 / 重开 / 换关，旧卡片不会穿越局面弹出。 */
+function scheduleWinOverlay(): void {
+  cancelWinReveal()
+  completed.add(`${current.id}:${index}`)
+  const wonGame = current.id
+  const wonLevel = index
+  const wonKey = current.def.stateKey(hist.current)
+  const animationWait = current.animationRemainingMs?.() ?? 0
+  winRevealTimer = setTimeout(() => {
+    winRevealTimer = null
+    if (current.id !== wonGame || index !== wonLevel) return
+    if (current.def.stateKey(hist.current) !== wonKey || !current.def.isWin(hist.current)) return
+    showOverlay()
+  }, Math.ceil(animationWait) + WIN_SETTLE_MS)
 }
 
 function hideOverlay(): void {
@@ -384,6 +413,7 @@ function hideWinbar(): void {
 }
 
 function openLevel(i: number): void {
+  cancelWinReveal()
   index = Math.max(0, Math.min(i, levels.length - 1))
   if (current.id === 'chem' && index === 9 && !completed.has('chem:9')) briefEl.open = true
   current.resetAnim?.()
@@ -402,7 +432,8 @@ function openLevel(i: number): void {
 }
 
 function loadGame(id: string): void {
-  gameIndices[current.id] = index
+  // 首次启动时 levels 还是空数组，不要用默认 index=0 覆盖 URL 深链接指定的关卡。
+  if (levels.length > 0) gameIndices[current.id] = index
   current = bundles[id]
   app.dataset.game = id
   levels = loadLevels(filesFor(id), current.def.parseLevel)
@@ -424,7 +455,7 @@ function loadGame(id: string): void {
 
 function applyDir(dir: Dir): void {
   const def = current.def
-  const wasWin = def.isWin(hist.current)
+  if (def.isWin(hist.current)) return
   const next = def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
@@ -435,11 +466,12 @@ function applyDir(dir: Dir): void {
   hist.push(next)
   draw()
   updateHud()
-  if (!wasWin && def.isWin(next)) showOverlay()
+  if (def.isWin(next)) scheduleWinOverlay()
 }
 
 function doUndo(): void {
   if (!hist.canUndo) return
+  cancelWinReveal()
   hist.undo()
   setChemInspect(null)
   clearInspectTimer()
@@ -619,7 +651,8 @@ const CHEM_CHAPTERS = [
   { start: 32, end: 38, label: '阶段护罩' },
   { start: 39, end: 39, label: '终盘复习' },
   { start: 40, end: 45, label: '结构碰撞与回授闸门' },
-  { start: 46, end: 49, label: '综合终盘' },
+  { start: 46, end: 49, label: '综合 mastery' },
+  { start: 50, end: 59, label: '综合候选池' },
 ] as const
 
 function buildPicker(): void {
