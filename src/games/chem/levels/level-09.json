@@ -1,33 +1,80 @@
 {
   "id": "109.5°-09",
   "name": "同一站位，两扇门",
-  "hint": "中间站位向北、向南会撞不同中心。北边已经达标，别碰它；取蓝珠后只染南边，再完成右侧奇偶目标。",
+  "hint": "同一站位，向北与向南撞的是两个不同中心。已达标的那个，别碰。",
   "width": 6,
   "height": 5,
   "walls": [],
-  "player": [0, 2],
+  "player": [
+    0,
+    2
+  ],
   "centers": [
     {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "N"
     },
     {
-      "pos": [4, 1],
-      "arms": { "N": "green", "E": "red", "S": "yellow", "W": "blue" },
+      "pos": [
+        4,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "yellow",
+        "W": "blue"
+      },
       "leaving": "E"
     },
     {
-      "pos": [2, 3],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" },
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
+      },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [0, 3], "color": "blue" }],
+  "groups": [
+    {
+      "pos": [
+        0,
+        3
+      ],
+      "color": "blue"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "red" },
-    { "center": 1, "arm": "E", "color": "blue" },
-    { "center": 2, "arm": "N", "color": "blue" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "red"
+    },
+    {
+      "center": 1,
+      "arm": "E",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "blue"
+    }
   ],
   "par": 8
 }

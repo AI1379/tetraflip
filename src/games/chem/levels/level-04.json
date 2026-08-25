@@ -1,22 +1,49 @@
 {
   "id": "109.5°-04",
   "name": "撞出来一个",
-  "hint": "仍是两步：拾取紫珠，再向下撞入。除了看紫珠落到 N 臂，也看手边——原开口 S 臂的蓝珠会换到你手中。",
+  "hint": "仍是两步。这次也看看手：原开口臂上的珠会换进手中。染色 = 交换 + 翻转。",
   "width": 3,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "blue",
+        "W": "yellow"
+      },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "purple" },
-    { "center": 0, "arm": "S", "color": "red" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
+    },
+    {
+      "center": 0,
+      "arm": "S",
+      "color": "red"
+    }
   ],
   "par": 2
 }

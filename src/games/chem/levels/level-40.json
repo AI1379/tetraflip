@@ -1,25 +1,93 @@
 {
   "id": "109.5°-40",
-  "name": "毕业：延迟喷流",
-  "hint": "护罩中先用光预调三臂弹射中心；完成第一段后，取蓝珠从新开口撞入，让空穴与喷流同时翻面。",
-  "width": 6,
-  "height": 5,
+  "name": "开罩接空穴",
+  "hint": "第一击的连锁其实够得到罩内中心——被挡住正是设计。阶段推进后，罩内中心自会开放。",
+  "width": 5,
+  "height": 3,
   "walls": [],
-  "player": [4, 1],
-  "centers": [
-    { "pos": [3, 2], "arms": { "N": "purple", "E": "red", "S": "green" }, "leaving": "N", "kind": "trigonal", "ejects": true, "shieldUntilStage": 1 },
-    { "pos": [4, 2], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" }, "leaving": "S" }
+  "player": [
+    0,
+    1
   ],
-  "groups": [{ "pos": [1, 2], "color": "blue" }],
-  "lights": [[1, 0]],
+  "centers": [
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "N"
+    }
+  ],
   "stages": [
-    { "goals": [{ "center": 1, "arm": "N", "color": "green" }] },
     {
       "goals": [
-        { "center": 0, "arm": "W", "color": "blue" },
-        { "center": 0, "arm": "N", "color": "green" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "yellow"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "yellow"
+        }
       ]
     }
   ],
-  "par": 9
+  "par": 6
 }

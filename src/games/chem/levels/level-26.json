@@ -1,23 +1,71 @@
 {
   "id": "109.5°-26",
-  "name": "照过空穴",
-  "hint": "光只移动开口，会跳过没有臂的空穴；空穴本身仍随两次翻转来回换边。",
-  "width": 4,
+  "name": "空穴保险丝",
+  "hint": "链尾一开始就是对的。震动到达时缺口会先翻转——它能不能保住链尾，看它翻到哪一侧。",
+  "width": 5,
   "height": 4,
-  "walls": [[1, 2]],
-  "player": [0, 0],
+  "walls": [],
+  "player": [
+    2,
+    0
+  ],
   "centers": [
     {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green" },
-      "leaving": "E",
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "green",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "red",
+        "S": "green"
+      },
+      "leaving": "S",
       "kind": "trigonal"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
-  "lights": [[0, 1]],
-  "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 0, "arm": "E", "color": "blue" }] }
+  "goals": [
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "red"
+    },
+    {
+      "center": 1,
+      "arm": "N",
+      "color": "green"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "red"
+    }
   ],
-  "par": 9
+  "par": 1
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DIR_VEC, opposite } from '../../core/protocol'
+import { DIR_VEC, cellKey, opposite } from '../../core/protocol'
 import type { Dir } from '../../core/protocol'
 import { solve, solveFrom } from '../../core/solver'
 import { chemGame, initialState, isShielded, step } from './engine'
@@ -46,12 +46,12 @@ const baseline: Record<string, number> = {
   './levels/level-21.json': 9, // 光照 × 分步
   './levels/level-22.json': 10, // 光照 × 搬运 × 分步
   './levels/level-23.json': 9, // 分步共振毕业
-  './levels/level-24.json': 3, // 空穴断路器：先断链，翻空穴后再接通链尾
-  './levels/level-25.json': 2, // 三臂中心：标准翻转 + 缺口移到对侧
-  './levels/level-26.json': 9, // 光照 × 空穴 × 分步
-  './levels/level-27.json': 1, // 空穴保险丝：传播后翻洞保护已达标链尾
-  './levels/level-28.json': 8, // 南北双路换向：两次翻洞依次接通两支路
-  './levels/level-29.json': 3, // 阶段护罩 × 空穴：开罩后扩张共振图
+  './levels/level-24.json': 2, // 三臂中心：标准翻转 + 缺口移到对侧
+  './levels/level-25.json': 3, // 空穴断路器：先断链，翻空穴后再接通链尾
+  './levels/level-26.json': 1, // 空穴保险丝：传播后翻洞保护已达标链尾
+  './levels/level-27.json': 8, // 南北双路换向：两次翻洞依次接通两支路
+  './levels/level-28.json': 9, // 光照 × 空穴 × 分步
+  './levels/level-29.json': 5, // 双染引链：染色换出的珠成为第二次染色的输入
   './levels/level-30.json': 3, // 弹射入门：顶出珠沿身后落地
   './levels/level-31.json': 7, // 压缩后的弹射资源复用
   './levels/level-32.json': 4, // 一击三果：翻转 + 连锁 + 弹射
@@ -62,16 +62,16 @@ const baseline: Record<string, number> = {
   './levels/level-37.json': 5, // 延迟连锁：下一动作才穿透护罩
   './levels/level-38.json': 3, // 多护罩按阶段依次解除
   './levels/level-39.json': 6, // 光照预对齐阶段护罩
-  './levels/level-40.json': 9, // 阶段护罩 + 空穴 + 光照 + 弹射中心
-  './levels/level-41.json': 3, // 阶段护罩 × 空穴扩链
-  './levels/level-42.json': 4, // 阶段护罩 × 弹射 × 共振
+  './levels/level-40.json': 6, // 开罩接空穴：第一击连锁被护罩拦下，开罩后罩内中心直接可用
+  './levels/level-41.json': 4, // 阶段护罩 × 弹射 × 共振
+  './levels/level-42.json': 9, // 毕业：阶段护罩 + 空穴 + 光照 + 弹射中心
   './levels/level-43.json': 8, // E/W 空穴双路换向
   './levels/level-44.json': 6, // 光照 × 空穴 × 搬运
   './levels/level-45.json': 7, // 双弹射资源接力
-  './levels/level-46.json': 19, // 光照改轴后回收弹射珠
+  './levels/level-46.json': 10, // 一束光转正两个开口后回收弹射珠
   './levels/level-47.json': 1, // 空穴分叉保险丝
   './levels/level-48.json': 6, // 光照预对齐三阶段护罩
-  './levels/level-49.json': 8, // 护罩解除后 N/S 空穴换路
+  './levels/level-49.json': 7, // 开罩接三路：第一击连锁被护罩拦下，奇偶复位后接通
   './levels/level-50.json': 12, // 三阶段：光照 × 搬运 × 弹射 × 护罩
 }
 
@@ -246,8 +246,8 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(dangerous.won).toBe(false)
   })
 
-  it('level-24 空穴断路器：最短解先断开链尾，再翻空穴接通；缺少接通事件无等长解', () => {
-    const file = './levels/level-24.json'
+  it('level-25 空穴断路器：最短解先断开链尾，再翻空穴接通；缺少接通事件无等长解', () => {
+    const file = './levels/level-25.json'
     const transitions = shortestTransitions(file)
     const breaksTail = (t: Transition): boolean =>
       holeAt(t.before, 1) === 'W' &&
@@ -265,8 +265,8 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], connectsTail)).toBe(false)
   })
 
-  it('level-27 空穴保险丝：共振命中三臂中心后先翻洞，已达标链尾保持不动', () => {
-    const file = './levels/level-27.json'
+  it('level-26 空穴保险丝：共振命中三臂中心后先翻洞，已达标链尾保持不动', () => {
+    const file = './levels/level-26.json'
     const transitions = shortestTransitions(file)
     const protectsTail = (t: Transition): boolean =>
       holeAt(t.before, 1) === 'W' &&
@@ -281,8 +281,8 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], protectsTail)).toBe(false)
   })
 
-  it('level-28 南北换路：两次翻洞分别只接通北支与南支，任一事件缺失均无等长解', () => {
-    const file = './levels/level-28.json'
+  it('level-27 南北换路：两次翻洞分别只接通北支与南支，任一事件缺失均无等长解', () => {
+    const file = './levels/level-27.json'
     const transitions = shortestTransitions(file)
     const northRoute = (t: Transition): boolean =>
       holeAt(t.before, 0) === 'N' &&
@@ -302,27 +302,98 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], southRoute)).toBe(false)
   })
 
-  it('level-29 阶段拓扑：第一段断链后护罩解除，第二段翻洞才把新节点纳入', () => {
+  it('level-29 双染引链：两次染色缺一不可，第二次染色的输入来自第一次换出的珠', () => {
     const file = './levels/level-29.json'
-    const transitions = shortestTransitions(file)
-    const opensShieldBehindGap = (t: Transition): boolean =>
-      t.before.stage === 0 &&
-      t.after.stage === 1 &&
-      isShielded(t.before, t.before.centers[2]) &&
-      !isShielded(t.after, t.after.centers[2]) &&
-      holeAt(t.after, 1) === 'E' &&
-      !centerChanged(t, 2)
-    const expandsTopology = (t: Transition): boolean =>
-      t.before.stage === 1 &&
-      holeAt(t.before, 1) === 'E' &&
-      holeAt(t.after, 1) === 'W' &&
-      centerChanged(t, 2)
+    expect(shortestInteractionTrace(file)).toEqual([
+      'carry:empty>purple',
+      'attack:1:purple',
+      'attack:0:yellow',
+    ])
 
-    expect(transitions.some(opensShieldBehindGap)).toBe(true)
-    expect(transitions.some(expandsTopology)).toBe(true)
+    // 约束：不存在绕开第二次染色（对中心 0 的持珠进攻）的等长解
     const level = chemGame.parseLevel(levelFiles[file])
-    expect(hasWinningPathAvoiding(level, baseline[file], opensShieldBehindGap)).toBe(false)
-    expect(hasWinningPathAvoiding(level, baseline[file], expandsTopology)).toBe(false)
+    expect(
+      hasWinningPathAvoiding(level, baseline[file], (t) => {
+        if (t.before.player[0] !== t.after.player[0] || t.before.player[1] !== t.after.player[1])
+          return false
+        const [dx, dy] = DIR_VEC[t.action]
+        const target = t.before.centers.findIndex(
+          (c) => c.pos[0] === t.before.player[0] + dx && c.pos[1] === t.before.player[1] + dy,
+        )
+        return target === 0 && t.before.holding !== null
+      }),
+    ).toBe(false)
+  })
+
+  it('level-40 开罩接空穴：第一击连锁够到护罩但被拦下，开罩后罩内中心才被使用', () => {
+    const file = './levels/level-40.json'
+    const transitions = shortestTransitions(file)
+    const firstStrike = transitions[0]
+
+    // 第一击：三臂中心翻转，连锁到达护罩前——罩内中心与受保护链尾都不翻，护罩在结算后解除
+    expect(centerChanged(firstStrike, 1)).toBe(true)
+    expect(centerChanged(firstStrike, 2)).toBe(false)
+    expect(centerChanged(firstStrike, 3)).toBe(false)
+    expect(firstStrike.before.stage).toBe(0)
+    expect(firstStrike.after.stage).toBe(1)
+    expect(isShielded(firstStrike.before, firstStrike.before.centers[2])).toBe(true)
+    expect(isShielded(firstStrike.after, firstStrike.after.centers[2])).toBe(false)
+
+    // 罩内中心的变化只发生在解锁之后的动作
+    const usedAfterRelease = transitions.findIndex((t) => centerChanged(t, 2))
+    expect(usedAfterRelease).toBeGreaterThan(0)
+
+    // 去罩对照：没有护罩时连锁第一击就贯穿，整关退化为一步——护罩是硬约束
+    const stripped = JSON.parse(JSON.stringify(levelFiles[file])) as {
+      centers: { shieldUntilStage?: number }[]
+    }
+    for (const center of stripped.centers) delete center.shieldUntilStage
+    const noShield = solve(chemGame, chemGame.parseLevel(stripped), { maxDepth: 30 })
+    expect(noShield.solved).toBe(true)
+    expect(noShield.solution.length).toBeLessThan(baseline[file])
+  })
+
+  it('level-49 开罩接三路：第一击的南向连锁被护罩拦下，奇偶复位后才接通', () => {
+    const file = './levels/level-49.json'
+    const transitions = shortestTransitions(file)
+    const firstStrike = transitions[0]
+
+    // 第一击：S 与三臂中心翻转，北支无事、南向连锁被护罩拦下；护罩在结算后解除
+    expect(centerChanged(firstStrike, 0)).toBe(true)
+    expect(centerChanged(firstStrike, 1)).toBe(true)
+    expect(centerChanged(firstStrike, 3)).toBe(false)
+    expect(firstStrike.before.stage).toBe(0)
+    expect(firstStrike.after.stage).toBe(1)
+    expect(isShielded(firstStrike.before, firstStrike.before.centers[3])).toBe(true)
+    expect(isShielded(firstStrike.after, firstStrike.after.centers[3])).toBe(false)
+
+    // 护罩中心的翻转发生在后续动作（奇偶复位后的连锁）
+    const reachedAfterRelease = transitions.findIndex((t) => centerChanged(t, 3))
+    expect(reachedAfterRelease).toBeGreaterThan(0)
+    expect(reachedAfterRelease).toBe(transitions.length - 1)
+
+    // 去罩对照：没有护罩时第一击连锁直接贯穿通关——护罩是硬约束
+    const stripped = JSON.parse(JSON.stringify(levelFiles[file])) as {
+      centers: { shieldUntilStage?: number }[]
+    }
+    for (const center of stripped.centers) delete center.shieldUntilStage
+    const noShield = solve(chemGame, chemGame.parseLevel(stripped), { maxDepth: 30 })
+    expect(noShield.solved).toBe(true)
+    expect(noShield.solution.length).toBeLessThan(baseline[file])
+  })
+
+  it('level-46 最短解不重复踏入同一光照格（无光格乒乓）', () => {
+    const file = './levels/level-46.json'
+    const level = chemGame.parseLevel(levelFiles[file])
+    const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
+    const visits = new Map<string, number>()
+    for (const t of shortestTransitions(file)) {
+      const key = cellKey(t.after.player[0], t.after.player[1])
+      if (lightKeys.has(key)) visits.set(key, (visits.get(key) ?? 0) + 1)
+    }
+    for (const [key, count] of visits) {
+      expect(count, `光照格 ${key} 被踏入 ${count} 次`).toBe(1)
+    }
   })
 
   it('所有空穴关的最短解都实际翻动空穴，而非把三臂中心当静态摆设', () => {

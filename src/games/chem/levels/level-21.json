@@ -1,18 +1,59 @@
 {
   "id": "109.5°-21",
   "name": "照亮两步",
-  "hint": "先照光换进攻轴完成第一段；翻转后的开口落在轴另一侧，第二段要换边再撞回来。",
+  "hint": "两段目标、同一个中心：光照决定何时换到另一侧进攻。",
   "width": 4,
   "height": 4,
-  "walls": [[2, 3]],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 2], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N" }
+  "walls": [
+    [
+      2,
+      3
+    ]
   ],
-  "lights": [[1, 0]],
+  "player": [
+    0,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N"
+    }
+  ],
+  "lights": [
+    [
+      1,
+      0
+    ]
+  ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 0, "arm": "N", "color": "red" }] }
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        }
+      ]
+    }
   ],
   "par": 9
 }

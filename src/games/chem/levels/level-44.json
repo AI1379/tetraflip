@@ -1,19 +1,60 @@
 {
   "id": "109.5°-44",
   "name": "照光填槽",
-  "hint": "墙挡住初始进攻轴。先取紫珠并照光，把开口转到 S；染色会保持三条真实臂，并把空穴翻到对侧。",
+  "hint": "墙挡住初始进攻轴，光能把开口转出来。三臂中心被染色时，缺口同样随臂翻转。",
   "width": 4,
   "height": 4,
-  "walls": [[1, 2]],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 2], "arms": { "N": "red", "E": "blue", "S": "green" }, "leaving": "E", "kind": "trigonal" }
+  "walls": [
+    [
+      1,
+      2
+    ]
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
-  "lights": [[0, 1]],
+  "player": [
+    0,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      1
+    ]
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "purple" },
-    { "center": 0, "arm": "W", "color": "blue" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
+    },
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    }
   ],
   "par": 6
 }

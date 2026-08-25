@@ -1,33 +1,79 @@
 {
   "id": "109.5°-27",
-  "name": "空穴保险丝",
-  "hint": "链尾一开始已经正确。震动进入三臂中心后，空穴会先翻到右侧，正好切断下一跳，保护链尾不被烧坏。",
+  "name": "南北换路",
+  "hint": "缺口只在南北两侧切换；每翻一次，接通哪条支路、切断哪条支路恰好对调。",
   "width": 5,
-  "height": 4,
+  "height": 5,
   "walls": [],
-  "player": [2, 0],
+  "player": [
+    1,
+    2
+  ],
   "centers": [
     {
-      "pos": [2, 1],
-      "arms": { "N": "blue", "E": "green", "S": "red", "W": "yellow" },
-      "leaving": "S"
-    },
-    {
-      "pos": [2, 2],
-      "arms": { "N": "blue", "E": "red", "S": "green" },
-      "leaving": "S",
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "red",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "E",
       "kind": "trigonal"
     },
     {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
-      "leaving": "E"
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "red",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "S"
     }
   ],
-  "goals": [
-    { "center": 0, "arm": "N", "color": "red" },
-    { "center": 1, "arm": "N", "color": "green" },
-    { "center": 2, "arm": "N", "color": "red" }
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "blue"
+        },
+        {
+          "center": 2,
+          "arm": "S",
+          "color": "blue"
+        }
+      ]
+    }
   ],
-  "par": 1
+  "par": 8
 }

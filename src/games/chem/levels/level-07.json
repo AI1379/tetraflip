@@ -1,22 +1,49 @@
 {
   "id": "109.5°-07",
   "name": "插槽与奇偶锁",
-  "hint": "开口轴是可染色的插槽：紫珠进入 E 后翻到 W。垂直的 N/S 臂不能被注入，只按翻转奇偶互换；这一击同时展示两种目标。",
+  "hint": "开口轴是可染色的插槽；与它垂直的两臂不能注入，只随翻转奇偶互换。这一击同时考两种目标。",
   "width": 4,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
     }
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 0, "arm": "N", "color": "green" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
+    },
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "green"
+    }
   ],
   "par": 3
 }

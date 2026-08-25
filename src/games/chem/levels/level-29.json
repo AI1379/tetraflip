@@ -1,38 +1,93 @@
 {
   "id": "109.5°-29",
-  "name": "开罩接链",
-  "hint": "第一段让空穴保持断链，护罩会在结算后解除。随后先翻空穴，再点火，新增节点才会在第二段接入。",
+  "name": "双染引链",
+  "hint": "染色换出的珠，是下一次染色的输入；缺口的翻转决定每一击震动通向哪一侧。",
   "width": 5,
   "height": 3,
   "walls": [],
-  "player": [2, 2],
+  "player": [
+    2,
+    2
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
+      },
       "leaving": "S"
     },
     {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "yellow" },
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "blue",
+        "S": "red"
+      },
       "leaving": "N",
       "kind": "trigonal"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
-      "leaving": "E",
-      "shieldUntilStage": 1
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "green",
+        "S": "purple",
+        "W": "red"
+      },
+      "leaving": "N"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "color": "purple"
     }
   ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
     {
       "goals": [
-        { "center": 0, "arm": "N", "color": "red" },
-        { "center": 2, "arm": "N", "color": "green" }
+        {
+          "center": 1,
+          "arm": "S",
+          "color": "purple"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "S",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "purple"
+        }
       ]
     }
   ],
-  "par": 3
+  "par": 5
 }

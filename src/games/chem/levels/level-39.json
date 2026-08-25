@@ -1,19 +1,68 @@
 {
   "id": "109.5°-39",
   "name": "罩内预调",
-  "hint": "护罩只挡撞击与共振，不挡光。先照光把罩内开口从 N 预调到 E，再完成第 1 段，开罩后直接从西侧撞入。",
+  "hint": "护罩挡进攻与共振，不挡光。罩内开口可以在开罩前先调好。",
   "width": 6,
   "height": 4,
   "walls": [],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S" },
-    { "pos": [4, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N", "shieldUntilStage": 1 }
+  "player": [
+    0,
+    0
   ],
-  "lights": [[1, 0]],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        4,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    }
+  ],
+  "lights": [
+    [
+      1,
+      0
+    ]
+  ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 1, "arm": "W", "color": "blue" }] }
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "blue"
+        }
+      ]
+    }
   ],
   "par": 6
 }

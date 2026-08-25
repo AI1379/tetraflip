@@ -1,20 +1,69 @@
 {
   "id": "109.5°-46",
   "name": "转轴回收飞珠",
-  "hint": "照光后把紫珠撞进弹射中心；被顶出的蓝珠落到左端，捡回后送进下方中心。",
-  "width": 5,
-  "height": 5,
-  "walls": [[3, 3]],
-  "player": [1, 0],
+  "hint": "一束光要同时把两个开口转到能用的方向；被顶出的珠是下一趟货。",
+  "width": 4,
+  "height": 4,
+  "walls": [
+    [
+      3,
+      3
+    ]
+  ],
+  "player": [
+    1,
+    0
+  ],
   "centers": [
-    { "pos": [3, 2], "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" }, "leaving": "N", "ejects": true },
-    { "pos": [1, 4], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "purple" }, "leaving": "S" }
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "green",
+        "E": "blue",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "N",
+      "ejects": true
+    },
+    {
+      "pos": [
+        1,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "purple"
+      },
+      "leaving": "E"
+    }
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
-  "lights": [[0, 0]],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      0
+    ]
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 1, "arm": "N", "color": "blue" }
+    {
+      "center": 1,
+      "arm": "N",
+      "color": "blue"
+    }
   ],
-  "par": 19
+  "par": 10
 }

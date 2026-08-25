@@ -4,12 +4,43 @@
   "hint": "走上金色光照格，所有中心的开口顺时针移到下一条真实臂；颜色臂本身不会转。",
   "width": 4,
   "height": 3,
-  "walls": [[2, 2]],
-  "player": [3, 2],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N" }
+  "walls": [
+    [
+      2,
+      2
+    ]
   ],
-  "lights": [[1, 0]],
-  "goals": [{ "center": 0, "arm": "W", "color": "blue" }],
+  "player": [
+    3,
+    2
+  ],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N"
+    }
+  ],
+  "lights": [
+    [
+      1,
+      0
+    ]
+  ],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    }
+  ],
   "par": 6
 }

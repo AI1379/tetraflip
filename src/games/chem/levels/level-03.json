@@ -1,19 +1,44 @@
 {
   "id": "109.5°-03",
   "name": "把珠撞进去",
-  "hint": "先走上紫珠拾取，再向下撞入。手中紫珠会装进开口臂，并随中心翻到目标圈：你撞进去一个。",
+  "hint": "手持珠撞入会发生染色：手中珠进入中心，随它一起翻到对侧。",
   "width": 3,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
-  "goals": [{ "center": 0, "arm": "N", "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
+    }
+  ],
   "par": 2
 }

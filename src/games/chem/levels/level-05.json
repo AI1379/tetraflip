@@ -1,27 +1,62 @@
 {
   "id": "109.5°-05",
   "name": "从 A 送到 B",
-  "hint": "B 的 N 插槽需要蓝珠。先用紫珠撞 A，把 A 开口上的蓝珠换到手中，再把它送进 B。每次都先说出放入什么、换出什么。",
+  "hint": "B 的插槽缺蓝珠。每一击之前想：手中的珠会到哪条臂，开口上的珠又会去哪？",
   "width": 5,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "blue",
+        "W": "yellow"
+      },
       "leaving": "S"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "purple" },
-    { "center": 1, "arm": "N", "color": "blue" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
+    },
+    {
+      "center": 1,
+      "arm": "N",
+      "color": "blue"
+    }
   ],
   "par": 5
 }

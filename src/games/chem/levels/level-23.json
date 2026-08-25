@@ -1,23 +1,86 @@
 {
   "id": "109.5°-23",
   "name": "分段共振",
-  "hint": "第一段必须保留空手纯翻转；第二段才拾蓝珠染色，并让相邻两中心同时共振到产物。",
+  "hint": "两段目标、一颗珠：哪一击必须空手纯翻转，哪一击要染色？",
   "width": 5,
   "height": 5,
   "walls": [],
-  "player": [0, 1],
-  "centers": [
-    { "pos": [1, 3], "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" }, "leaving": "S" },
-    { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" }, "leaving": "E" },
-    { "pos": [3, 1], "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "purple" }, "leaving": "E" }
+  "player": [
+    0,
+    1
   ],
-  "groups": [{ "pos": [0, 0], "color": "blue" }],
+  "centers": [
+    {
+      "pos": [
+        1,
+        3
+      ],
+      "arms": {
+        "N": "green",
+        "E": "blue",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "blue",
+        "W": "purple"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        0
+      ],
+      "color": "blue"
+    }
+  ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "red" }] },
     {
       "goals": [
-        { "center": 1, "arm": "W", "color": "blue" },
-        { "center": 2, "arm": "E", "color": "purple" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 2,
+          "arm": "E",
+          "color": "purple"
+        }
       ]
     }
   ],

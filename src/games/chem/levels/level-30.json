@@ -1,15 +1,45 @@
 {
   "id": "109.5°-30",
   "name": "第一次弹出",
-  "hint": "菱形核是弹射中心。持珠撞入后手会变空，原开口珠从身后沿虚线弹道飞到最后空格。",
+  "hint": "菱形核是弹射中心。持珠撞入后手会变空，原开口珠沿虚线弹道飞到最后空格。",
   "width": 5,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true }
+  "player": [
+    0,
+    0
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
-  "goals": [{ "center": 0, "arm": "W", "color": "purple" }],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
+    }
+  ],
   "par": 3
 }

@@ -1,18 +1,35 @@
 {
   "id": "109.5°-02",
   "name": "站到背面",
-  "hint": "你在开口正面，直接撞不会动。绕到中心左侧，再朝开口箭头方向撞入；这里只考读方向，不考迷宫。",
+  "hint": "站在开口正面直接撞不会动。站到开口的对面，才能撞入。",
   "width": 3,
   "height": 3,
   "walls": [],
-  "player": [2, 1],
+  "player": [
+    2,
+    1
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "green"
+      },
       "leaving": "E"
     }
   ],
-  "goals": [{ "center": 0, "arm": "E", "color": "green" }],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "E",
+      "color": "green"
+    }
+  ],
   "par": 5
 }

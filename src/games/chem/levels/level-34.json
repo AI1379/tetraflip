@@ -1,19 +1,61 @@
 {
   "id": "109.5°-34",
   "name": "转轴再喷流",
-  "hint": "光照会改变弹射中心的合法进攻轴，也随之改变喷流方向。先转轴，再把紫珠送到正确背面。",
+  "hint": "光照会改变弹射中心的合法进攻轴，喷流方向也随之改变。",
   "width": 5,
   "height": 4,
-  "walls": [[3, 3]],
-  "player": [1, 0],
-  "centers": [
-    { "pos": [3, 2], "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "green" }, "leaving": "N", "ejects": true }
+  "walls": [
+    [
+      3,
+      3
+    ]
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
-  "lights": [[0, 0]],
+  "player": [
+    1,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "N",
+      "ejects": true
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      0
+    ]
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 0, "arm": "N", "color": "yellow" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
+    },
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "yellow"
+    }
   ],
   "par": 6
 }

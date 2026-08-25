@@ -1,20 +1,67 @@
 {
   "id": "109.5°-13",
   "name": "点火之前",
-  "hint": "第一次进攻只配平连线，第二次染色才点火。先保留空手翻转机会，再确认手中色珠最终落臂。",
+  "hint": "链是否接通看翻转奇偶，点火的颜色看手中的珠。两次进攻各有各的任务。",
   "width": 5,
   "height": 4,
   "walls": [],
-  "player": [4, 1],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "blue", "E": "yellow", "S": "red", "W": "purple" }, "leaving": "W" },
-    { "pos": [2, 2], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" }, "leaving": "S" }
+  "player": [
+    4,
+    1
   ],
-  "groups": [{ "pos": [3, 0], "color": "blue" }],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "yellow",
+        "S": "red",
+        "W": "purple"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        3,
+        0
+      ],
+      "color": "blue"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "blue" },
-    { "center": 0, "arm": "N", "color": "blue" },
-    { "center": 1, "arm": "W", "color": "yellow" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    },
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "blue"
+    },
+    {
+      "center": 1,
+      "arm": "W",
+      "color": "yellow"
+    }
   ],
   "par": 7
 }

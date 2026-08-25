@@ -1,18 +1,35 @@
 {
   "id": "109.5°-01",
   "name": "第一次背面进攻",
-  "hint": "白色箭头指向开口。朝箭头方向撞入中心：玩家留在原地，四条臂整体翻到对侧。按 → 完成第一击。",
+  "hint": "白色箭头指向开口。从箭头的反方向撞入，四条臂会整体翻到对侧。",
   "width": 3,
   "height": 3,
   "walls": [],
-  "player": [0, 1],
+  "player": [
+    0,
+    1
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "red",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
     }
   ],
-  "goals": [{ "center": 0, "arm": "N", "color": "green" }],
+  "goals": [
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "green"
+    }
+  ],
   "par": 1
 }

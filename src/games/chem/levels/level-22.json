@@ -1,20 +1,81 @@
 {
   "id": "109.5°-22",
   "name": "光路接力",
-  "hint": "照光开出进攻位，再带蓝珠染色；第一段完成后，翻转形成的共振会替你完成下一段。",
+  "hint": "照光开位，染色改链。第一段的翻转也许顺路就完成了下一段。",
   "width": 5,
   "height": 4,
-  "walls": [[1, 1]],
-  "player": [4, 3],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "red", "E": "purple", "S": "yellow", "W": "green" }, "leaving": "E" },
-    { "pos": [3, 1], "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" }, "leaving": "E" }
+  "walls": [
+    [
+      1,
+      1
+    ]
   ],
-  "groups": [{ "pos": [0, 3], "color": "blue" }],
-  "lights": [[0, 0]],
+  "player": [
+    4,
+    3
+  ],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "purple",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "red",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        3
+      ],
+      "color": "blue"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      0
+    ]
+  ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "blue" }] },
-    { "goals": [{ "center": 1, "arm": "E", "color": "green" }] }
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "E",
+          "color": "green"
+        }
+      ]
+    }
   ],
   "par": 10
 }

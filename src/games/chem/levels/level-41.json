@@ -1,24 +1,90 @@
 {
   "id": "109.5°-41",
-  "name": "开罩接空穴",
-  "hint": "第一段让空穴保持断链并解除链尾护罩；随后从下方翻回空穴，新增节点才会进入第二段共振。",
+  "name": "开罩三响",
+  "hint": "同一击要完成三件事：注入、共振与飞珠落地。在那之前，先空手把第 1 段做完。",
   "width": 5,
-  "height": 3,
+  "height": 4,
   "walls": [],
-  "player": [2, 2],
+  "player": [
+    2,
+    2
+  ],
   "centers": [
-    { "pos": [1, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S" },
-    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "yellow" }, "leaving": "N", "kind": "trigonal" },
-    { "pos": [3, 1], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" }, "leaving": "E", "shieldUntilStage": 1 }
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        4,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "color": "purple"
+    }
   ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
     {
       "goals": [
-        { "center": 0, "arm": "N", "color": "red" },
-        { "center": 2, "arm": "N", "color": "green" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "blue"
+        }
       ]
     }
   ],
-  "par": 3
+  "par": 4
 }

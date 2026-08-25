@@ -1,24 +1,88 @@
 {
   "id": "109.5°-49",
-  "name": "开罩南北换路",
-  "hint": "第一击只接通北支并完成第 1 段；南支护罩随后解除。换到另一侧再撞，空穴才把南支纳入。",
+  "name": "开罩接三路",
+  "hint": "第一击的连锁有三条去处：缺口切断一条，护罩拦下一条。真正能通过的那一条，要等罩子开放。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [],
-  "player": [1, 2],
+  "player": [
+    0,
+    2
+  ],
   "centers": [
-    { "pos": [2, 2], "arms": { "E": "red", "S": "blue", "W": "green" }, "leaving": "E", "kind": "trigonal" },
-    { "pos": [2, 1], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" }, "leaving": "N" },
-    { "pos": [2, 3], "arms": { "N": "blue", "E": "red", "S": "yellow", "W": "green" }, "leaving": "S", "shieldUntilStage": 1 }
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "blue",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "shieldUntilStage": 1
+    }
   ],
   "stages": [
-    { "goals": [{ "center": 1, "arm": "N", "color": "blue" }] },
     {
       "goals": [
-        { "center": 1, "arm": "N", "color": "blue" },
-        { "center": 2, "arm": "S", "color": "blue" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "yellow"
+        }
       ]
     }
   ],
-  "par": 8
+  "par": 7
 }

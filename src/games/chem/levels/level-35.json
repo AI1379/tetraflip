@@ -1,18 +1,63 @@
 {
   "id": "109.5°-35",
   "name": "空穴喷流",
-  "hint": "三臂弹射中心会让色珠、空穴和喷流方向一起翻面；身后障碍把被顶出珠截在指定落点。",
+  "hint": "三臂弹射中心会让色珠、缺口和喷流方向一起翻面；身后的障碍决定被顶出珠的落点。",
   "width": 5,
   "height": 5,
-  "walls": [[0, 2], [2, 1], [2, 3]],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [3, 2], "arms": { "N": "red", "E": "blue", "S": "green" }, "leaving": "E", "kind": "trigonal", "ejects": true }
+  "walls": [
+    [
+      0,
+      2
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      2,
+      3
+    ]
   ],
-  "groups": [{ "pos": [1, 0], "color": "yellow" }],
+  "player": [
+    0,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green"
+      },
+      "leaving": "E",
+      "kind": "trigonal",
+      "ejects": true
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "yellow"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "green" },
-    { "center": 0, "arm": "W", "color": "yellow" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "green"
+    },
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "yellow"
+    }
   ],
   "par": 5
 }

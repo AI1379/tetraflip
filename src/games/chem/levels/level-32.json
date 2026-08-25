@@ -1,20 +1,68 @@
 {
   "id": "109.5°-32",
   "name": "一击三果",
-  "hint": "同一击会注入蓝珠、沿亮键翻转邻居，并把原开口绿珠弹到身后；三个结果必须一起预测。",
+  "hint": "同一击会注入、沿亮键翻转邻居，并把原开口珠弹到身后。三个结果要一起预测。",
   "width": 5,
   "height": 5,
   "walls": [],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 2], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "purple" }, "leaving": "E", "ejects": true },
-    { "pos": [3, 2], "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "purple" }, "leaving": "E" }
+  "player": [
+    0,
+    0
   ],
-  "groups": [{ "pos": [0, 2], "color": "blue" }],
+  "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
+      },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "blue",
+        "W": "purple"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "color": "blue"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "blue" },
-    { "center": 0, "arm": "S", "color": "red" },
-    { "center": 1, "arm": "E", "color": "purple" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    },
+    {
+      "center": 0,
+      "arm": "S",
+      "color": "red"
+    },
+    {
+      "center": 1,
+      "arm": "E",
+      "color": "purple"
+    }
   ],
   "par": 4
 }

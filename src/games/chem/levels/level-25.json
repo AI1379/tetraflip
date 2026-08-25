@@ -1,22 +1,79 @@
 {
   "id": "109.5°-25",
-  "name": "缺了一臂",
-  "hint": "它和普通中心一样翻转，只是少一条臂：三颗珠、缺口和箭头都会一起转到对侧。撞两下仍会回到原样。",
+  "name": "空穴断路器",
+  "hint": "缺口朝着哪一侧，链就断在哪一侧。翻动缺口，链的路径也随之改变。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
-  "player": [2, 0],
+  "player": [
+    2,
+    2
+  ],
   "centers": [
     {
-      "pos": [2, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green" },
-      "leaving": "S",
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow"
+      },
+      "leaving": "N",
       "kind": "trigonal"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
-  "goals": [
-    { "center": 0, "arm": "N", "color": "green" },
-    { "center": 0, "arm": "W", "color": "blue" }
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
   ],
-  "par": 2
+  "par": 3
 }

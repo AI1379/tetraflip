@@ -1,19 +1,75 @@
 {
   "id": "109.5°-37",
   "name": "迟一拍的链",
-  "hint": "第一击完成阶段时，护罩仍挡住那次连锁；解除后再从中间点火，右侧节点才会被纳入。",
+  "hint": "护罩在当前这一步全部结算后才解除——这一击的连锁仍会被挡住。能不能穿过去，看是哪一击。",
   "width": 5,
   "height": 3,
   "walls": [],
-  "player": [0, 1],
+  "player": [
+    0,
+    1
+  ],
   "centers": [
-    { "pos": [1, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E" },
-    { "pos": [2, 1], "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" }, "leaving": "N", "shieldUntilStage": 1 },
-    { "pos": [3, 1], "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" }, "leaving": "E" }
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
+    }
   ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "yellow" }] },
-    { "goals": [{ "center": 2, "arm": "N", "color": "green" }] }
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
   ],
   "par": 5
 }

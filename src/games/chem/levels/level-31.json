@@ -1,19 +1,63 @@
 {
   "id": "109.5°-31",
   "name": "飞珠再利用",
-  "hint": "先把紫珠撞进弹射中心；飞到左侧的绿珠会让手重新有货，再把它送进下方中心。",
+  "hint": "弹出的珠不是废料；手变空本身就是资源。",
   "width": 4,
   "height": 5,
   "walls": [],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true },
-    { "pos": [1, 3], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "purple" }, "leaving": "S" }
+  "player": [
+    0,
+    0
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "centers": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [
+        1,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "purple"
+      },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 1, "arm": "N", "color": "green" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
+    },
+    {
+      "center": 1,
+      "arm": "N",
+      "color": "green"
+    }
   ],
   "par": 7
 }

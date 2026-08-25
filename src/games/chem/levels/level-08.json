@@ -1,27 +1,62 @@
 {
   "id": "109.5°-08",
   "name": "空手只有一次",
-  "hint": "A 的蓝色目标必须空手纯翻转；一旦拾起紫珠，普通交换只会换色，手不会再空。先撞 A，再取珠送进 B。",
+  "hint": "空手撞是纯翻转；一旦拾珠，手就不会再空。A 的目标只能靠纯翻转达成。",
   "width": 5,
   "height": 3,
   "walls": [],
-  "player": [0, 1],
+  "player": [
+    0,
+    1
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
     }
   ],
-  "groups": [{ "pos": [0, 0], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        0,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "blue" },
-    { "center": 1, "arm": "W", "color": "purple" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "blue"
+    },
+    {
+      "center": 1,
+      "arm": "W",
+      "color": "purple"
+    }
   ],
   "par": 6
 }

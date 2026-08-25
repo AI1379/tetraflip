@@ -1,33 +1,80 @@
 {
   "id": "109.5°-06",
   "name": "手不会自己变空",
-  "hint": "连续三次交换：紫进 A、蓝进 B、绿进 C。每次手里只会换成开口原珠，不会自然变空；沿着上方站位把颜色接力到底。",
+  "hint": "连续三次交换。手不会自己变空，只会换成开口原珠。",
   "width": 7,
   "height": 3,
   "walls": [],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "blue",
+        "W": "yellow"
+      },
       "leaving": "S"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "purple" },
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "purple"
+      },
       "leaving": "S"
     },
     {
-      "pos": [5, 1],
-      "arms": { "N": "red", "E": "blue", "S": "yellow", "W": "purple" },
+      "pos": [
+        5,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "purple"
+      },
       "leaving": "S"
     }
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "N", "color": "purple" },
-    { "center": 1, "arm": "N", "color": "blue" },
-    { "center": 2, "arm": "N", "color": "green" }
+    {
+      "center": 0,
+      "arm": "N",
+      "color": "purple"
+    },
+    {
+      "center": 1,
+      "arm": "N",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "green"
+    }
   ],
   "par": 8
 }

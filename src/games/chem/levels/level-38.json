@@ -1,20 +1,85 @@
 {
   "id": "109.5°-38",
   "name": "逐层开罩",
-  "hint": "三个中心围着同一站位：先撞左侧，标 2 的上罩解除；再撞上方，标 3 的下罩解除；最后向下完成。",
+  "hint": "三面罩、三个编号。同一站位，按什么顺序进攻，编号自己会说。",
   "width": 4,
   "height": 5,
   "walls": [],
-  "player": [2, 2],
+  "player": [
+    2,
+    2
+  ],
   "centers": [
-    { "pos": [1, 2], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "W" },
-    { "pos": [2, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "N", "shieldUntilStage": 1 },
-    { "pos": [2, 3], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S", "shieldUntilStage": 2 }
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S",
+      "shieldUntilStage": 2
+    }
   ],
   "stages": [
-    { "goals": [{ "center": 0, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 1, "arm": "N", "color": "green" }] },
-    { "goals": [{ "center": 2, "arm": "N", "color": "green" }] }
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
   ],
   "par": 3
 }

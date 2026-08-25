@@ -1,21 +1,81 @@
 {
   "id": "109.5°-33",
   "name": "飞珠接力",
-  "hint": "第一次弹射同时完成共振；弹出的绿珠不是废料，它是下方中心的下一棒。",
+  "hint": "第一次弹射同时完成共振；弹出的珠是下一棒。",
   "width": 5,
   "height": 5,
   "walls": [],
-  "player": [0, 0],
-  "centers": [
-    { "pos": [2, 2], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true },
-    { "pos": [3, 2], "arms": { "N": "yellow", "E": "red", "S": "green", "W": "blue" }, "leaving": "E" },
-    { "pos": [1, 4], "arms": { "N": "red", "E": "yellow", "S": "blue", "W": "green" }, "leaving": "S" }
+  "player": [
+    0,
+    0
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
+  "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
+        4
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
   "goals": [
-    { "center": 0, "arm": "W", "color": "purple" },
-    { "center": 1, "arm": "E", "color": "blue" },
-    { "center": 2, "arm": "N", "color": "green" }
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
+    },
+    {
+      "center": 1,
+      "arm": "E",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "green"
+    }
   ],
   "par": 8
 }
