@@ -18,6 +18,12 @@ export interface ChemCenterDef {
   shieldUntilStage?: number
   /** 弹射中心（v3）：持珠进攻时，被顶出的基团沿攻击反方向飞出（不入手） */
   ejects?: boolean
+  /** 弹射珠落在光照格上时触发该光照（仅 ejects 中心有效） */
+  hitLights?: boolean
+  /** 弹射珠落在某中心当前进攻位上时触发该中心纯翻转（仅 ejects 中心有效） */
+  hitCenters?: boolean
+  /** 护罩再生（v4）：reactiveTo 指向的“中间产物”臂不匹配颜色时，该中心进入护罩状态 */
+  reactiveTo?: ChemGoal
 }
 
 export interface ChemGoal {
@@ -83,6 +89,9 @@ const schema = z
           kind: z.enum(['tetra', 'trigonal']).optional(),
           shieldUntilStage: z.number().int().min(1).optional(),
           ejects: z.boolean().optional(),
+          hitLights: z.boolean().optional(),
+          hitCenters: z.boolean().optional(),
+          reactiveTo: goalSchema.optional(),
         }).strict(),
       )
       .min(1),
@@ -179,6 +188,23 @@ export function parseChemLevel(json: unknown): ChemLevel {
     ...raw.centers.flatMap((c) => Object.values(c.arms)),
     ...raw.groups.map((g) => g.color),
   ])
+
+  for (const c of raw.centers) {
+    if ((c.hitLights || c.hitCenters) && !c.ejects) {
+      fail(`中心 ${c.pos} 的 hitLights / hitCenters 只能用在弹射中心上`)
+    }
+    if (c.reactiveTo) {
+      const target = raw.centers[c.reactiveTo.center]
+      if (!target) fail(`中心 ${c.pos} 的护罩再生引用了不存在的中心 ${c.reactiveTo.center}`)
+      if (target.arms[c.reactiveTo.arm] === undefined) {
+        fail(`中心 ${c.pos} 的护罩再生引用了中心 ${c.reactiveTo.center} 不存在的 ${c.reactiveTo.arm} 臂`)
+      }
+      if (!palette.has(c.reactiveTo.color)) {
+        fail(`中心 ${c.pos} 的护罩再生颜色 ${c.reactiveTo.color} 不在本关任何中心臂或游离基团中`)
+      }
+    }
+  }
+
   for (const [si, stage] of stages.entries()) {
     for (const g of stage.goals) {
       const center = raw.centers[g.center]
@@ -207,6 +233,9 @@ export function parseChemLevel(json: unknown): ChemLevel {
       kind: c.kind ?? 'tetra',
       shieldUntilStage: c.shieldUntilStage,
       ejects: c.ejects ?? false,
+      hitLights: c.hitLights ?? false,
+      hitCenters: c.hitCenters ?? false,
+      reactiveTo: c.reactiveTo,
     })),
     groups: raw.groups,
     stages,

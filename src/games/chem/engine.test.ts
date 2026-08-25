@@ -574,6 +574,7 @@ describe('chem v3 机制群引擎', () => {
       color: 'green',
       path: [[0, 1]],
       landing: [0, 1],
+      blockedCenter: null,
     })
     s = step(s, 'E') // 进攻
     expect(s.holding).toBe(null) // 携带珠已注入 ⇒ 手变空
@@ -726,6 +727,171 @@ describe('chem v3 机制群引擎', () => {
   })
 })
 
+
+describe('chem v4 新机制（弹射打结构 / 护罩再生）', () => {
+  it('弹射打结构：hitLights 落到光照格时触发转轴，珠留在格上', () => {
+    const level: ChemLevel = {
+      id: 'test-hit-light',
+      width: 5,
+      height: 3,
+      walls: [],
+      player: [0, 0],
+      centers: [
+        {
+          pos: [2, 1],
+          arms: { N: 'red', E: 'green', S: 'yellow', W: 'blue' },
+          leaving: 'E',
+          ejects: true,
+          hitLights: true,
+        },
+        {
+          pos: [4, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'W',
+        },
+      ],
+      groups: [{ pos: [1, 0], color: 'purple' }],
+      lights: [[0, 1]],
+      stages: [{ goals: [{ center: 0, arm: 'W', color: 'purple' }] }],
+    }
+    let s = initialState(level)
+    s = step(s, 'E') // 拾取 purple
+    s = step(s, 'S') // 走到弹射中心背面 (1,1)
+    expect(getEjectionPreview(s, 0)?.landing).toEqual([0, 1])
+    const before = s.centers.map((c) => c.leaving)
+    const after = step(s, 'E')
+    // 弹射中心本身先完成取代 + 翻转（leaving E→W），随后落地光照再统一转轴 W→N
+    expect(after.centers[0].leaving).toBe('N')
+    expect(after.centers[1].leaving).toBe('N')
+    expect(after.groups).toContainEqual({ pos: [0, 1], color: 'green' })
+    expect(before).not.toEqual(after.centers.map((c) => c.leaving))
+  })
+
+  it('弹射打结构：hitCenters 落到中心进攻位时触发该中心纯翻转', () => {
+    const level: ChemLevel = {
+      id: 'test-hit-center',
+      width: 5,
+      height: 3,
+      walls: [],
+      player: [1, 0],
+      centers: [
+        {
+          pos: [3, 1],
+          arms: { N: 'red', E: 'green', S: 'yellow', W: 'blue' },
+          leaving: 'E',
+          ejects: true,
+          hitCenters: true,
+        },
+        {
+          pos: [0, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'W',
+        },
+      ],
+      groups: [{ pos: [2, 0], color: 'purple' }],
+      lights: [],
+      stages: [{ goals: [{ center: 0, arm: 'W', color: 'purple' }] }],
+    }
+    let s = initialState(level)
+    s = step(s, 'E') // 拾取 purple (2,0)
+    s = step(s, 'S') // 到 (2,1)，弹射中心背面
+    const plan = getEjectionPreview(s, 0)
+    expect(plan?.landing).toEqual([1, 1])
+    expect(plan?.blockedCenter).toBe(1)
+    const after = step(s, 'E')
+    // 目标中心被弹射珠撞翻：W→E，N=red→green
+    expect(after.centers[1].leaving).toBe('E')
+    expect(after.centers[1].arms.N).toBe('green')
+    expect(after.centers[1].arms.S).toBe('red')
+    // 弹射珠仍落在 [1,1] 成为可拾取基团
+    expect(after.groups).toContainEqual({ pos: [1, 1], color: 'green' })
+  })
+
+  it('弹射打结构：hitCenters 不开启时，落点即使合法也不触发撞翻', () => {
+    const level: ChemLevel = {
+      id: 'test-hit-center-off',
+      width: 5,
+      height: 3,
+      walls: [],
+      player: [1, 0],
+      centers: [
+        {
+          pos: [3, 1],
+          arms: { N: 'red', E: 'green', S: 'yellow', W: 'blue' },
+          leaving: 'E',
+          ejects: true,
+        },
+        {
+          pos: [0, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'W',
+        },
+      ],
+      groups: [{ pos: [2, 0], color: 'purple' }],
+      lights: [],
+      stages: [{ goals: [{ center: 0, arm: 'W', color: 'purple' }] }],
+    }
+    let s = initialState(level)
+    s = step(s, 'E')
+    s = step(s, 'S')
+    const after = step(s, 'E')
+    expect(after.centers[1].leaving).toBe('W') // 未触发
+    expect(after.centers[1].arms.N).toBe('red')
+  })
+
+  it('护罩再生：中间产物被破坏时护罩回来，修复后重新打开', () => {
+    const level: ChemLevel = {
+      id: 'test-reactive-shield',
+      width: 4,
+      height: 3,
+      walls: [],
+      player: [0, 0],
+      centers: [
+        {
+          pos: [1, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'S',
+        },
+        {
+          pos: [2, 1],
+          arms: { N: 'red', E: 'blue', S: 'green', W: 'yellow' },
+          leaving: 'N',
+          reactiveTo: { center: 0, arm: 'N', color: 'red' },
+        },
+      ],
+      groups: [],
+      lights: [],
+      stages: [
+        { goals: [{ center: 0, arm: 'N', color: 'red' }] },
+        { goals: [{ center: 1, arm: 'W', color: 'blue' }] },
+      ],
+    }
+    let s = initialState(level)
+    // 第 1 段自动完成，中心 0 的 N=red 是已达标中间产物：护罩未再生
+    expect(s.stage).toBe(1)
+    expect(isShielded(s, s.centers[1])).toBe(false)
+    // 第一次进攻翻转中心 0，N=red 被破坏
+    s = step(s, 'E') // (1,0)
+    s = step(s, 'S') // 撞中心 0
+    expect(s.centers[0].arms.N).toBe('green')
+    expect(isShielded(s, s.centers[1])).toBe(true)
+    // 护罩期间直接进攻中心 1 无效
+    s = step(s, 'E') // (2,0)
+    const blocked = step(s, 'S')
+    expect(blocked).toBe(s)
+    // 第 1 段目标仍要求 N=red；绕到中心 0 北侧再纯翻转一次，恢复中间产物
+    s = step(blocked, 'E') // (3,0)
+    s = step(s, 'S') // (3,1)
+    s = step(s, 'S') // (3,2)
+    s = step(s, 'W') // (2,2)
+    s = step(s, 'W') // (1,2)
+    s = step(s, 'N') // 撞中心 0
+    expect(s.centers[0].arms.N).toBe('red')
+    expect(isShielded(s, s.centers[1])).toBe(false)
+  })
+})
+
+
 describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
   it('tetra：翻一次 = 四臂 180° 对换 + 开口反向；翻两次回到原构型（周期 2）', () => {
     const center = {
@@ -734,6 +900,8 @@ describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
       leaving: 'W' as Dir,
       kind: 'tetra' as const,
       ejects: false,
+      hitLights: false,
+      hitCenters: false,
     }
     const once = peekFlip(center)
     expect(once.arms).toEqual({ N: 'green', E: 'yellow', S: 'red', W: 'blue' })
@@ -751,6 +919,8 @@ describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
       leaving: 'N' as Dir,
       kind: 'trigonal' as const,
       ejects: false,
+      hitLights: false,
+      hitCenters: false,
     }
     const once = peekFlip(center)
     expect(once.arms).toEqual({ N: 'green', W: 'blue', S: 'red' })

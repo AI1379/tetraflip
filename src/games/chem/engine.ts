@@ -1,7 +1,7 @@
 import { DIRS, DIR_VEC, cellKey, opposite } from '../../core/protocol'
 import type { Dir, GameDefinition, Vec } from '../../core/protocol'
 import { parseChemLevel } from './level'
-import type { CenterKind, ChemLevel, ChemStage } from './level'
+import type { CenterKind, ChemGoal, ChemLevel, ChemStage } from './level'
 
 /**
  * Inversion（chem）引擎（v1 搬运 + v2 共振 + v3 机制群，见 docs/design.md §5）。
@@ -34,6 +34,9 @@ export interface ChemCenterState {
   kind: CenterKind
   shieldUntilStage?: number
   ejects: boolean
+  hitLights: boolean
+  hitCenters: boolean
+  reactiveTo?: ChemGoal
 }
 
 export interface ChemGroupState {
@@ -54,6 +57,8 @@ export interface ChemEjectionPreview {
   path: readonly Vec[]
   /** 射线最后空格；喷口受阻时为 null */
   landing: Vec | null
+  /** 射线最终被哪个中心挡住（若被中心挡住则为其下标，否则 null） */
+  blockedCenter: number | null
 }
 
 export interface ChemState {
@@ -83,8 +88,17 @@ export interface ChemState {
 const hasVec = (list: readonly Vec[], x: number, y: number): boolean =>
   list.some((v) => v[0] === x && v[1] === y)
 
-export const isShielded = (s: Pick<ChemState, 'stage'>, c: ChemCenterState): boolean =>
-  c.shieldUntilStage !== undefined && s.stage < c.shieldUntilStage
+export const isShielded = (
+  s: Pick<ChemState, 'stage' | 'centers'>,
+  c: ChemCenterState,
+): boolean => {
+  // v4 护罩再生：reactiveTo 中间产物被破坏时，护罩重新出现
+  if (c.reactiveTo) {
+    const target = s.centers[c.reactiveTo.center]
+    if (!target || target.arms[c.reactiveTo.arm] !== c.reactiveTo.color) return true
+  }
+  return c.shieldUntilStage !== undefined && s.stage < c.shieldUntilStage
+}
 
 const presentArmDirs = (center: Pick<ChemCenterState, 'arms'>): Dir[] =>
   DIRS.filter((d) => center.arms[d] !== undefined)
@@ -127,7 +141,7 @@ function propagate(
       )
       if (yi < 0 || flipped.has(yi)) continue
       const yc = centers[yi]
-      if (isShielded({ stage }, yc)) continue // 阶段护罩挡住共振
+      if (isShielded({ stage, centers }, yc)) continue // 阶段护罩 / 再生护罩挡住共振
       const sourceColor = centers[x].arms[d]
       const targetColor = centers[yi].arms[opposite(d)]
       if (sourceColor !== undefined && targetColor !== undefined && sourceColor === targetColor) {
@@ -198,13 +212,23 @@ export function getEjectionPreview(s: ChemState, centerIndex: number): ChemEject
   if (color === undefined) return null
   const dir = opposite(center.leaving)
   const path = scanPath(s, s.player, dir)
+  const landing = path[path.length - 1] ?? null
+  let blockedCenter: number | null = null
+  if (landing) {
+    const [lx, ly] = DIR_VEC[dir]
+    const bi = s.centers.findIndex(
+      (c) => c.pos[0] === landing[0] + lx && c.pos[1] === landing[1] + ly,
+    )
+    blockedCenter = bi >= 0 ? bi : null
+  }
   return {
     center: centerIndex,
     from: s.player,
     dir,
     color,
     path,
-    landing: path[path.length - 1] ?? null,
+    landing,
+    blockedCenter,
   }
 }
 
@@ -234,6 +258,9 @@ export function initialState(level: ChemLevel): ChemState {
       kind: c.kind ?? 'tetra',
       shieldUntilStage: c.shieldUntilStage,
       ejects: c.ejects ?? false,
+      hitLights: c.hitLights ?? false,
+      hitCenters: c.hitCenters ?? false,
+      reactiveTo: c.reactiveTo,
     })),
     groups: level.groups.map((g) => ({ pos: g.pos, color: g.color })),
     stages: level.stages,
@@ -263,11 +290,10 @@ export function step(s: ChemState, dir: Dir): ChemState {
     if (dir !== center.leaving) return s // 非背面进攻：无效果
 
     // 弹射中心 + 手持：被顶出的基团要从玩家身后飞出，身后第一步就被堵 ⇒ 进攻无效
-    let ejectLanding: Vec | null = null
-    if (center.ejects && s.holding !== null) {
-      ejectLanding = getEjectionPreview(s, ci)?.landing ?? null
-      if (ejectLanding === null) return s
-    }
+    const ejectionPreview =
+      center.ejects && s.holding !== null ? getEjectionPreview(s, ci) : null
+    const ejectLanding = ejectionPreview?.landing ?? null
+    if (center.ejects && s.holding !== null && ejectLanding === null) return s
 
     const { arms, leaving, extracted } = substitute(center, dir, s.holding)
     let centers = s.centers.map((c, i) => (i === ci ? { ...c, arms, leaving } : c))
@@ -284,6 +310,26 @@ export function step(s: ChemState, dir: Dir): ChemState {
         holding = extracted ?? null
       }
     }
+
+    // v4 弹射打结构联动：先触发落地光照，再判定中心撞入（可选，仅对显式开启的弹射中心）
+    if (center.ejects && ejectionPreview !== null && ejectLanding !== null) {
+      if (center.hitLights && hasVec(s.lights, ejectLanding[0], ejectLanding[1])) {
+        centers = centers.map((c) => ({ ...c, leaving: nextPresentOpening(c) }))
+      }
+      const hi = ejectionPreview.blockedCenter
+      if (center.hitCenters && hi !== null) {
+        const hitCenter = centers[hi]
+        const [adx, ady] = DIR_VEC[hitCenter.leaving]
+        const onAttackFace =
+          ejectLanding[0] === hitCenter.pos[0] - adx &&
+          ejectLanding[1] === hitCenter.pos[1] - ady
+        if (onAttackFace && !isShielded({ stage: s.stage, centers }, hitCenter)) {
+          centers = flipCenter(centers, hi)
+          centers = propagate(centers, hi, s.stage)
+        }
+      }
+    }
+
     const next: ChemState = { ...s, centers, holding, groups, moves: s.moves + 1 }
     const advanced = advance(next)
     return { ...advanced, won: isWin(advanced) }

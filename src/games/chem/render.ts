@@ -528,13 +528,19 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       }
     }
 
-    // 阶段护罩（v3.2）：六边形罩 + 微填充；到达阈值阶段后消失
-    if (isShielded(s, c)) drawShield(ctx, px, py, cell, c.shieldUntilStage!)
+    // 阶段护罩（v3.2）与再生护罩（v4）：六边形罩 + 微填充；阶段罩显示编号，再生罩显示 R
+    if (isShielded(s, c)) {
+      const shieldLabel =
+        c.shieldUntilStage !== undefined && s.stage < c.shieldUntilStage
+          ? c.shieldUntilStage + 1
+          : 'R'
+      drawShield(ctx, px, py, cell, shieldLabel)
+    }
     const burstAt = shieldBursts.get(i)
     if (burstAt !== undefined) {
       const progress = (now - burstAt) / SHIELD_BURST_MS
       if (progress >= 1) shieldBursts.delete(i)
-      else drawShieldBurst(ctx, px, py, cell, c.shieldUntilStage!, progress)
+      else drawShieldBurst(ctx, px, py, cell, c.shieldUntilStage ?? 0, progress)
     }
 
     // 已达标锁定圈 + ✓ 徽标（当前段中该中心的所有目标均已满足且至少有一个）
@@ -733,7 +739,13 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           pc.ejects,
           pose.armRot,
         )
-        if (isShielded(p, pc)) drawShield(ctx, gx, gy, cell, pc.shieldUntilStage!)
+        if (isShielded(p, pc)) {
+          const shieldLabel =
+            pc.shieldUntilStage !== undefined && p.stage < pc.shieldUntilStage
+              ? pc.shieldUntilStage + 1
+              : 'R'
+          drawShield(ctx, gx, gy, cell, shieldLabel)
+        }
         // 动作后的锁定圈（预演态判定：这一步之后谁达标）
         const goals =
           s.stage < s.stages.length
@@ -915,15 +927,15 @@ function drawStageBadge(
   ctx.restore()
 }
 
-/** 阶段护罩：强六边形双轮廓 + 解锁阶段编号（常规与预演共用）。 */
+/** 阶段护罩 / 再生护罩：强六边形双轮廓 + 编号 / R（常规与预演共用）。 */
 function drawShield(
   ctx: CanvasRenderingContext2D,
   px: number,
   py: number,
   cell: number,
-  unlockStage: number,
+  label: number | string,
 ): void {
-  const tone = stageTone(unlockStage)
+  const tone = stageTone(typeof label === 'number' ? label - 1 : 0)
   ctx.save()
   for (const [radius, alpha, width] of [
     [0.57, 0.92, 0.045],
@@ -961,7 +973,7 @@ function drawShield(
   ctx.font = `800 ${Math.max(10, Math.floor(cell * 0.18))}px ui-monospace, Menlo, monospace`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(String(unlockStage + 1), bx, by + 0.5)
+  ctx.fillText(String(label), bx, by + 0.5)
   ctx.restore()
 }
 
