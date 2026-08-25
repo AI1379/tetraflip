@@ -1,24 +1,37 @@
 {
   "id": "109.5°-44",
-  "name": "终局：三段闭环",
-  "hint": "三段目标、一束预调的光。每颗珠都有自己的去处——包括被弹出的那颗。",
-  "width": 4,
-  "height": 5,
+  "name": "回授闸门",
+  "hint": "链第一次穿过闸门时会回拨控制臂，让护罩再次合上；下一次开门也能成为点火。",
+  "width": 5,
+  "height": 3,
   "walls": [],
   "player": [
     0,
-    0
+    1
   ],
   "centers": [
     {
       "pos": [
         2,
+        2
+      ],
+      "arms": {
+        "N": "green",
+        "E": "blue",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
         1
       ],
       "arms": {
         "N": "red",
-        "E": "yellow",
-        "S": "green",
+        "E": "green",
+        "S": "yellow",
         "W": "blue"
       },
       "leaving": "E"
@@ -26,85 +39,57 @@
     {
       "pos": [
         2,
-        2
+        1
       ],
       "arms": {
-        "N": "purple",
-        "E": "red",
-        "S": "green"
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "N",
-      "kind": "trigonal",
-      "ejects": true,
-      "shieldUntilStage": 1
+      "leaving": "W",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "red"
+      }
     },
     {
       "pos": [
-        1,
-        3
+        3,
+        1
       ],
       "arms": {
-        "N": "blue",
-        "E": "yellow",
-        "S": "green",
-        "W": "purple"
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "green"
       },
       "leaving": "E"
     }
   ],
-  "groups": [
-    {
-      "pos": [
-        1,
-        1
-      ],
-      "color": "blue"
-    }
-  ],
-  "lights": [
-    [
-      0,
-      1
-    ]
-  ],
+  "groups": [],
+  "lights": [],
   "stages": [
     {
       "goals": [
         {
           "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "red"
         },
-        {
-          "center": 0,
-          "arm": "W",
-          "color": "yellow"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "W",
-          "color": "blue"
-        },
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
         {
           "center": 2,
           "arm": "N",
           "color": "red"
+        },
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "yellow"
         }
       ]
     }
   ],
-  "par": 12
+  "par": 9
 }

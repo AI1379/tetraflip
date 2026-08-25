@@ -63,16 +63,16 @@ const baseline: Record<string, number> = {
   './levels/level-38.json': 4, // 阶段护罩 × 弹射 × 共振
   './levels/level-39.json': 9, // 毕业：阶段护罩 + 空穴 + 光照 + 弹射中心
   './levels/level-40.json': 6, // 光照 × 空穴 × 搬运
-  './levels/level-41.json': 10, // 一束光转正两个开口后回收弹射珠
-  './levels/level-42.json': 6, // 光照预对齐三阶段护罩
-  './levels/level-43.json': 7, // 开罩接三路：第一击连锁被护罩拦下，奇偶复位后接通
-  './levels/level-44.json': 12, // 三阶段：光照 × 搬运 × 弹射 × 护罩
-  './levels/level-45.json': 8, // v4 弹射撞核：弹射珠撞中心纯翻转，撞完的珠继续送
-  './levels/level-46.json': 8, // v4 撞光又撞核：弹射珠落光照转轴后顺势撞中心
-  './levels/level-47.json': 9, // v4 再生护罩：破坏中间产物护罩回来，修复后重新打开
-  './levels/level-48.json': 9, // v4 再生闸门：修复中间产物让共振链穿过闸门
-  './levels/level-49.json': 11, // v4 修中间体再撞核：再生护罩 × 弹射撞核
-  './levels/level-50.json': 9, // v4 撞核共振链：弹射撞核后共振链继续传播，珠回收闭环
+  './levels/level-41.json': 8, // v4 弹射撞核：弹射珠撞中心纯翻转，撞完的珠继续送
+  './levels/level-42.json': 8, // v4 撞光又撞核：弹射珠落光照转轴后顺势撞中心
+  './levels/level-43.json': 7, // v4 关闸保形：主动关盾隔离共振，完成后修复控制臂
+  './levels/level-44.json': 9, // v4 回授闸门：闭→开→闭→开，两次开门分别接通反馈链
+  './levels/level-45.json': 10, // v4 护罩缓冲：关盾挡下飞珠撞核，物流完成后重新开盾
+  './levels/level-46.json': 9, // v4 撞核共振链：弹射撞核后共振链继续传播，珠回收闭环
+  './levels/level-47.json': 10, // mastery：一束光转正两个开口后回收弹射珠
+  './levels/level-48.json': 6, // mastery：光照预对齐三阶段护罩
+  './levels/level-49.json': 7, // mastery：开罩接三路，奇偶复位后接通
+  './levels/level-50.json': 12, // 唯一终局：三阶段光照 × 搬运 × 弹射 × 护罩
 }
 
 const entries = Object.entries(levelFiles).sort(([a], [b]) => a.localeCompare(b))
@@ -118,6 +118,24 @@ function shortestTransitions(file: string): Transition[] {
   })
 }
 
+function reactiveShieldPhases(file: string): boolean[] {
+  const level = chemGame.parseLevel(levelFiles[file])
+  const guarded = level.centers.findIndex((c) => c.reactiveTo !== undefined)
+  expect(guarded, `${file} 应有再生护罩中心`).toBeGreaterThanOrEqual(0)
+  const transitions = shortestTransitions(file)
+  const states = [initialState(level), ...transitions.map((t) => t.after)]
+  return states
+    .map((s) => isShielded(s, s.centers[guarded]))
+    .filter((shielded, i, all) => i === 0 || shielded !== all[i - 1])
+}
+
+function withoutReactiveShields(level: ChemLevel): ChemLevel {
+  return {
+    ...level,
+    centers: level.centers.map((c) => ({ ...c, reactiveTo: undefined })),
+  }
+}
+
 const centerChanged = (t: Transition, index: number): boolean =>
   t.before.centers[index].arms !== t.after.centers[index].arms
 
@@ -157,6 +175,14 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
   it('关卡数量与基线表一致', () => {
     expect(entries.map(([file]) => file)).toEqual(Object.keys(baseline))
     expect(entries).toHaveLength(50)
+  })
+
+  it('文件序号与内部 id 一一对应', () => {
+    for (const [file, json] of entries) {
+      const number = /level-(\d+)\.json$/.exec(file)?.[1]
+      expect(number, `${file} 应使用 level-XX 文件名`).toBeDefined()
+      expect(chemGame.parseLevel(json).id).toBe(`109.5°-${number}`)
+    }
   })
 
   it('v3.2 正式曲线按机制段落落位', () => {
@@ -202,6 +228,24 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
         )
       expect(usesMasteryMechanic, `level-${n} 应深化既有机制`).toBe(true)
     }
+    for (const n of [41, 42, 46]) {
+      expect(
+        at(n).centers.some((c) => c.hitLights || c.hitCenters),
+        `level-${n} 应使用弹射打结构`,
+      ).toBe(true)
+    }
+    for (const n of [43, 44, 45]) {
+      expect(at(n).centers.some((c) => c.reactiveTo), `level-${n} 应使用再生护罩`).toBe(true)
+    }
+    for (let n = 47; n <= 50; n++) {
+      expect(
+        at(n).centers.every((c) => !c.hitLights && !c.hitCenters && !c.reactiveTo),
+        `level-${n} 应回到既有规则综合，不再教学 v4 字段`,
+      ).toBe(true)
+    }
+    for (let n = 1; n < 50; n++) expect(at(n).name).not.toMatch(/^终局/)
+    expect(at(50).name).toMatch(/^终局/)
+    expect(at(50).stages).toHaveLength(3)
   })
 
   it.each(entries)('%s 通过关卡校验', (_file, json) => {
@@ -224,7 +268,7 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(level.par, `${file} 的 JSON 标准杆应与最短解基线一致`).toBe(baseline[file])
   })
 
-  it('10–44 每关带 hint 且不泄露解法箭头序列', () => {
+  it('10–50 每关带 hint 且不泄露解法箭头序列', () => {
     for (const [file, json] of entries.slice(9)) {
       const level = chemGame.parseLevel(json)
       expect(level.hint, `${file} 缺少教学 hint`).toBeTruthy()
@@ -359,8 +403,8 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(noShield.solution.length).toBeLessThan(baseline[file])
   })
 
-  it('level-43 开罩接三路：第一击的南向连锁被护罩拦下，奇偶复位后才接通', () => {
-    const file = './levels/level-43.json'
+  it('level-49 开罩接三路：第一击的南向连锁被护罩拦下，奇偶复位后才接通', () => {
+    const file = './levels/level-49.json'
     const transitions = shortestTransitions(file)
     const firstStrike = transitions[0]
 
@@ -388,8 +432,8 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(noShield.solution.length).toBeLessThan(baseline[file])
   })
 
-  it('level-41 最短解不重复踏入同一光照格（无光格乒乓）', () => {
-    const file = './levels/level-41.json'
+  it('level-47 最短解不重复踏入同一光照格（无光格乒乓）', () => {
+    const file = './levels/level-47.json'
     const level = chemGame.parseLevel(levelFiles[file])
     const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
     const visits = new Map<string, number>()
@@ -503,12 +547,12 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     expect(shortestInteractionTrace(file)).toEqual(expected)
   })
 
-  it('v4 弹射打结构关：最短解必须真的用弹射中心发射（45/46/49/50）', () => {
+  it('v4 弹射打结构关：最短解必须真的用弹射中心发射（41/42/45/46）', () => {
     for (const file of [
+      './levels/level-41.json',
+      './levels/level-42.json',
       './levels/level-45.json',
       './levels/level-46.json',
-      './levels/level-49.json',
-      './levels/level-50.json',
     ]) {
       const level = chemGame.parseLevel(levelFiles[file])
       const ejectIndices = level.centers
@@ -523,25 +567,61 @@ describe('chem（109.5°）正式关卡批次 01–50', () => {
     }
   })
 
-  it('v4 再生护罩关：最短解中再生护罩状态发生过开/合变化（47/48/49）', () => {
-    for (const file of [
-      './levels/level-47.json',
-      './levels/level-48.json',
-      './levels/level-49.json',
-    ]) {
-      const level = chemGame.parseLevel(levelFiles[file])
-      const reactiveIndices = level.centers
-        .map((c, i) => (c.reactiveTo ? i : -1))
-        .filter((i) => i >= 0)
-      const transitions = shortestTransitions(file)
-      const changed = transitions.some((t) =>
-        reactiveIndices.some(
-          (i) =>
-            isShielded(t.before, t.before.centers[i]) !==
-            isShielded(t.after, t.after.centers[i]),
-        ),
-      )
-      expect(changed, `${file} 最短解必须体现再生护罩的开合变化`).toBe(true)
+  it('v4 43 关闸保形：开→关→开，关盾确实阻断会烧坏已达标中心的共振', () => {
+    const file = './levels/level-43.json'
+    expect(reactiveShieldPhases(file)).toEqual([false, true, false])
+    const transitions = shortestTransitions(file)
+    const isolatedFlip = transitions.find(
+      (t) => isShielded(t.before, t.before.centers[1]) && centerChanged(t, 2),
+    )
+    expect(isolatedFlip, '最短解应在关盾期间翻转共振源').toBeDefined()
+    expect(centerChanged(isolatedFlip!, 1), '关盾时已达标中心必须保持不动').toBe(false)
+
+    const unshieldedBefore: ChemState = {
+      ...isolatedFlip!.before,
+      centers: isolatedFlip!.before.centers.map((c, i) =>
+        i === 1 ? { ...c, reactiveTo: undefined } : c,
+      ),
     }
+    const wouldBurn = step(unshieldedBefore, isolatedFlip!.action)
+    expect(
+      wouldBurn.centers[1].arms,
+      '同一步若没有护罩，共振必须烧到受保护中心',
+    ).not.toBe(unshieldedBefore.centers[1].arms)
+
+    const level = chemGame.parseLevel(levelFiles[file])
+    expect(solve(chemGame, withoutReactiveShields(level), { maxDepth: 30 }).solved).toBe(false)
+  })
+
+  it('v4 44 回授闸门：最短解形成闭→开→闭→开的完整反馈脉冲', () => {
+    expect(reactiveShieldPhases('./levels/level-44.json')).toEqual([true, false, true, false])
+  })
+
+  it('v4 45 护罩缓冲：开→关→开，关盾期间发射只落珠、不撞翻受保护中心', () => {
+    const file = './levels/level-45.json'
+    expect(reactiveShieldPhases(file)).toEqual([false, true, false])
+    const transitions = shortestTransitions(file)
+    const bufferedShot = transitions.find(
+      (t) =>
+        isShielded(t.before, t.before.centers[1]) &&
+        centerChanged(t, 2) &&
+        t.after.groups.length > t.before.groups.length,
+    )
+    expect(bufferedShot, '最短解应在关盾期间使用弹射中心').toBeDefined()
+    expect(centerChanged(bufferedShot!, 1), '护罩必须挡下飞珠撞核').toBe(false)
+
+    const unshieldedBefore: ChemState = {
+      ...bufferedShot!.before,
+      centers: bufferedShot!.before.centers.map((c, i) =>
+        i === 1 ? { ...c, reactiveTo: undefined } : c,
+      ),
+    }
+    const wouldHit = step(unshieldedBefore, bufferedShot!.action)
+    expect(wouldHit.centers[1].arms, '同一发飞珠若没有护罩，必须撞翻目标中心').not.toBe(
+      unshieldedBefore.centers[1].arms,
+    )
+
+    const level = chemGame.parseLevel(levelFiles[file])
+    expect(solve(chemGame, withoutReactiveShields(level), { maxDepth: 30 }).solved).toBe(false)
   })
 })

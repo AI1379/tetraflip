@@ -12,7 +12,8 @@ import type { CenterKind } from './level'
  * - 中心画成分子骨架风格：细键线 + 原子点（中心原子 + 臂原子）；三臂中心以三角核区分。
  * - 开口以中心核内的白色短箭头标记（指向进攻方向；固定在旋转中心上，避免被进攻位玩家遮挡）。
  * - 相邻中心画「共轭键」：面对臂同色时点亮（共振可传导），否则暗色（v2 玩法信息）。
- * - v3.2 特殊信息：光照格（金色放射纹）；阶段护罩中心画六边形罩；
+ * - v3.2/v4 特殊信息：光照格（金色放射纹）；阶段护罩中心画六边形罩；
+ *   再生护罩常显休眠轮廓与通往控制臂的彩色因果线；
  *   分步目标当前段正常虚线圈、未来段淡圈预告。
  * - 背景：极低透明度的四面体线框（标题《109.5°》的几何本体，纯装饰，缓慢自转）。
  * - 可读性：色珠同时使用颜色与内部纹样编码；玩家用亮环暗芯轮廓，与色珠 / 中心 / 目标区分。
@@ -368,6 +369,10 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 
   drawSpecialCells(ctx, s, cx, cy, cell, now)
 
+  // 再生护罩的因果关系必须在“罩已打开”时仍可读：控制线画在中心 / 共轭键下层，
+  // 端点钉在 reactiveTo 指向的具体颜色臂上，而不是只给受保护中心一个无来源的 R。
+  drawReactiveLinks(ctx, s, cx, cy, cell)
+
   // 相邻中心关系（共轭）：每个中心各方向是否有相邻中心
   const neighborIdx = (i: number, d: Dir): number => {
     const c = s.centers[i]
@@ -469,12 +474,14 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   // 常规管线里这些中心的落点预览 / 锁定圈跳过（避免画两遍、口径不一）。
   const previewChanged: number[] = []
   const previewShieldReleased: number[] = []
+  const previewShieldFormed: number[] = []
   if (preview && !s.won) {
     for (let i = 0; i < s.centers.length && i < preview.centers.length; i++) {
       const p = preview.centers[i]
       const c = s.centers[i]
       if (p && c && (p.arms !== c.arms || p.leaving !== c.leaving)) previewChanged.push(i)
       if (p && c && isShielded(s, c) && !isShielded(preview, p)) previewShieldReleased.push(i)
+      if (p && c && !isShielded(s, c) && isShielded(preview, p)) previewShieldFormed.push(i)
     }
   }
   for (let i = 0; i < s.centers.length; i++) {
@@ -535,6 +542,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           ? c.shieldUntilStage + 1
           : 'R'
       drawShield(ctx, px, py, cell, shieldLabel)
+    } else if (c.reactiveTo) {
+      drawDormantReactiveShield(ctx, px, py, cell)
     }
     const burstAt = shieldBursts.get(i)
     if (burstAt !== undefined) {
@@ -745,6 +754,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
               ? pc.shieldUntilStage + 1
               : 'R'
           drawShield(ctx, gx, gy, cell, shieldLabel)
+        } else if (pc.reactiveTo) {
+          drawDormantReactiveShield(ctx, gx, gy, cell)
         }
         // 动作后的锁定圈（预演态判定：这一步之后谁达标）
         const goals =
@@ -790,9 +801,14 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         cx(c.pos[0]),
         cy(c.pos[1]),
         cell,
-        c.shieldUntilStage!,
+        c.shieldUntilStage ?? 0,
         now,
       )
+    }
+    // 再生罩生成也属于规则结果；即使受保护中心本身没有翻转，也要在一步预演里显式出现。
+    for (const i of previewShieldFormed) {
+      const c = p.centers[i]
+      drawShield(ctx, cx(c.pos[0]), cy(c.pos[1]), cell, 'R')
     }
 
     // 场上珠增减 ghost：新出现的珠（换落 / 弹射落点）半透明画出
@@ -924,6 +940,110 @@ function drawStageBadge(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(String(stageIndex + 1), bx, by + 0.5)
+  ctx.restore()
+}
+
+/** 再生护罩到控制臂的常显因果线；亮度表达当前是闭合还是休眠。 */
+function drawReactiveLinks(
+  ctx: CanvasRenderingContext2D,
+  s: ChemState,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+): void {
+  for (const guarded of s.centers) {
+    const trigger = guarded.reactiveTo
+    if (!trigger) continue
+    const controller = s.centers[trigger.center]
+    if (!controller) continue
+
+    const [adx, ady] = DIR_VEC[trigger.arm]
+    const tx = cx(controller.pos[0]) + adx * cell * ARM_LEN
+    const ty = cy(controller.pos[1]) + ady * cell * ARM_LEN
+    const gx = cx(guarded.pos[0])
+    const gy = cy(guarded.pos[1])
+    const vx = tx - gx
+    const vy = ty - gy
+    const distance = Math.max(1, Math.hypot(vx, vy))
+    const ux = vx / distance
+    const uy = vy / distance
+    const startX = gx + ux * cell * 0.58
+    const startY = gy + uy * cell * 0.58
+    const bend = Math.min(cell * 0.16, distance * 0.12)
+    const midX = (startX + tx) / 2 - uy * bend
+    const midY = (startY + ty) / 2 + ux * bend
+    const active = isShielded(s, guarded)
+    const tone = colorOf(trigger.color)
+
+    ctx.save()
+    ctx.strokeStyle = tone
+    ctx.globalAlpha = active ? 0.78 : 0.32
+    ctx.lineWidth = Math.max(1.5, cell * (active ? 0.035 : 0.025))
+    ctx.setLineDash([cell * 0.09, cell * 0.065])
+    ctx.beginPath()
+    ctx.moveTo(startX, startY)
+    ctx.quadraticCurveTo(midX, midY, tx, ty)
+    ctx.stroke()
+    ctx.setLineDash([])
+    // 控制臂端点：目标色空心环，当前臂匹配时补一个实心点。
+    ctx.globalAlpha = active ? 0.82 : 0.58
+    ctx.fillStyle = '#10161f'
+    ctx.beginPath()
+    ctx.arc(tx, ty, cell * 0.095, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = tone
+    ctx.lineWidth = Math.max(1.5, cell * 0.025)
+    ctx.stroke()
+    if (controller.arms[trigger.arm] === trigger.color) {
+      ctx.fillStyle = tone
+      ctx.beginPath()
+      ctx.arc(tx, ty, cell * 0.038, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+}
+
+/** 打开状态的再生罩仍常显：断开的淡六边形 = 当前可通过，但此处受控制臂管辖。 */
+function drawDormantReactiveShield(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  cell: number,
+): void {
+  const tone = stageTone(0)
+  const radius = cell * 0.54
+  ctx.save()
+  ctx.strokeStyle = tone
+  ctx.globalAlpha = 0.34
+  ctx.lineWidth = Math.max(1.5, cell * 0.022)
+  for (let k = 0; k < 6; k++) {
+    const a1 = -Math.PI / 2 + (k * Math.PI) / 3
+    const a2 = a1 + Math.PI / 3
+    const x1 = px + Math.cos(a1) * radius
+    const y1 = py + Math.sin(a1) * radius
+    const x2 = px + Math.cos(a2) * radius
+    const y2 = py + Math.sin(a2) * radius
+    ctx.beginPath()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x1 + (x2 - x1) * 0.68, y1 + (y2 - y1) * 0.68)
+    ctx.stroke()
+  }
+  const r = cell * 0.12
+  const bx = px + cell * 0.42
+  const by = py - cell * 0.42
+  ctx.globalAlpha = 0.72
+  ctx.fillStyle = '#10161f'
+  ctx.strokeStyle = tone
+  ctx.beginPath()
+  ctx.arc(bx, by, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = tone
+  ctx.font = `800 ${Math.max(9, Math.floor(cell * 0.15))}px ui-monospace, Menlo, monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('R', bx, by + 0.5)
   ctx.restore()
 }
 

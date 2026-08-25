@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chemGame, initialState, step } from './engine'
+import { chemGame, initialState, isShielded, step } from './engine'
 import {
   render,
   setChemDecor,
@@ -21,6 +21,7 @@ import level15 from './levels/level-15.json'
 import level18 from './levels/level-18.json'
 import level29 from './levels/level-29.json'
 import level33 from './levels/level-33.json'
+import level43 from './levels/level-43.json'
 
 /**
  * 渲染冒烟测试：用 Proxy 桩画布验证 render 可无异常执行。
@@ -209,6 +210,31 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
     setChemPreview(null)
     expect(() => render(next, ctx, 480, 480)).not.toThrow() // 正式护罩碎裂
+  })
+
+  it('再生护罩：打开时常显休眠 R 与控制线，预演生成 / 消失均可渲染', () => {
+    const texts: string[] = []
+    const ctx = recordingCtx(texts)
+    let s = initialState(chemGame.parseLevel(level43))
+    expect(isShielded(s, s.centers[1])).toBe(false)
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    expect(texts).toContain('R') // 旧实现只在关盾时显示，开局看不出机关存在
+
+    const closed = step(s, 'S')
+    expect(isShielded(closed, closed.centers[1])).toBe(true)
+    setChemPreview(closed)
+    expect(() => render(s, ctx, 480, 480)).not.toThrow() // 开→关预演必须出现完整护罩
+    setChemPreview(null)
+    s = closed
+
+    // 沿最短解走到最后一次修复控制臂之前，覆盖再生罩的关→开预演。
+    for (const action of ['E', 'S', 'S', 'E', 'W'] as const) s = step(s, action)
+    const reopened = step(s, 'N')
+    expect(isShielded(reopened, reopened.centers[1])).toBe(false)
+    setChemPreview(reopened)
+    expect(() => render(s, ctx, 480, 480)).not.toThrow()
+    setChemPreview(null)
+    expect(() => render(reopened, ctx, 480, 480)).not.toThrow()
   })
 })
 

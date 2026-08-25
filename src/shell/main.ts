@@ -21,7 +21,8 @@ import {
 import type { ChemMark } from '../games/chem'
 
 /**
- * 浏览器壳：游戏切换、关卡导航、HUD、撤销/重开、画布宿主。
+ * 《109.5°》正式浏览器壳：关卡导航、HUD、撤销/重开、画布宿主。
+ * `t+3` 仅作为研发档保留，可用显式 ?game=t3 进入；正常提交入口不显示原型切换。
  * 这是唯一允许 any 的胶合层（桥接异构游戏类型），引擎保持严格类型。
  *
  * 认知外置层（design §11）在本层的落点：
@@ -79,14 +80,15 @@ function filesFor(gameId: string): Record<string, unknown> {
 const app = document.querySelector('#app') as HTMLElement
 const searchParams = new URLSearchParams(window.location.search)
 const visualBlindMode = searchParams.get('blind') === '1'
+const showPrototypeSwitcher = searchParams.get('devGames') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
-      <span class="brand-kicker">LEXIN LAB · PUZZLE PROTOTYPES</span>
-      <strong>玩法实验室</strong>
+      <span class="brand-kicker">LEXIN GAMES · STRUCTURAL PUZZLE</span>
+      <strong>109.5°</strong>
     </div>
     <div class="header-tools">
-      <div class="tabs" id="tabs" role="tablist" aria-label="切换游戏"></div>
+      <div class="tabs ${showPrototypeSwitcher ? '' : 'hidden'}" id="tabs" role="tablist" aria-label="研发原型切换"></div>
       <button id="decor" class="icon-button active" title="切换棋盘装饰" aria-label="关闭棋盘装饰">✦</button>
     </div>
   </header>
@@ -219,7 +221,7 @@ const markBtn = app.querySelector('#mark-mode') as HTMLButtonElement
 
 const LOGICAL = 480
 
-let current: Bundle = bundles.t3
+let current: Bundle = bundles.chem
 let levels: LoadedLevel<any>[] = []
 let index = 0
 let hist: History<any> = new History(undefined)
@@ -608,9 +610,29 @@ function handleCanvasTap(clientX: number, clientY: number): void {
 
 // ---------- 选关面板：当前游戏全部关卡一屏可选（替代一关关按 ▶） ----------
 
+const CHEM_CHAPTERS = [
+  { start: 0, end: 8, label: '核心搬运' },
+  { start: 9, end: 14, label: '共振传导' },
+  { start: 15, end: 19, label: '光照与分步' },
+  { start: 20, end: 25, label: '三臂空穴' },
+  { start: 26, end: 31, label: '弹射中心' },
+  { start: 32, end: 38, label: '阶段护罩' },
+  { start: 39, end: 39, label: '终盘复习' },
+  { start: 40, end: 45, label: '结构碰撞与回授闸门' },
+  { start: 46, end: 49, label: '综合终盘' },
+] as const
+
 function buildPicker(): void {
   pickerEl.innerHTML = ''
   levels.forEach((l, i) => {
+    const chapter = current.id === 'chem' ? CHEM_CHAPTERS.find((c) => c.start === i) : undefined
+    if (chapter) {
+      const heading = document.createElement('div')
+      heading.className = 'level-chapter'
+      const range = `${String(chapter.start + 1).padStart(2, '0')}–${String(chapter.end + 1).padStart(2, '0')}`
+      heading.innerHTML = `<span>${range}</span><strong>${chapter.label}</strong>`
+      pickerEl.appendChild(heading)
+    }
     const meta = l.level as { id?: string; name?: string }
     const btn = document.createElement('button')
     const isComplete = completed.has(`${current.id}:${i}`)
@@ -709,14 +731,16 @@ function showHint(): void {
 
 // ---------- 事件 ----------
 
-for (const b of Object.values(bundles)) {
-  const btn = document.createElement('button')
-  btn.textContent = b.label
-  btn.dataset.game = b.id
-  btn.setAttribute('role', 'tab')
-  btn.setAttribute('aria-selected', 'false')
-  btn.addEventListener('click', () => loadGame(b.id))
-  tabsEl.appendChild(btn)
+if (showPrototypeSwitcher) {
+  for (const b of Object.values(bundles)) {
+    const btn = document.createElement('button')
+    btn.textContent = b.label
+    btn.dataset.game = b.id
+    btn.setAttribute('role', 'tab')
+    btn.setAttribute('aria-selected', 'false')
+    btn.addEventListener('click', () => loadGame(b.id))
+    tabsEl.appendChild(btn)
+  }
 }
 prevBtn.addEventListener('click', () => {
   cancelPending()
@@ -928,7 +952,7 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('blur', cancelPending)
 
 const requestedGame = searchParams.get('game')
-const initialGame = requestedGame !== null && Object.hasOwn(bundles, requestedGame) ? requestedGame : 't3'
+const initialGame = requestedGame !== null && Object.hasOwn(bundles, requestedGame) ? requestedGame : 'chem'
 const requestedLevel = Number.parseInt(searchParams.get('level') ?? '', 10)
 if (Number.isFinite(requestedLevel)) gameIndices[initialGame] = Math.max(0, requestedLevel - 1)
 loadGame(initialGame)
