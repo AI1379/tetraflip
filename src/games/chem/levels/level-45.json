@@ -1,0 +1,21 @@
+{
+  "id": "109.5°-45",
+  "name": "弹射撞核",
+  "hint": "弹射珠撞到中心当前的进攻面，会替你做一次纯翻转；撞完的珠仍留在落点，捡起来继续送。",
+  "width": 5,
+  "height": 4,
+  "walls": [],
+  "player": [1, 0],
+  "centers": [
+    { "pos": [3, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true, "hitCenters": true },
+    { "pos": [0, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "W" },
+    { "pos": [1, 3], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "E" }
+  ],
+  "groups": [{ "pos": [2, 0], "color": "purple" }],
+  "lights": [],
+  "stages": [{ "goals": [
+    { "center": 1, "arm": "N", "color": "green" },
+    { "center": 2, "arm": "W", "color": "green" }
+  ] }],
+  "par": 8
+}

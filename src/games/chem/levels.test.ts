@@ -21,7 +21,7 @@ const levelFiles = import.meta.glob('./levels/*.json', {
   import: 'default',
 }) as Record<string, unknown>
 
-/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；分段与 44 关正式曲线一致） */
+/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；分段与 50 关正式曲线一致） */
 const baseline: Record<string, number> = {
   './levels/level-01.json': 1, // 第一次撞入
   './levels/level-02.json': 5, // 从错误侧绕到背面
@@ -67,6 +67,12 @@ const baseline: Record<string, number> = {
   './levels/level-42.json': 6, // 光照预对齐三阶段护罩
   './levels/level-43.json': 7, // 开罩接三路：第一击连锁被护罩拦下，奇偶复位后接通
   './levels/level-44.json': 12, // 三阶段：光照 × 搬运 × 弹射 × 护罩
+  './levels/level-45.json': 8, // v4 弹射撞核：弹射珠撞中心纯翻转，撞完的珠继续送
+  './levels/level-46.json': 8, // v4 撞光又撞核：弹射珠落光照转轴后顺势撞中心
+  './levels/level-47.json': 9, // v4 再生护罩：破坏中间产物护罩回来，修复后重新打开
+  './levels/level-48.json': 9, // v4 再生闸门：修复中间产物让共振链穿过闸门
+  './levels/level-49.json': 11, // v4 修中间体再撞核：再生护罩 × 弹射撞核
+  './levels/level-50.json': 9, // v4 撞核共振链：弹射撞核后共振链继续传播，珠回收闭环
 }
 
 const entries = Object.entries(levelFiles).sort(([a], [b]) => a.localeCompare(b))
@@ -147,10 +153,10 @@ function hasWinningPathAvoiding(
   return false
 }
 
-describe('chem（109.5°）正式关卡批次 01–44', () => {
+describe('chem（109.5°）正式关卡批次 01–50', () => {
   it('关卡数量与基线表一致', () => {
     expect(entries.map(([file]) => file)).toEqual(Object.keys(baseline))
-    expect(entries).toHaveLength(44)
+    expect(entries).toHaveLength(50)
   })
 
   it('v3.2 正式曲线按机制段落落位', () => {
@@ -180,13 +186,19 @@ describe('chem（109.5°）正式关卡批次 01–44', () => {
         `level-${n} 应使用阶段护罩`,
       ).toBe(true)
     }
-    for (let n = 40; n <= 44; n++) {
+    for (let n = 40; n <= 50; n++) {
       const level = at(n)
       const usesMasteryMechanic =
         level.lights.length > 0 ||
         level.stages.length > 1 ||
         level.centers.some(
-          (c) => c.kind === 'trigonal' || c.ejects || c.shieldUntilStage !== undefined,
+          (c) =>
+            c.kind === 'trigonal' ||
+            c.ejects ||
+            c.shieldUntilStage !== undefined ||
+            c.hitLights ||
+            c.hitCenters ||
+            c.reactiveTo !== undefined,
         )
       expect(usesMasteryMechanic, `level-${n} 应深化既有机制`).toBe(true)
     }
@@ -489,5 +501,47 @@ describe('chem（109.5°）正式关卡批次 01–44', () => {
     ],
   ])('%s 最短解仍执行目标教学交互序列', (file, expected) => {
     expect(shortestInteractionTrace(file)).toEqual(expected)
+  })
+
+  it('v4 弹射打结构关：最短解必须真的用弹射中心发射（45/46/49/50）', () => {
+    for (const file of [
+      './levels/level-45.json',
+      './levels/level-46.json',
+      './levels/level-49.json',
+      './levels/level-50.json',
+    ]) {
+      const level = chemGame.parseLevel(levelFiles[file])
+      const ejectIndices = level.centers
+        .map((c, i) => (c.ejects ? i : -1))
+        .filter((i) => i >= 0)
+      const events = shortestInteractionTrace(file)
+      const usedLauncher = events.some((e) => {
+        const m = /^attack:(\d+):(.+)$/.exec(e)
+        return m !== null && ejectIndices.includes(Number(m[1])) && m[2] !== 'empty'
+      })
+      expect(usedLauncher, `${file} 最短解必须使用弹射中心发射`).toBe(true)
+    }
+  })
+
+  it('v4 再生护罩关：最短解中再生护罩状态发生过开/合变化（47/48/49）', () => {
+    for (const file of [
+      './levels/level-47.json',
+      './levels/level-48.json',
+      './levels/level-49.json',
+    ]) {
+      const level = chemGame.parseLevel(levelFiles[file])
+      const reactiveIndices = level.centers
+        .map((c, i) => (c.reactiveTo ? i : -1))
+        .filter((i) => i >= 0)
+      const transitions = shortestTransitions(file)
+      const changed = transitions.some((t) =>
+        reactiveIndices.some(
+          (i) =>
+            isShielded(t.before, t.before.centers[i]) !==
+            isShielded(t.after, t.after.centers[i]),
+        ),
+      )
+      expect(changed, `${file} 最短解必须体现再生护罩的开合变化`).toBe(true)
+    }
   })
 })
