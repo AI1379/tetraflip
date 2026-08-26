@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_DEV_ENDPOINT, buildPayload, isRating, resolveEndpoint } from './feedback'
+import {
+  DEFAULT_DEV_ENDPOINT,
+  buildPayload,
+  isFeedbackTag,
+  isRating,
+  normalizeFeedbackTags,
+  resolveEndpoint,
+} from './feedback'
 
 describe('resolveEndpoint（构建期开关解析）', () => {
   it('dev 默认指向本地回环收集器', () => {
@@ -43,5 +50,24 @@ describe('buildPayload', () => {
     const p = buildPayload({ game: 'chem', level: 1, levelId: 'level-01', moves: 4 }, 2, 4)
     expect(p).toEqual({ game: 'chem', level: 1, levelId: 'level-01', moves: 4, difficulty: 2, fun: 4 })
     expect('par' in p).toBe(false)
+    expect('tags' in p).toBe(false)
+  })
+
+  it('携带去重后的可选快捷标签', () => {
+    const p = buildPayload(
+      { game: 'chem', level: 5, levelId: 'level-05', moves: 9, par: 8 },
+      4,
+      3,
+      ['rules_unclear', 'controls_awkward', 'rules_unclear'],
+    )
+    expect(p.tags).toEqual(['rules_unclear', 'controls_awkward'])
+  })
+})
+
+describe('反馈标签白名单', () => {
+  it('只接受六个固定标签并过滤未知值 / 重复值', () => {
+    expect(isFeedbackTag('very_fun')).toBe(true)
+    expect(isFeedbackTag('free_text')).toBe(false)
+    expect(normalizeFeedbackTags(['very_fun', 'bad', 'very_fun', null])).toEqual(['very_fun'])
   })
 })

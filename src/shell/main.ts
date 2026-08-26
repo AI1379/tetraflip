@@ -10,7 +10,6 @@ import { t3Game, render as renderT3, setT3Preview } from '../games/t3'
 import {
   chemGame,
   render as renderChem,
-  setChemDecor,
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
@@ -32,6 +31,11 @@ import type { TutorialEvent, TutorialInputMode } from './tutorial'
 import { mountFeedback } from './feedback'
 import { logicalCanvasSize } from './viewport'
 import {
+  SWIPE_DISTANCE,
+  shouldStartPreview,
+  swipeDir,
+} from './swipe'
+import {
   addCompleted,
   emptyProgress,
   loadProgress,
@@ -45,8 +49,8 @@ import {
  * 这是唯一允许 any 的胶合层（桥接异构游戏类型），引擎保持严格类型。
  *
  * 认知外置层（design §11）在本层的落点：
- * - 输入模型：tap = 执行，hold ≥ HOLD_MS = 预演（预览 = 对当前局面求一次 step 交给渲染层画 ghost），
- *   松开 = 执行，Esc / 指针移开 = 取消；棋盘拖拽 = 实时预演。
+ * - 输入模型：tap = 执行，hold ≥ 280ms = 预演（预览 = 对当前局面求一次 step 交给渲染层画 ghost），
+ *   松开 = 执行，Esc / 指针移开 = 取消；棋盘拖拽先锁定方向，停留后才进入预演。
  * - 标记模式（chem）：点按中心循环 ①–⑤，点按其他格循环 ★/？/×；按「游戏:关卡」存会话内。
  * - Inspect（chem）：点按中心显示构型周期面板（渲染层实现），6 秒自动收起、任何动作即收起。
  */
@@ -56,8 +60,6 @@ interface Bundle {
   label: string
   def: AnyGame
   render: (state: any, ctx: CanvasRenderingContext2D, w: number, h: number) => void
-  /** 装饰开关（design §10：包装可用一个开关整体关掉）；未实现则缺省 */
-  setDecor?: (v: boolean) => void
   /** 无效输入反馈（step 无效果时调用）；未实现则缺省 */
   onBlocked?: (dir: Dir) => void
   /** 换关 / 重开时重置渲染层动画状态；未实现则缺省 */
@@ -77,7 +79,6 @@ const bundles: Record<string, Bundle> = {
     label: '109.5°',
     def: chemGame,
     render: renderChem,
-    setDecor: setChemDecor,
     onBlocked: notifyChemImpact,
     resetAnim: resetChemAnim,
     animationRemainingMs: getChemAnimationRemainingMs,
@@ -111,7 +112,6 @@ app.innerHTML = `
     </div>
     <div class="header-tools">
       <div class="tabs ${showPrototypeSwitcher ? '' : 'hidden'}" id="tabs" role="tablist" aria-label="研发原型切换"></div>
-      <button id="decor" class="icon-button active" title="切换棋盘装饰" aria-label="关闭棋盘装饰"><span class="decor-glyph" aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -154,7 +154,8 @@ app.innerHTML = `
         <kbd id="guide-key-label">S</kbd>
         <span id="guide-key-action">PRESS</span>
       </div>
-      <section class="board-guide-card" aria-label="操作引导">
+      <section id="tutorial-card" class="board-guide-card" aria-label="操作引导">
+        <button id="tutorial-close" class="tutorial-close" title="收起操作引导" aria-label="收起操作引导" aria-controls="tutorial-card" aria-expanded="true"><span aria-hidden="true"></span></button>
         <small id="tutorial-kicker">CORE INPUT · 01 / 05</small>
         <strong id="tutorial-title"></strong>
         <p id="tutorial-body"></p>
@@ -175,6 +176,7 @@ app.innerHTML = `
         <div id="tutorial-feedback" class="tutorial-feedback hidden" role="status"></div>
         <span id="tutorial-tip" class="tutorial-tip"></span>
       </section>
+      <button id="tutorial-reopen" class="tutorial-reopen" aria-label="展开操作引导" aria-controls="tutorial-card" aria-expanded="false"><span>TIP</span><i aria-hidden="true"></i></button>
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <div id="overlay" class="overlay hidden" aria-hidden="true">
@@ -191,7 +193,7 @@ app.innerHTML = `
       </div>
     </div>
     <div id="winbar" class="winbar hidden" aria-live="polite">
-      <span id="winbar-text" class="winbar-text"></span>
+      <button id="winbar-open" class="winbar-text" title="重新打开通关反馈" aria-label="重新打开通关反馈"></button>
       <button id="winbar-replay" class="secondary-button">再玩一次</button>
       <button id="winbar-next" class="primary-button">下一关 →</button>
       <button id="winbar-close" class="winbar-close" title="关闭通关栏" aria-label="关闭通关栏">✕</button>
@@ -200,13 +202,13 @@ app.innerHTML = `
 
   <section class="controls" aria-label="游戏操作">
     <div class="utility-actions">
-      <button id="undo" class="control-button" title="撤销 (Z)">
+      <button id="undo" class="control-button" title="撤销 (Z)" aria-label="撤销">
         <span class="control-icon icon-undo" aria-hidden="true"></span><span>撤销</span>
       </button>
-      <button id="restart" class="control-button" title="重开 (R)">
+      <button id="restart" class="control-button" title="重开 (R)" aria-label="重开">
         <span class="control-icon icon-restart" aria-hidden="true"></span><span>重开</span>
       </button>
-      <button id="mark-mode" class="control-button hidden" title="标记模式 (M)：点按中心放 ①–⑤ 顺序标，点按格子放 ★/？/×">
+      <button id="mark-mode" class="control-button hidden" title="标记模式 (M)：点按中心放 ①–⑤ 顺序标，点按格子放 ★/？/×" aria-label="标记模式">
         <span class="control-icon icon-mark" aria-hidden="true"></span><span>标记</span>
       </button>
     </div>
@@ -217,7 +219,7 @@ app.innerHTML = `
       <button class="dpad-key east" data-dir="E" aria-label="向右">→</button>
       <button class="dpad-key south" data-dir="S" aria-label="向下">↓</button>
     </div>
-    <button id="hint" class="control-button hint-button" title="下一步提示 (H)：不限次数">
+    <button id="hint" class="control-button hint-button" title="下一步提示 (H)：不限次数" aria-label="提示一步">
       <span class="control-icon icon-hint" aria-hidden="true"></span><span>提示一步</span>
     </button>
   </section>
@@ -254,7 +256,7 @@ const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const replayAfterWin = app.querySelector('#replay-after-win') as HTMLButtonElement
 const viewAfterWin = app.querySelector('#view-after-win') as HTMLButtonElement
 const winbar = app.querySelector('#winbar') as HTMLElement
-const winbarText = app.querySelector('#winbar-text') as HTMLElement
+const winbarOpen = app.querySelector('#winbar-open') as HTMLButtonElement
 const winbarReplay = app.querySelector('#winbar-replay') as HTMLButtonElement
 const winbarNext = app.querySelector('#winbar-next') as HTMLButtonElement
 const winbarClose = app.querySelector('#winbar-close') as HTMLButtonElement
@@ -278,11 +280,12 @@ const forecastOutDot = app.querySelector('#forecast-out-dot') as HTMLElement
 const forecastOutColor = app.querySelector('#forecast-out-color') as HTMLElement
 const tutorialFeedback = app.querySelector('#tutorial-feedback') as HTMLElement
 const tutorialTip = app.querySelector('#tutorial-tip') as HTMLElement
+const tutorialClose = app.querySelector('#tutorial-close') as HTMLButtonElement
+const tutorialReopen = app.querySelector('#tutorial-reopen') as HTMLButtonElement
 const toastEl = app.querySelector('#toast') as HTMLElement
 const pickerEl = app.querySelector('#level-picker') as HTMLElement
 const pickerBackdrop = app.querySelector('#picker-backdrop') as HTMLElement
 const levelsBtn = app.querySelector('#levels-btn') as HTMLButtonElement
-const decorBtn = app.querySelector('#decor') as HTMLButtonElement
 const prevBtn = app.querySelector('#prev') as HTMLButtonElement
 const nextBtn = app.querySelector('#next') as HTMLButtonElement
 const undoBtn = app.querySelector('#undo') as HTMLButtonElement
@@ -320,8 +323,6 @@ app.dataset.inputMode = tutorialInputMode
 
 // ---------- 认知外置层（design §11）：预演 / 标记 / Inspect 的壳层状态 ----------
 
-/** 按住预演的最小停留时间（毫秒）：≤ 阈值视为快速点按（松开即执行），超过进入预演 */
-const HOLD_MS = 280
 /** 棋盘动画结束后保留终局局面的短暂停顿，让玩家先看懂“为什么通关”。 */
 const WIN_SETTLE_MS = 360
 /** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost */
@@ -329,6 +330,8 @@ let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
 /** 01–05 引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
 let tutorialEvent: TutorialEvent = null
+/** 玩家主动收起后跨教程步骤保持精简态；可随时用棋盘边缘的 TIP 标签恢复。 */
+let tutorialCollapsed = false
 
 /** 标记模式（仅 chem）；标记按「游戏:关卡」存会话内，撤销 / 重开不丢失 */
 let markMode = false
@@ -382,9 +385,9 @@ function draw(): void {
 }
 
 // 渲染循环：补间动画 / 背景自转 / 无效进攻反馈需要连续重绘（棋盘小，开销可忽略）；
-// 同时驱动「按住预演」：按住超过 HOLD_MS 注入一步预演态（design §11）。
+// 同时驱动「按住预演」：按住超过 280ms 注入一步预演态（design §11）。
 function frame(): void {
-  if (pending && !pending.previewing && performance.now() - pending.downAt >= HOLD_MS) {
+  if (pending && !pending.previewing && shouldStartPreview(pending.downAt, performance.now())) {
     pending.previewing = true
     showPreview(pending.dir)
   }
@@ -521,6 +524,8 @@ function updateTutorial(): void {
   }
 
   boardGuide.classList.remove('hidden')
+  boardGuide.classList.toggle('collapsed', tutorialCollapsed)
+  tutorialClose.setAttribute('aria-expanded', String(!tutorialCollapsed))
   tutorialKicker.textContent = guide.kicker
   tutorialTitle.textContent = guide.title
   tutorialBody.textContent = guide.body
@@ -552,6 +557,13 @@ function updateTutorial(): void {
 
   tutorialFeedback.classList.toggle('hidden', guide.feedback === null)
   tutorialFeedback.textContent = guide.feedback ?? ''
+}
+
+function setTutorialCollapsed(collapsed: boolean): void {
+  tutorialCollapsed = collapsed
+  boardGuide.classList.toggle('collapsed', collapsed)
+  tutorialClose.setAttribute('aria-expanded', String(!collapsed))
+  tutorialReopen.setAttribute('aria-expanded', String(!collapsed))
 }
 
 // 旋转屏幕或视口高度变化时，Canvas 会从正方形变为矩形；教程锚点必须同步重算。
@@ -593,8 +605,6 @@ function updateHud(): void {
   prevBtn.disabled = index <= 0
   nextBtn.disabled = index >= levels.length - 1
   undoBtn.disabled = !hist.canUndo
-  decorBtn.classList.toggle('hidden', current.setDecor === undefined)
-
   // 关卡 hint（教学/点拨文案）：纯展示，有则显示，无则隐藏
   if (meta.hint) {
     hintEl.textContent = meta.hint
@@ -623,7 +633,7 @@ function showOverlay(): void {
   const result = winResult()
   winTitle.textContent = meta.name ?? meta.id ?? `第 ${index + 1} 关`
   winStats.textContent = result
-  winbarText.textContent = `✓ 已通关 · ${result}`
+  winbarOpen.textContent = `✓ 已通关 · ${result}`
   nextAfterWin.textContent = isLast ? '回到本关' : '下一关 →'
   winbarNext.textContent = isLast ? '回到本关' : '下一关 →'
   // 可选通关反馈（构建期开关，design §8）：未启用时面板保持隐藏、零请求
@@ -635,9 +645,7 @@ function showOverlay(): void {
     moves: s.moves ?? hist.depth,
     par: s.par,
   })
-  overlay.classList.remove('hidden')
-  overlay.setAttribute('aria-hidden', 'false')
-  viewAfterWin.focus()
+  reopenOverlay()
 }
 
 function cancelWinReveal(): void {
@@ -669,6 +677,14 @@ function scheduleWinOverlay(): void {
 function hideOverlay(): void {
   overlay.classList.add('hidden')
   overlay.setAttribute('aria-hidden', 'true')
+}
+
+/** 从精简通栏恢复原来的通关卡片；不重建 DOM，因此未提交的反馈选择也会保留。 */
+function reopenOverlay(): void {
+  hideWinbar()
+  overlay.classList.remove('hidden')
+  overlay.setAttribute('aria-hidden', 'false')
+  viewAfterWin.focus()
 }
 
 /** 关闭通关卡片、露出终局棋盘，同时保留一条精简通栏 */
@@ -991,18 +1007,6 @@ function togglePicker(): void {
   else closePicker()
 }
 
-// 装饰开关（design §10 纪律：包装可用一个开关整体关掉，玩法信息不受影响）
-let decorOn = true
-function toggleDecor(): void {
-  decorOn = !decorOn
-  for (const b of Object.values(bundles)) b.setDecor?.(decorOn)
-  decorBtn.textContent = decorOn ? '✦' : '·'
-  decorBtn.classList.toggle('active', decorOn)
-  decorBtn.title = decorOn ? '关闭棋盘装饰' : '恢复棋盘装饰'
-  decorBtn.setAttribute('aria-label', decorBtn.title)
-  draw()
-}
-
 // ---------- solver 提示（design §10「玩家辅助」：从当前局面实时求解，不写手打攻略） ----------
 
 const DIR_TEXT: Record<string, string> = {
@@ -1074,7 +1078,6 @@ undoBtn.addEventListener('click', () => {
   cancelPending()
   restart()
 })
-decorBtn.addEventListener('click', toggleDecor)
 ;(app.querySelector('#hint') as HTMLButtonElement).addEventListener('click', () => {
   cancelPending()
   showHint()
@@ -1091,11 +1094,14 @@ nextAfterWin.addEventListener('click', () => {
 replayAfterWin.addEventListener('click', restart)
 viewAfterWin.addEventListener('click', viewBoard)
 winbarReplay.addEventListener('click', restart)
+winbarOpen.addEventListener('click', reopenOverlay)
 winbarNext.addEventListener('click', () => {
   if (index >= levels.length - 1) restart()
   else nextLevel()
 })
 winbarClose.addEventListener('click', hideWinbar)
+tutorialClose.addEventListener('click', () => setTutorialCollapsed(true))
+tutorialReopen.addEventListener('click', () => setTutorialCollapsed(false))
 
 // 触屏方向键（design §11 输入模型）：按下开始计时，松开 = 执行；指针移开按钮 = 取消。
 // 键盘可达性：Enter/Space 触发的 click（无 pointerdown 前置）直接执行。
@@ -1127,14 +1133,9 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
   })
 }
 
-// 触屏棋盘（design §11）：拖拽 ≥ 24px = 实时预演（随手指变向），松开执行；
-// 拖回起点 < 24px = 取消；位移 < 24px 的轻点 = Inspect / 标记。
+// 触屏棋盘（design §11）：拖拽 ≥24px 先锁定方向，快速松手直接执行；
+// 保持方向 ≥280ms 才显示预演。拖回起点 = 取消；短距离轻点 = Inspect / 标记。
 let swipeStart: { x: number; y: number; pointerId: number; engaged: boolean } | null = null
-
-function swipeDir(dx: number, dy: number): Dir | null {
-  if (Math.min(Math.abs(dx), Math.abs(dy)) > Math.max(Math.abs(dx), Math.abs(dy)) * 0.75) return null
-  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'E' : 'W') : dy > 0 ? 'S' : 'N'
-}
 
 canvas.addEventListener('pointerdown', (e) => {
   observePointerInput(e)
@@ -1145,7 +1146,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (!swipeStart || swipeStart.pointerId !== e.pointerId) return
   const dx = e.clientX - swipeStart.x
   const dy = e.clientY - swipeStart.y
-  if (Math.hypot(dx, dy) < 24) {
+  if (Math.hypot(dx, dy) < SWIPE_DISTANCE) {
     // 拖回起点附近：若之前已预演，取消
     if (swipeStart.engaged) {
       swipeStart.engaged = false
@@ -1157,9 +1158,11 @@ canvas.addEventListener('pointermove', (e) => {
   if (!dir) return // 斜滑：保持既有方向
   swipeStart.engaged = true
   if (!pending || pending.dir !== dir) {
-    // 变向 = 替换意图（不提交旧方向）；拖拽预演立即生效，不等 HOLD_MS
-    pending = { dir, downAt: performance.now(), previewing: true }
-    showPreview(dir)
+    // 变向 = 替换意图并重新计时，不提交旧方向；停留到阈值后由 frame 注入预演。
+    clearPreview()
+    tutorialEvent = null
+    pending = { dir, downAt: performance.now(), previewing: false }
+    updateTutorial()
   }
 })
 canvas.addEventListener('pointerup', (e) => {
@@ -1169,7 +1172,17 @@ canvas.addEventListener('pointerup', (e) => {
   const dx = e.clientX - start.x
   const dy = e.clientY - start.y
   const distance = Math.hypot(dx, dy)
-  if (start.engaged && distance >= 24 && pending) {
+  // 极快的 fling 可能在越过阈值后没有派发 pointermove；在松手点补一次方向判定。
+  if (!start.engaged && distance >= SWIPE_DISTANCE) {
+    const dir = swipeDir(dx, dy)
+    if (dir) {
+      pending = { dir, downAt: performance.now(), previewing: false }
+      hideToast()
+      commitPending()
+    }
+    return
+  }
+  if (start.engaged && distance >= SWIPE_DISTANCE && pending) {
     hideToast()
     dirUp(pending.dir) // 松开 = 执行
     return

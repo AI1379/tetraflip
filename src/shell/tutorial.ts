@@ -159,7 +159,7 @@ function exchangeForecast(
 function feedbackFor(state: ChemState, event: TutorialEvent): Pick<TutorialModel, 'feedback' | 'feedbackTone'> {
   if (event?.kind === 'preview') {
     return {
-      feedback: '预演中：虚线轮廓是松开后将发生的结果；移开指针或按 Esc 可以取消。',
+      feedback: '预演中：虚线轮廓是松开后将发生的结果；回到原位或按 Esc 可以取消。',
       feedbackTone: 'info',
     }
   }
@@ -359,7 +359,7 @@ export function getChemTutorial(
     return model(levelIndex, state, event, {
       title: attack ? `位置对了，向${tutorialDirText(attack.dir)}撞入` : '绕到白箭头的反面',
       body: '从错误的一面撞，中心不会动；普通空格仍可行走。找到箭头反面的进攻位，再沿箭头方向出手。',
-      tip: '不确定时按住方向约 0.3 秒预演；松开执行，移开或 Esc 取消',
+      tip: '不确定时按住方向约 0.3 秒预演；松开执行，回到原位或按 Esc 取消',
       focusDirs: attack ? [attack.dir] : [],
       forecast: null,
       spotlight: { pos: state.centers[0].pos, radiusCells: 0.85 },
@@ -391,7 +391,7 @@ export function getChemTutorial(
             : '把手中的色珠带到中心箭头反面的进攻位，靠近后再学习预演。'
         : '经过游离色珠会自动拿起；上方状态栏的「手持」会从“空”变成对应颜色。',
       tip: previewing && forecast
-        ? `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来，再松手执行；移开或按 Esc 取消`
+        ? `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来，再松手执行；回到原位或按 Esc 取消`
         : holdingText
           ? attack
             ? keyboard

@@ -18,10 +18,11 @@ import os
 import time
 import uuid
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -39,6 +40,16 @@ app.add_middleware(
 )
 
 
+FeedbackTag = Literal[
+    "rules_unclear",
+    "stuck_reasoning",
+    "controls_awkward",
+    "too_much_walking",
+    "too_easy",
+    "very_fun",
+]
+
+
 class Feedback(BaseModel):
     game: str = Field(min_length=1, max_length=64)
     level: int = Field(ge=1)
@@ -47,6 +58,14 @@ class Feedback(BaseModel):
     fun: int = Field(ge=1, le=5)
     moves: int | None = Field(default=None, ge=0)
     par: int | None = Field(default=None, ge=0)
+    tags: list[FeedbackTag] = Field(default_factory=list, max_length=6)
+
+    @field_validator("tags")
+    @classmethod
+    def tags_are_unique(cls, tags: list[FeedbackTag]) -> list[FeedbackTag]:
+        if len(tags) != len(set(tags)):
+            raise ValueError("feedback tags must be unique")
+        return tags
 
 
 @app.get("/health")

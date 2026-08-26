@@ -20,8 +20,7 @@ import type { CenterKind } from './level'
  * - 手感：行走补间、整体 180° 翻转动画（连锁时按传播距离阶梯延迟；三臂中心的缺口也随骨架转动）、
  *   无效进攻抖动 + 撞面红闪；已达标中心画锁定圈 + ✓ 徽标。
  * - 动画状态是渲染层私有时钟（只读游戏状态、绝不改状态）；状态转移由 stateKey 变化驱动。
- * - 纪律：装饰不压缩棋盘（布局常量与无装饰时完全一致）；
- *   `setChemDecor(false)` 可整体关掉装饰（玩法信息——开口箭头/目标虚线/共轭键/锁定徽标/特殊格——永远保留）。
+ * - 纪律：装饰不压缩棋盘，不与玩法信息——开口箭头 / 目标虚线 / 共轭键 / 锁定徽标 / 特殊格——竞争。
  * - 全程不出现化学术语/化学式文字。
  *
  * 认知外置层（design §11，2026-08-24）：
@@ -59,19 +58,12 @@ const ARM_LEN = 0.46 // 普通臂长（格）：收在中心附近，避免与�
 const ARM_LEN_SHORT = 0.34 // 相邻中心侧进一步缩短，留出共振键
 const TETRA_SPIN = 0.00012 // 背景四面体自转（rad/ms）
 
-let decor = true
-
 /**
  * Canvas 小字号不能依赖 Unicode 圈号或浏览器的等宽字体回退：不同系统会得到完全不同的字面框。
  * 阶段 / 连锁编号统一使用窄体无衬线数字，中文说明统一走系统中文黑体栈。
  */
 const CANVAS_NUM_FONT = '"Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif'
 const CANVAS_UI_FONT = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif'
-
-/** 装饰开关（design §10：包装可用一个开关整体关掉）。只关装饰，不关玩法信息。 */
-export function setChemDecor(v: boolean): void {
-  decor = v
-}
 
 // ---------- 认知外置层（design §11）：预演 / Inspect / 标记（渲染层只读，不进游戏状态） ----------
 
@@ -356,10 +348,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   ctx.fillStyle = '#0b1018'
   ctx.fillRect(0, 0, W, H)
 
-  if (decor) {
-    drawBackdrop(ctx, W, H, now)
-    drawFrame(ctx, ox, oy, cell * s.width, cell * s.height, cell)
-  }
+  drawBackdrop(ctx, W, H, now)
+  drawFrame(ctx, ox, oy, cell * s.width, cell * s.height, cell)
 
   // 棋盘底板与网格
   ctx.fillStyle = 'rgba(18, 27, 39, 0.72)'
@@ -652,16 +642,14 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       shake = null
     }
   }
-  if (decor) {
-    ctx.save()
-    ctx.strokeStyle = INK
-    ctx.globalAlpha = 0.22
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.arc(sx, sy, cell * 0.36, 0, Math.PI * 2)
-    ctx.stroke()
-    ctx.restore()
-  }
+  ctx.save()
+  ctx.strokeStyle = INK
+  ctx.globalAlpha = 0.22
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.arc(sx, sy, cell * 0.36, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
   // 玩家使用“亮环 + 暗芯”，与目标圈、中心原子和游离珠形成不同轮廓。
   ctx.fillStyle = INK
   ctx.beginPath()
@@ -1237,7 +1225,7 @@ function drawChainBadge(
 
 /** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性） */
 function drawPreviewBanner(ctx: CanvasRenderingContext2D, W: number): void {
-  const text = '预演中 · 松开执行 · Esc 取消'
+  const text = '预演中 · 松开执行 · 回到原位 / Esc 取消'
   // 宽度按字符估算（CJK ≈ 12px / ASCII ≈ 7px @12px 字号），不依赖 measureText
   const textW = [...text].reduce((w, ch) => w + ((ch.codePointAt(0) ?? 0) > 0x2e80 ? 12 : 7), 0)
   const w = textW + 28

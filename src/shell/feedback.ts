@@ -1,5 +1,5 @@
 /**
- * 通关反馈（可选收集）：难度 / 趣味性两条 1–5 评分，POST 到自建 FastAPI 收集器。
+ * 通关反馈（可选收集）：难度 / 趣味性两条 1–5 评分 + 可选快捷标签，POST 到自建 FastAPI 收集器。
  *
  * 构建期开关（design §8）：
  * - dev（vite dev）：默认开启，端点 `http://127.0.0.1:8787`，可用 `VITE_FEEDBACK_ENDPOINT` 覆盖；
@@ -29,8 +29,29 @@ export function resolveEndpoint(env: FeedbackEnv, queryOverride?: string): strin
 
 export type Rating = 1 | 2 | 3 | 4 | 5
 
+export const FEEDBACK_TAGS = [
+  { id: 'rules_unclear', label: '规则没看懂' },
+  { id: 'stuck_reasoning', label: '卡在推理' },
+  { id: 'controls_awkward', label: '操作不顺' },
+  { id: 'too_much_walking', label: '走路太多' },
+  { id: 'too_easy', label: '太简单' },
+  { id: 'very_fun', label: '很有意思' },
+] as const
+
+export type FeedbackTag = (typeof FEEDBACK_TAGS)[number]['id']
+const FEEDBACK_TAG_IDS = new Set<string>(FEEDBACK_TAGS.map((tag) => tag.id))
+
 export function isRating(v: unknown): v is Rating {
   return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5
+}
+
+export function isFeedbackTag(v: unknown): v is FeedbackTag {
+  return typeof v === 'string' && FEEDBACK_TAG_IDS.has(v)
+}
+
+/** 忽略未知值并去重，保证会话旧数据与载荷始终落在后端白名单内。 */
+export function normalizeFeedbackTags(values: readonly unknown[]): FeedbackTag[] {
+  return [...new Set(values.filter(isFeedbackTag))]
 }
 
 export interface FeedbackInfo {
@@ -46,10 +67,19 @@ export interface FeedbackInfo {
 export interface FeedbackPayload extends FeedbackInfo {
   difficulty: Rating
   fun: Rating
+  tags?: FeedbackTag[]
 }
 
-export function buildPayload(info: FeedbackInfo, difficulty: Rating, fun: Rating): FeedbackPayload {
-  return { ...info, difficulty, fun }
+export function buildPayload(
+  info: FeedbackInfo,
+  difficulty: Rating,
+  fun: Rating,
+  tags: readonly FeedbackTag[] = [],
+): FeedbackPayload {
+  const normalized = normalizeFeedbackTags(tags)
+  return normalized.length > 0
+    ? { ...info, difficulty, fun, tags: normalized }
+    : { ...info, difficulty, fun }
 }
 
 /** 提交评分；8 秒超时，失败返回 false（不抛错，不影响游戏流程） */
@@ -98,21 +128,28 @@ function storeKey(info: FeedbackInfo): string {
   return `${STORE_PREFIX}${info.game}:${info.levelId || info.level}`
 }
 
-function loadSaved(key: string): { difficulty: Rating; fun: Rating } | null {
+interface SavedFeedback {
+  difficulty: Rating
+  fun: Rating
+  tags: FeedbackTag[]
+}
+
+function loadSaved(key: string): SavedFeedback | null {
   try {
     const raw = sessionStorage.getItem(key)
     if (!raw) return null
-    const v = JSON.parse(raw) as { difficulty?: unknown; fun?: unknown }
+    const v = JSON.parse(raw) as { difficulty?: unknown; fun?: unknown; tags?: unknown }
     if (!isRating(v.difficulty) || !isRating(v.fun)) return null
-    return { difficulty: v.difficulty, fun: v.fun }
+    const tags = Array.isArray(v.tags) ? normalizeFeedbackTags(v.tags) : []
+    return { difficulty: v.difficulty, fun: v.fun, tags }
   } catch {
     return null
   }
 }
 
-function saveSaved(key: string, difficulty: Rating, fun: Rating): void {
+function saveSaved(key: string, difficulty: Rating, fun: Rating, tags: readonly FeedbackTag[]): void {
   try {
-    sessionStorage.setItem(key, JSON.stringify({ difficulty, fun }))
+    sessionStorage.setItem(key, JSON.stringify({ difficulty, fun, tags: normalizeFeedbackTags(tags) }))
   } catch {
     /* 隐私模式等存储不可用时忽略 */
   }
@@ -191,7 +228,7 @@ export function mountFeedback(container: HTMLElement, info: FeedbackInfo): void 
   const head = makeEl('div', 'feedback-head')
   head.append(
     makeEl('span', 'feedback-title', '通关反馈'),
-    makeEl('small', 'feedback-sub', '难度 / 趣味各 1–5 分，选完可提交（可选）'),
+    makeEl('small', 'feedback-sub', '可选'),
   )
 
   const groups = new Map<'difficulty' | 'fun', StarGroup>()
@@ -215,6 +252,25 @@ export function mountFeedback(container: HTMLElement, info: FeedbackInfo): void 
     row.append(stars)
     rowEls.push(row)
   }
+
+  const selectedTags = new Set<FeedbackTag>(saved?.tags ?? [])
+  const tagBlock = makeEl('div', 'feedback-tag-block')
+  tagBlock.append(makeEl('span', 'feedback-tag-label', '快速标签 · 可多选'))
+  const tagGroup = makeEl('div', 'feedback-tags')
+  tagGroup.setAttribute('role', 'group')
+  tagGroup.setAttribute('aria-label', '可选的反馈标签')
+  for (const tag of FEEDBACK_TAGS) {
+    const button = makeEl('button', 'feedback-tag', tag.label)
+    button.type = 'button'
+    button.setAttribute('aria-pressed', String(selectedTags.has(tag.id)))
+    button.addEventListener('click', () => {
+      if (selectedTags.has(tag.id)) selectedTags.delete(tag.id)
+      else selectedTags.add(tag.id)
+      button.setAttribute('aria-pressed', String(selectedTags.has(tag.id)))
+    })
+    tagGroup.append(button)
+  }
+  tagBlock.append(tagGroup)
 
   const actions = makeEl('div', 'feedback-actions')
   const submit = makeEl('button', 'feedback-submit', '提交')
@@ -241,12 +297,13 @@ export function mountFeedback(container: HTMLElement, info: FeedbackInfo): void 
     submit.disabled = true
     status.dataset.tone = 'pending'
     status.textContent = '发送中…'
-    const ok = await postFeedback(getEndpoint(), buildPayload(info, sel.difficulty, sel.fun))
+    const tags = [...selectedTags]
+    const ok = await postFeedback(getEndpoint(), buildPayload(info, sel.difficulty, sel.fun, tags))
     if (ok) {
       submitted = true
       status.dataset.tone = 'ok'
       status.textContent = '✓ 已提交，谢谢！'
-      saveSaved(key, sel.difficulty, sel.fun)
+      saveSaved(key, sel.difficulty, sel.fun, tags)
     } else {
       status.dataset.tone = 'error'
       status.textContent = '发送失败，可稍后重试或忽略'
@@ -254,5 +311,5 @@ export function mountFeedback(container: HTMLElement, info: FeedbackInfo): void 
     }
   })
 
-  container.append(head, ...rowEls, actions)
+  container.append(head, ...rowEls, tagBlock, actions)
 }

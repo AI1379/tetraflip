@@ -42,7 +42,7 @@ docs/
 
 ## 通关反馈收集（可选，默认关闭）
 
-默认构建**无任何联网行为**。想收集通关后的难度 / 趣味评分（各 1–5）：
+默认构建**无任何联网行为**。想收集通关后的难度 / 趣味评分（各 1–5）与可选快捷标签：
 
 1. 起后端：`pip install -r server/requirements.txt && uvicorn app:app --app-dir server --port 8787`（或 `python server/app.py`）
 2. dev 下已默认开启；生产构建用 `VITE_FEEDBACK_ENDPOINT=<地址> pnpm build` 开启

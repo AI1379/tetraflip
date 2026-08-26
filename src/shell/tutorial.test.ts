@@ -90,6 +90,7 @@ describe('01–05 状态驱动操作引导', () => {
     expect(preview?.title).toContain('这就是预演')
     expect(preview?.body).toContain('这就是染色')
     expect(preview?.feedback).toContain('预演中')
+    expect(preview?.feedback).toContain('回到原位或按 Esc')
     expect(preview?.forecast).toMatchObject({
       center: 0,
       dir: 'S',

@@ -1,6 +1,6 @@
 # 通关反馈收集服务（可选开发工具）
 
-比赛提交仍是纯静态、无后端；本服务只在你想收集通关后的「难度 / 趣味」评分时启用。
+比赛提交仍是纯静态、无后端；本服务只在你想收集通关后的「难度 / 趣味」评分与快捷标签时启用。
 数据以 JSONL 追加写入 `server/data/feedback.jsonl`（已 gitignore，不会进仓库）。
 
 ## 本地跑
@@ -34,8 +34,9 @@ cloudflared tunnel --url http://127.0.0.1:8787
 
 ## API
 
-- `POST /api/feedback` — body `{game, level, levelId, difficulty, fun, moves?, par?}` → `{ok, id}`
+- `POST /api/feedback` — body `{game, level, levelId, difficulty, fun, moves?, par?, tags?}` → `{ok, id}`
   - `difficulty` / `fun` 取值 1–5，服务端校验。
+  - `tags` 是可选数组，只接受：`rules_unclear`、`stuck_reasoning`、`controls_awkward`、`too_much_walking`、`too_easy`、`very_fun`；省略时按空数组处理。
 - `GET /api/feedback` — `{count, file}`（调试用，已收集行数）
 - `GET /health` — `{ok: true}`
 

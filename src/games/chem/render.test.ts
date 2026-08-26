@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { chemGame, initialState, isShielded, step } from './engine'
 import {
   render,
-  setChemDecor,
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
@@ -58,14 +57,10 @@ function recordingCtx(texts: string[]): CanvasRenderingContext2D {
 }
 
 describe('chem（109.5°）渲染冒烟', () => {
-  it('单中心 / 多中心 / v1 搬运关均可直接渲染，装饰开关两种状态均可用', () => {
+  it('单中心 / 多中心 / v1 搬运关均可直接渲染', () => {
     const ctx = stubCtx()
     for (const json of [level01, level09, level10, level14]) {
       const s = initialState(chemGame.parseLevel(json))
-      expect(() => render(s, ctx, 480, 480)).not.toThrow()
-      setChemDecor(false)
-      expect(() => render(s, ctx, 480, 480)).not.toThrow()
-      setChemDecor(true)
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
     }
   })
@@ -102,9 +97,6 @@ describe('chem（109.5°）渲染冒烟', () => {
     for (const json of [level10, level18]) {
       const s = initialState(chemGame.parseLevel(json))
       expect(() => render(s, ctx, 480, 480)).not.toThrow()
-      setChemDecor(false)
-      expect(() => render(s, ctx, 480, 480)).not.toThrow()
-      setChemDecor(true)
     }
     // 连锁翻转转移：level-15 一击分叉到四个中心。
     const level = chemGame.parseLevel(level15)
@@ -150,9 +142,6 @@ describe('chem（109.5°）渲染冒烟', () => {
     }
     let s = initialState(level)
     expect(() => render(s, ctx, 480, 480)).not.toThrow()
-    setChemDecor(false)
-    expect(() => render(s, ctx, 480, 480)).not.toThrow()
-    setChemDecor(true)
 
     // 光照格转移（只转开口、不播翻转动画）
     s = step(s, 'S')
@@ -267,6 +256,9 @@ describe('chem 认知外置层（design §11：预演 / Inspect / 标记）', ()
     // 进攻预演（player 在开口背面，按 E 撞入 ⇒ 中心构型变化）
     setChemPreview(step(positioned, 'E'))
     expect(() => render(positioned, ctx, 480, 480)).not.toThrow()
+    const previewTexts: string[] = []
+    render(positioned, recordingCtx(previewTexts), 480, 480)
+    expect(previewTexts).toContain('预演中 · 松开执行 · 回到原位 / Esc 取消')
     // 无效动作预演（step 返回原状态 ⇒ 无变化中心，仅压暗 + 提示条）
     setChemPreview(step(positioned, 'W'))
     expect(() => render(positioned, ctx, 480, 480)).not.toThrow()
