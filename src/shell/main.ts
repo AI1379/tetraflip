@@ -131,6 +131,10 @@ app.innerHTML = `
       <strong id="move-label">0</strong>
     </div>
     <div id="game-stats" class="game-stats"></div>
+    <button id="tutorial-toggle" class="tutorial-toggle" role="switch" aria-checked="true" aria-label="新手教程已开启">
+      <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
+      <span class="tutorial-switch-track" aria-hidden="true"><i></i></span>
+    </button>
   </section>
 
   <details id="level-brief" class="level-brief" open>
@@ -219,13 +223,18 @@ app.innerHTML = `
       <button class="dpad-key east" data-dir="E" aria-label="向右">→</button>
       <button class="dpad-key south" data-dir="S" aria-label="向下">↓</button>
     </div>
-    <button id="hint" class="control-button hint-button" title="下一步提示 (H)：不限次数" aria-label="提示一步">
-      <span class="control-icon icon-hint" aria-hidden="true"></span><span>提示一步</span>
-    </button>
+    <div class="assist-actions">
+      <button id="hint" class="control-button hint-button" title="下一步提示 (H)：不限次数" aria-label="提示一步">
+        <span class="control-icon icon-hint" aria-hidden="true"></span><span>提示一步</span>
+      </button>
+      <button id="rules" class="control-button rules-button" title="查看全部规则 (G)" aria-label="查看全部游戏规则" aria-haspopup="dialog">
+        <span class="control-icon icon-rules" aria-hidden="true"></span><span>全部规则</span>
+      </button>
+    </div>
   </section>
 
   <footer class="app-footer">
-    <div class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开执行，Esc 取消） · Z 撤销 · R 重开 · H 提示 · M 标记</div>
+    <div class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开执行，Esc 取消） · Z 撤销 · R 重开 · H 提示 · G 规则 · M 标记</div>
     <div class="copyright">© 2026 <a href="https://github.com/AI1379" target="_blank" rel="noopener noreferrer" aria-label="Renatus Madrigal 的 GitHub 主页">Renatus Madrigal</a></div>
   </footer>
 
@@ -238,6 +247,75 @@ app.innerHTML = `
       <div id="level-picker" class="level-picker"></div>
     </section>
   </div>
+
+  <div id="rules-backdrop" class="picker-backdrop rules-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+    <section class="picker-panel rules-panel">
+      <header class="picker-header">
+        <div><span class="brand-kicker">RULE BOOK</span><strong id="rules-title">《109.5°》全部规则</strong></div>
+        <button id="rules-close" class="icon-button" aria-label="关闭规则弹窗">×</button>
+      </header>
+      <div class="rules-scroll">
+        <div class="rules-game" data-rules-game="chem">
+          <section class="rules-intro">
+            <span>一句话目标</span>
+            <strong>让每个虚线目标圈的颜色，与圈内色珠的颜色一致。</strong>
+            <p>当前阶段的目标全部对齐后会进入下一阶段；完成最后阶段即可过关。出现 ✓ 表示该目标目前已经对齐，但之后仍可能被再次改变。</p>
+          </section>
+          <ol class="rules-list">
+            <li>
+              <span class="rule-number">01</span><div><strong>移动与背面进攻</strong><p>上下左右移动一格。白箭头指向中心的开口，也指明撞入方向：先站到箭头所指方向的反面，再沿箭头方向撞入。撞封闭面不会生效。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">02</span><div><strong>整体翻转 180°</strong><p>每次有效进攻都会让中心、全部色臂、白箭头与空穴整体翻到对侧：上 ↔ 下、左 ↔ 右。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">03</span><div><strong>拾珠与交换</strong><p>走过游离色珠会拿起它；手中已有珠时会与地面色珠交换。持珠进攻时，手中珠进入开口，开口原珠换到手中；随后中心整体翻转。手不会自然变空。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">04</span><div><strong>长按预演</strong><p>按住方向键或拖住不松手，可先看松开后的完整结果；虚线轮廓表示尚未发生。回到原位或按 Esc 取消。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">05</span><div><strong>共振键</strong><p>相邻中心彼此面对的两条臂都有珠且颜色相同，会形成亮键。中心被命中后先翻转，再按翻转后的构型检查亮键；通过的邻居也先翻转，再检查下一跳。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">06</span><div><strong>光照与分步目标</strong><p>走上金色光照格，会让所有中心的白箭头顺时针移到下一条真实色臂，色臂本身不转。亮圈是当前阶段目标，淡圈是未来阶段目标。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">07</span><div><strong>三臂中心与空穴</strong><p>三臂中心始终只有三颗珠；虚线空槽是不可填补的空穴。翻转时空穴也移到对侧，空穴所在方向不能形成共振键；光照会跳过空穴。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">08</span><div><strong>弹射中心</strong><p>菱形核是弹射中心。持珠撞入后手会变空，开口原珠从背后喷口沿直线飞到最后一个空格；身后第一格被堵时，整次进攻无效。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">09</span><div><strong>阶段护罩</strong><p>带数字的六边形护罩会阻挡直接进攻与共振，但不挡光。编号表示它从哪一阶段起开放；护罩只在当前动作全部结算后解除，不会让刚结束的连锁追溯穿过。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">10</span><div><strong>飞珠撞结构</strong><p>后期关卡中，弹射珠落到光照格会触发光照；落到另一座中心当前的进攻位，会替你完成一次空手翻转并继续检查共振。珠仍留在最终落点。</p></div>
+            </li>
+            <li>
+              <span class="rule-number">11</span><div><strong>再生护罩</strong><p>带 R 的护罩用虚线连着一条控制臂。控制臂颜色被破坏时护罩关闭，修复后重新开放；临时关盾有时能保护已经对齐的结构。</p></div>
+            </li>
+          </ol>
+        </div>
+        <div class="rules-game hidden" data-rules-game="t3">
+          <section class="rules-intro">
+            <span>一句话目标</span>
+            <strong>让所有棋子同时站进各自的目标格。</strong>
+            <p>你按下的每个方向都会沿时间线向后流动，并由不同延迟的回声原样重放。</p>
+          </section>
+          <ol class="rules-list">
+            <li><span class="rule-number">01</span><div><strong>移动</strong><p>方向键或 WASD 移动白色棋子；每一次按键也会写入所有回声的未来动作。</p></div></li>
+            <li><span class="rule-number">02</span><div><strong>延迟回声</strong><p>回声会在标明的拍数之后，原样执行你当时按下的方向；起点不同会让同一串输入走出不同路线。</p></div></li>
+            <li><span class="rule-number">03</span><div><strong>碰撞也计时</strong><p>撞墙或边界虽然不会移动，仍会消耗一拍并进入回声时间线，可把它当作等待。</p></div></li>
+          </ol>
+        </div>
+        <section class="rules-controls" aria-label="通用操作">
+          <strong>通用操作</strong>
+          <p><kbd>WASD</kbd> / <kbd>方向键</kbd> 移动 · <kbd>Z</kbd> 撤销 · <kbd>R</kbd> 重开 · <kbd>H</kbd> 下一步提示 · <kbd>G</kbd> 规则 · <kbd>Esc</kbd> 取消预演或关闭弹窗</p>
+        </section>
+      </div>
+    </section>
+  </div>
 `
 app.classList.toggle('visual-blind', visualBlindMode)
 
@@ -248,6 +326,8 @@ const levelNumber = app.querySelector('#level-number') as HTMLElement
 const levelLabel = app.querySelector('#level-label') as HTMLElement
 const moveLabel = app.querySelector('#move-label') as HTMLElement
 const gameStats = app.querySelector('#game-stats') as HTMLElement
+const tutorialToggle = app.querySelector('#tutorial-toggle') as HTMLButtonElement
+const tutorialToggleState = app.querySelector('#tutorial-toggle-state') as HTMLElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
@@ -285,6 +365,10 @@ const tutorialReopen = app.querySelector('#tutorial-reopen') as HTMLButtonElemen
 const toastEl = app.querySelector('#toast') as HTMLElement
 const pickerEl = app.querySelector('#level-picker') as HTMLElement
 const pickerBackdrop = app.querySelector('#picker-backdrop') as HTMLElement
+const rulesBackdrop = app.querySelector('#rules-backdrop') as HTMLElement
+const rulesTitle = app.querySelector('#rules-title') as HTMLElement
+const rulesBtn = app.querySelector('#rules') as HTMLButtonElement
+const rulesClose = app.querySelector('#rules-close') as HTMLButtonElement
 const levelsBtn = app.querySelector('#levels-btn') as HTMLButtonElement
 const prevBtn = app.querySelector('#prev') as HTMLButtonElement
 const nextBtn = app.querySelector('#next') as HTMLButtonElement
@@ -302,6 +386,14 @@ const progressStore = (() => {
     return window.localStorage
   } catch {
     return null
+  }
+})()
+const TUTORIAL_PREF_KEY = 'lexin-games:tutorial-enabled'
+let tutorialEnabled = (() => {
+  try {
+    return progressStore?.getItem(TUTORIAL_PREF_KEY) !== 'off'
+  } catch {
+    return true
   }
 })()
 const savedProgress = progressStore ? loadProgress(progressStore) : emptyProgress()
@@ -330,6 +422,8 @@ let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
 /** 01–05 引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
 let tutorialEvent: TutorialEvent = null
+/** 01 / 03 指物教学的局部拍数；达到各段阈值后才开放真实方向输入。 */
+let tutorialIntroBeat = 0
 /** 玩家主动收起后跨教程步骤保持精简态；可随时用棋盘边缘的 TIP 标签恢复。 */
 let tutorialCollapsed = false
 
@@ -352,7 +446,7 @@ const COLOR_TEXT: Record<string, string> = {
 }
 
 /** 棋盘内对象揭示优先于静态 hint；hint 仍可由玩家手动展开复习。 */
-const BOARD_GUIDE_LEVELS = new Set([0, 1, 2, 3, 4, 9, 15, 16, 20, 26, 32, 40, 42])
+const BOARD_GUIDE_LEVELS = new Set([0, 1, 2, 3, 4, 9, 15, 16, 20, 26, 32, 40, 41, 42])
 
 function setTutorialInputMode(next: TutorialInputMode): void {
   if (tutorialInputMode === next) return
@@ -502,10 +596,45 @@ function positionBoardGuide(
  * 01–05 状态驱动操作引导：只把纯模型投影到 DOM，并高亮眼前已相邻的可执行方向。
  * 多步路线不在这里求解，06 起整个模块退出界面。
  */
+function updateTutorialToggle(): void {
+  tutorialToggle.classList.toggle('hidden', current.id !== 'chem')
+  tutorialToggle.dataset.enabled = String(tutorialEnabled)
+  tutorialToggle.setAttribute('aria-checked', String(tutorialEnabled))
+  tutorialToggle.setAttribute('aria-label', `新手教程已${tutorialEnabled ? '开启' : '关闭'}`)
+  tutorialToggleState.textContent = tutorialEnabled ? '开' : '关'
+}
+
+function setTutorialEnabled(enabled: boolean): void {
+  tutorialEnabled = enabled
+  tutorialEvent = null
+  try {
+    progressStore?.setItem(TUTORIAL_PREF_KEY, enabled ? 'on' : 'off')
+  } catch {
+    // 隐私模式下偏好只保留到当前页面；不影响教程开关本身。
+  }
+  updateTutorialToggle()
+  updateTutorial()
+}
+
+function isTutorialIntroAwaiting(): boolean {
+  if (!tutorialEnabled || current.id !== 'chem') return false
+  const state = hist.current as Parameters<typeof getChemTutorial>[1] | undefined
+  if (!state) return false
+  return getChemTutorial(index, state, tutorialEvent, tutorialInputMode, tutorialIntroBeat)?.advanceOnTap === true
+}
+
+/** 返回 true 表示这次输入只推进了讲解，不应再传给游戏。 */
+function advanceTutorialIntro(): boolean {
+  if (!isTutorialIntroAwaiting()) return false
+  tutorialIntroBeat++
+  updateTutorial()
+  return true
+}
+
 function updateTutorial(): void {
   const state = hist.current as Parameters<typeof getChemTutorial>[1]
-  const guide = current.id === 'chem'
-    ? getChemTutorial(index, state, tutorialEvent, tutorialInputMode)
+  const guide = current.id === 'chem' && tutorialEnabled
+    ? getChemTutorial(index, state, tutorialEvent, tutorialInputMode, tutorialIntroBeat)
     : null
 
   for (const button of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
@@ -520,10 +649,12 @@ function updateTutorial(): void {
   )
   if (!guide || !hasBoardCue || visualBlindMode) {
     boardGuide.classList.add('hidden')
+    boardGuide.classList.remove('awaiting-advance')
     return
   }
 
   boardGuide.classList.remove('hidden')
+  boardGuide.classList.toggle('awaiting-advance', guide.advanceOnTap === true)
   boardGuide.classList.toggle('collapsed', tutorialCollapsed)
   tutorialClose.setAttribute('aria-expanded', String(!tutorialCollapsed))
   tutorialKicker.textContent = guide.kicker
@@ -700,6 +831,7 @@ function hideWinbar(): void {
 function openLevel(i: number): void {
   cancelWinReveal()
   index = Math.max(0, Math.min(i, levels.length - 1))
+  tutorialIntroBeat = 0
   gameIndices[current.id] = index
   progress = setCurrentLevel(progress, current.id, index)
   persistProgress()
@@ -725,6 +857,11 @@ function loadGame(id: string): void {
   if (levels.length > 0) gameIndices[current.id] = index
   current = bundles[id]
   app.dataset.game = id
+  updateTutorialToggle()
+  rulesTitle.textContent = id === 'chem' ? '《109.5°》全部规则' : '《t+3》全部规则'
+  for (const ruleBook of app.querySelectorAll<HTMLElement>('[data-rules-game]')) {
+    ruleBook.classList.toggle('hidden', ruleBook.dataset.rulesGame !== id)
+  }
   levels = loadLevels(filesFor(id), current.def.parseLevel)
   // 切游戏：清掉两个游戏的预演 / Inspect 瞬态，退出标记模式
   for (const b of Object.values(bundles)) b.setPreview?.(null)
@@ -753,6 +890,14 @@ function applyDir(dir: Dir): void {
     return
   }
   tutorialEvent = null
+  if (
+    current.id === 'chem' &&
+    (index === 2 || index === 26) &&
+    (hist.current as { holding?: string | null }).holding === null &&
+    (next as { holding?: string | null }).holding !== null
+  ) {
+    tutorialIntroBeat = Math.max(tutorialIntroBeat, 2)
+  }
   setChemInspect(null) // 局面已变：Inspect 面板收起（design §11）
   clearInspectTimer()
   hist.push(next)
@@ -811,6 +956,7 @@ function clearPreview(): void {
 /** 方向按下：若正按住别的方向，先提交它（换键滚动），再开始新的等待 */
 function dirDown(dir: Dir): void {
   if (!overlay.classList.contains('hidden')) return // 胜利面板显示时不吃方向输入
+  if (advanceTutorialIntro()) return
   if (pending && pending.dir === dir) return // 键盘连发（repeat）忽略
   if (pending && pending.dir !== dir) commitPending()
   if (!overlay.classList.contains('hidden')) return // 提交可能刚好通关
@@ -915,6 +1061,7 @@ function cycleMark(hit: { kind: 'center'; index: number } | { kind: 'cell'; x: n
 
 /** 棋盘点按（位移 < 24px）：标记模式改标记；否则中心 = Inspect，空格 = 收起 Inspect */
 function handleCanvasTap(clientX: number, clientY: number): void {
+  if (advanceTutorialIntro()) return
   if (current.id !== 'chem') return
   const rect = canvas.getBoundingClientRect()
   if (rect.width === 0 || rect.height === 0) return
@@ -990,21 +1137,46 @@ function buildPicker(): void {
   })
 }
 
+function syncModalState(): void {
+  const modalOpen = !pickerBackdrop.classList.contains('hidden') || !rulesBackdrop.classList.contains('hidden')
+  document.body.classList.toggle('modal-open', modalOpen)
+}
+
 function openPicker(): void {
+  rulesBackdrop.classList.add('hidden')
   buildPicker()
   pickerBackdrop.classList.remove('hidden')
-  document.body.classList.add('modal-open')
+  syncModalState()
   ;(pickerEl.querySelector('.level-item.active') as HTMLButtonElement | null)?.focus()
 }
 
 function closePicker(): void {
   pickerBackdrop.classList.add('hidden')
-  document.body.classList.remove('modal-open')
+  syncModalState()
 }
 
 function togglePicker(): void {
   if (pickerBackdrop.classList.contains('hidden')) openPicker()
   else closePicker()
+}
+
+function openRules(): void {
+  cancelPending()
+  pickerBackdrop.classList.add('hidden')
+  rulesBackdrop.classList.remove('hidden')
+  syncModalState()
+  rulesClose.focus()
+}
+
+function closeRules(): void {
+  rulesBackdrop.classList.add('hidden')
+  syncModalState()
+  rulesBtn.focus()
+}
+
+function toggleRules(): void {
+  if (rulesBackdrop.classList.contains('hidden')) openRules()
+  else closeRules()
 }
 
 // ---------- solver 提示（design §10「玩家辅助」：从当前局面实时求解，不写手打攻略） ----------
@@ -1082,10 +1254,16 @@ undoBtn.addEventListener('click', () => {
   cancelPending()
   showHint()
 })
+rulesBtn.addEventListener('click', toggleRules)
+tutorialToggle.addEventListener('click', () => setTutorialEnabled(!tutorialEnabled))
 levelsBtn.addEventListener('click', togglePicker)
 ;(app.querySelector('#picker-close') as HTMLButtonElement).addEventListener('click', closePicker)
 pickerBackdrop.addEventListener('click', (e) => {
   if (e.target === pickerBackdrop) closePicker()
+})
+rulesClose.addEventListener('click', closeRules)
+rulesBackdrop.addEventListener('click', (e) => {
+  if (e.target === rulesBackdrop) closeRules()
 })
 nextAfterWin.addEventListener('click', () => {
   if (index >= levels.length - 1) restart()
@@ -1128,6 +1306,7 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
     const at = dpadPointerAt.get(btn) ?? 0
     if (performance.now() - at < 600) return
     setTutorialInputMode('keyboard')
+    if (advanceTutorialIntro()) return
     hideToast()
     applyDir(dir)
   })
@@ -1144,6 +1323,7 @@ canvas.addEventListener('pointerdown', (e) => {
 })
 canvas.addEventListener('pointermove', (e) => {
   if (!swipeStart || swipeStart.pointerId !== e.pointerId) return
+  if (isTutorialIntroAwaiting()) return
   const dx = e.clientX - swipeStart.x
   const dy = e.clientY - swipeStart.y
   if (Math.hypot(dx, dy) < SWIPE_DISTANCE) {
@@ -1169,6 +1349,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!swipeStart || swipeStart.pointerId !== e.pointerId) return
   const start = swipeStart
   swipeStart = null
+  if (advanceTutorialIntro()) return
   const dx = e.clientX - start.x
   const dy = e.clientY - start.y
   const distance = Math.hypot(dx, dy)
@@ -1207,6 +1388,15 @@ window.addEventListener('keydown', (e) => {
   }
   if (!pickerBackdrop.classList.contains('hidden')) {
     if (e.key === 'Escape') closePicker()
+    return
+  }
+  if (!rulesBackdrop.classList.contains('hidden')) {
+    if (e.key === 'Escape' || e.key === 'g' || e.key === 'G') closeRules()
+    return
+  }
+  if (isTutorialIntroAwaiting() && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault()
+    advanceTutorialIntro()
     return
   }
   const dir = dirFromKey(e)
@@ -1251,6 +1441,11 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault()
     cancelPending()
     showHint()
+    return
+  }
+  if (e.key === 'g' || e.key === 'G') {
+    e.preventDefault()
+    toggleRules()
     return
   }
   if (e.key === 'm' || e.key === 'M') {

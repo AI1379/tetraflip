@@ -1,6 +1,6 @@
 import { DIRS, DIR_VEC, cellKey, opposite } from '../core/protocol'
 import type { Dir } from '../core/protocol'
-import { isShielded } from '../games/chem/engine'
+import { getEjectionPreview, isShielded } from '../games/chem/engine'
 import type { ChemState } from '../games/chem/engine'
 
 /**
@@ -54,6 +54,8 @@ export interface TutorialModel {
   forecast: TutorialForecast | null
   feedback: string | null
   feedbackTone: 'info' | 'warning'
+  /** 这一拍只做对象辨认；轻触棋盘或方向输入推进讲解，不执行游戏动作。 */
+  advanceOnTap?: boolean
   spotlight?: TutorialSpotlight
   gesture?: TutorialGesture
 }
@@ -199,117 +201,489 @@ function model(
   }
 }
 
+interface RevealPage {
+  title: string
+  body: string
+  spotlight: TutorialSpotlight
+  tip?: string
+}
+
+function pointOnArm(
+  state: ChemState,
+  centerIndex: number,
+  dir: Dir,
+  distance = 0.46,
+): readonly [number, number] {
+  const center = state.centers[centerIndex]
+  const [dx, dy] = DIR_VEC[dir]
+  return [center.pos[0] + dx * distance, center.pos[1] + dy * distance]
+}
+
+function revealModel(
+  levelIndex: number,
+  state: ChemState,
+  event: TutorialEvent,
+  page: RevealPage,
+  step: number,
+  total: number,
+  label: string,
+): TutorialModel {
+  const reveal = model(levelIndex, state, event, {
+    title: page.title,
+    body: page.body,
+    tip: page.tip ?? '点击或轻触棋盘任意位置继续',
+    focusDirs: [],
+    forecast: null,
+    advanceOnTap: true,
+    spotlight: page.spotlight,
+  })
+  return {
+    ...reveal,
+    kicker: `${label} · ${String(step).padStart(2, '0')} / ${String(total).padStart(2, '0')}`,
+  }
+}
+
+function actionKicker(guide: TutorialModel, label: string, total: number): TutorialModel {
+  const n = String(total).padStart(2, '0')
+  return { ...guide, kicker: `${label} · ${n} / ${n}` }
+}
+
 /** 01–05 操作引导 + 后续机制首现揭示；通关态立即让位给真实棋盘动画。 */
 export function getChemTutorial(
   levelIndex: number,
   state: ChemState,
   event: TutorialEvent,
   inputMode: TutorialInputMode = 'touch',
+  introBeat = 0,
 ): TutorialModel | null {
   if (state.won) return null
 
-  // 后续机制只在首拍揭示；玩家开始行动后自动让位，不变成常驻攻略。
+  // 后续机制先逐物解释，最后一拍才开放真实输入；玩家开始行动后自动让位。
   if (state.moves === 0) {
     if (levelIndex === 9) {
-      return model(levelIndex, state, event, {
-        title: '这是共振键',
-        body: '相邻中心的面对臂同色时会连成亮键。撞动一座中心，翻转会沿亮键继续传给下一座。',
-        tip: '暗键不会传导；亮键会在动作结算后重新判断',
-        focusDirs: ['E'],
+      const pages: RevealPage[] = [
+        {
+          title: '这是两个中心之间的共振键',
+          body: '相邻中心彼此面对的两条臂颜色不同时，键是暗的，翻转不会从这里传过去。',
+          spotlight: { pos: [2.5, 2], radiusCells: 0.44 },
+        },
+        {
+          title: '先看左侧中心的蓝珠',
+          body: '它现在位于左臂。左侧中心翻转后，这颗蓝珠会来到右臂，正对另一座中心。',
+          spotlight: { pos: pointOnArm(state, 0, 'W'), radiusCells: 0.32 },
+        },
+        {
+          title: '右侧中心也有一颗面对的蓝珠',
+          body: '两颗面对珠同色时，暗键会变亮。共振只沿动作结算时真正亮起的键传播。',
+          spotlight: { pos: pointOnArm(state, 1, 'W', 0.34), radiusCells: 0.3 },
+        },
+        {
+          title: '亮键会把翻转传给下一座中心',
+          body: '左侧中心先翻转并接通亮键，右侧中心随后也翻转；它再按翻转后的构型检查下一跳。',
+          spotlight: { pos: state.centers[1].pos, radiusCells: 0.84 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'RESONANCE')
+      }
+      const attack = immediateAttack(state)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '现在撞动左侧中心',
+        body: '这一次先预测：左侧翻转、键变亮、右侧跟着翻转。然后再执行。',
+        tip: '按住可以先看完整连锁；松开执行',
+        focusDirs: attack ? [attack.dir] : [],
         forecast: null,
-        spotlight: { pos: [2.5, 2], radiusCells: 0.72 },
-        gesture: { from: state.player, dir: 'E', distanceCells: 1 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: attack ? { from: state.player, dir: attack.dir, distanceCells: 0.88, hold: true } : undefined,
+      }), 'RESONANCE', 5)
     }
     if (levelIndex === 15) {
-      return model(levelIndex, state, event, {
-        title: '金色放射格是光照格',
-        body: '走上它会让所有中心的白箭头顺时针移动；彩色臂本身不会跟着转。',
-        tip: '它改变的是进攻方向，不是中心构型',
-        focusDirs: [],
+      const light = state.lights[0] ?? ([1, 0] as const)
+      const center = state.centers[0]
+      const pages: RevealPage[] = [
+        {
+          title: '金色放射格是光照格',
+          body: '玩家走上光照格时，它会立刻触发一次全局转向。',
+          spotlight: { pos: light, radiusCells: 0.62 },
+        },
+        {
+          title: '光照只移动白箭头',
+          body: '触发后，所有中心的白箭头顺时针移到下一条真实色臂，合法进攻方向随之改变。',
+          spotlight: { pos: center.pos, radiusCells: 0.3 },
+        },
+        {
+          title: '彩色臂本身不会旋转',
+          body: '光照只是在重新选择开口，不会搬动任何色珠；中心构型保持原样。',
+          spotlight: { pos: pointOnArm(state, 0, 'N'), radiusCells: 0.32 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 4, 'LIGHT CONTROL')
+      }
+      const dir = nextDirToward(state, light)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '现在走向光照格',
+        body: '先走上金色格，再观察白箭头怎样改变方向。',
+        tip: '每次踏入都会再次触发光照',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: state.lights[0] ?? [1, 0], radiusCells: 0.62 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'LIGHT CONTROL', 4)
     }
     if (levelIndex === 16) {
-      return model(levelIndex, state, event, {
-        title: '亮圈是当前阶段，淡圈是下一阶段',
-        body: '先满足当前亮圈，系统才会推进到下一组目标。同一座中心可能要在后面的阶段再翻回来。',
-        tip: '上方「阶段」读数会同步推进',
-        focusDirs: [],
+      const currentGoal = state.stages[0]?.goals[0]
+      const futureGoal = state.stages[1]?.goals[0]
+      const pages: RevealPage[] = [
+        {
+          title: '亮圈是当前阶段目标',
+          body: '现在只需要先满足这枚明亮的绿色目标圈。上方「阶段」读数显示当前进度。',
+          spotlight: {
+            pos: currentGoal ? pointOnArm(state, currentGoal.center, currentGoal.arm) : state.centers[0].pos,
+            radiusCells: 0.34,
+          },
+        },
+        {
+          title: '淡圈是下一阶段目标',
+          body: '这枚较淡的目标还不用立即满足；当前阶段完成后，它才会变亮并接管目标。',
+          spotlight: {
+            pos: futureGoal ? pointOnArm(state, futureGoal.center, futureGoal.arm) : state.centers[0].pos,
+            radiusCells: 0.34,
+          },
+        },
+        {
+          title: '阶段会按顺序推进',
+          body: '完成亮圈后不会立刻通关，而是进入下一组目标。同一座中心可能需要在后面再翻回来。',
+          spotlight: { pos: state.centers[0].pos, radiusCells: 0.86 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 4, 'STAGED GOALS')
+      }
+      const center = state.centers[0]
+      const [dx, dy] = DIR_VEC[center.leaving]
+      const attackPos: readonly [number, number] = [center.pos[0] - dx, center.pos[1] - dy]
+      const dir = nextDirToward(state, attackPos)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '先完成当前的亮圈',
+        body: '移动到白箭头反面的进攻位，先观察第一阶段完成后哪些目标会亮起。',
+        tip: '淡圈只是预告，不必同时满足',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: state.centers[0].pos, radiusCells: 0.92 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'STAGED GOALS', 4)
     }
     if (levelIndex === 20) {
-      return model(levelIndex, state, event, {
-        title: '这是三臂中心，虚线空槽是空穴',
-        body: '它仍然整体翻转 180°：三颗珠、白箭头和空穴都会一起移动到对侧。空穴所在方向不能形成共振键。',
-        tip: '撞两次仍会回到原构型',
-        focusDirs: [],
+      const center = state.centers[0]
+      const missing = DIRS.find((dir) => center.arms[dir] === undefined) ?? 'W'
+      const target = state.stages[0]?.goals.find((goal) => goal.arm === missing)
+      const source = target
+        ? DIRS.find((dir) => center.arms[dir] === target.color) ?? opposite(missing)
+        : opposite(missing)
+      const pages: RevealPage[] = [
+        {
+          title: '三角核表示三臂中心',
+          body: '它只有三条真实色臂，但进攻方式仍和普通中心相同。',
+          spotlight: { pos: center.pos, radiusCells: 0.3 },
+        },
+        {
+          title: '虚线空槽是空穴',
+          body: '空穴没有颜色，不能拾取、注入或填补；空穴所在方向也不能形成共振键。',
+          spotlight: { pos: pointOnArm(state, 0, missing), radiusCells: 0.3 },
+        },
+        {
+          title: '目标仍可以指向空穴方向',
+          body: '这不是要把空穴填满，而是要靠整体翻转，让一条真实色臂移动到这个方向。',
+          spotlight: { pos: pointOnArm(state, 0, missing), radiusCells: 0.36 },
+        },
+        {
+          title: '这条蓝臂会随空穴一起换边',
+          body: '中心翻转 180° 时，三颗珠、白箭头和空穴全部移动到对侧；撞两次会回到原样。',
+          spotlight: { pos: pointOnArm(state, 0, source), radiusCells: 0.32 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'VACANCY')
+      }
+      const [dx, dy] = DIR_VEC[center.leaving]
+      const attackPos: readonly [number, number] = [center.pos[0] - dx, center.pos[1] - dy]
+      const dir = nextDirToward(state, attackPos)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '现在撞动三臂中心',
+        body: '出手前先预测蓝臂与空穴各会移动到哪一侧。',
+        tip: '三臂中心仍然是整体翻转 180°',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: state.centers[0].pos, radiusCells: 0.9 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'VACANCY', 5)
     }
     if (levelIndex === 26) {
-      return model(levelIndex, state, event, {
-        title: '菱形核是弹射中心',
-        body: '持珠撞入时，手中珠照常进入中心；开口原珠不会换到手中，而会从背后喷口沿直线飞出。',
-        tip: '双箭头标出喷口方向，虚线会预演完整弹道',
-        focusDirs: [],
+      const center = state.centers[0]
+      const outlet = pointOnArm(state, 0, opposite(center.leaving), 0.25)
+      const pages: RevealPage[] = [
+        {
+          title: '菱形核是弹射中心',
+          body: '它仍然接受持珠进攻，但离去珠不再换到手中。',
+          spotlight: { pos: center.pos, radiusCells: 0.3 },
+        },
+        {
+          title: '双箭头标出背后的喷口',
+          body: '持珠撞入后，开口原珠会从玩家身后沿直线飞出，手会重新变空。',
+          spotlight: { pos: outlet, radiusCells: 0.3 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 6, 'EJECTION')
+      }
+      const group = state.groups[0]
+      const dir = group ? nextDirToward(state, group.pos) : undefined
+      return { ...model(levelIndex, state, event, {
+        title: '先拾取紫珠，再靠近弹射中心',
+        body: '弹射只在持珠进攻时发生；先拿起场上的紫珠。',
+        tip: '靠近合法进攻位后会继续解释离去珠与落点',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: state.centers[0].pos, radiusCells: 0.92 },
-      })
+        spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), kicker: 'EJECTION · 03 / 06' }
     }
     if (levelIndex === 32) {
-      const shield = state.centers.find((center) => center.shieldUntilStage !== undefined)
-      return model(levelIndex, state, event, {
-        title: '六边形轮廓是阶段护罩',
-        body: '罩内中心暂时挡住直接撞击和共振。编号 02 表示完成第 1 阶段后，它会在整次动作结算完毕时解除。',
-        tip: '刚解除的同一步不会追溯传导；下一步起才开放',
-        focusDirs: [],
+      const shieldIndex = state.centers.findIndex((center) => center.shieldUntilStage !== undefined)
+      const shield = state.centers[shieldIndex >= 0 ? shieldIndex : 0]
+      const currentGoal = state.stages[0]?.goals[0]
+      const futureGoal = state.stages[1]?.goals[0]
+      const pages: RevealPage[] = [
+        {
+          title: '六边形轮廓是阶段护罩',
+          body: '罩内中心暂时挡住直接进攻与共振，但白箭头仍可被光照移动。',
+          spotlight: { pos: shield.pos, radiusCells: 0.95 },
+        },
+        {
+          title: '编号 02 表示第二阶段开放',
+          body: '先完成当前亮圈，也就是第 1 阶段目标；护罩还不会提前放行。',
+          spotlight: {
+            pos: currentGoal ? pointOnArm(state, currentGoal.center, currentGoal.arm) : state.centers[0].pos,
+            radiusCells: 0.34,
+          },
+        },
+        {
+          title: '罩内目标属于下一阶段',
+          body: '第 1 阶段完成后，这枚目标才变成当前任务，罩内中心也从下一步起可进攻。',
+          spotlight: {
+            pos: futureGoal ? pointOnArm(state, futureGoal.center, futureGoal.arm) : shield.pos,
+            radiusCells: 0.34,
+          },
+        },
+        {
+          title: '护罩在整次动作结算后才解除',
+          body: '刚完成阶段的那次连锁仍会被挡住，不会追溯穿过刚打开的护罩；下一次动作才开放。',
+          spotlight: { pos: shield.pos, radiusCells: 0.95 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'STAGE SHIELD')
+      }
+      const goalCenter = currentGoal ? state.centers[currentGoal.center] : state.centers[0]
+      const [dx, dy] = DIR_VEC[goalCenter.leaving]
+      const attackPos: readonly [number, number] = [goalCenter.pos[0] - dx, goalCenter.pos[1] - dy]
+      const dir = nextDirToward(state, attackPos)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '先完成第 1 阶段',
+        body: '暂时不要撞护罩；先移动到当前亮圈所属中心的进攻位。',
+        tip: '观察阶段推进后护罩何时真正消失',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: shield?.pos ?? state.centers[0].pos, radiusCells: 0.95 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'STAGE SHIELD', 5)
     }
     if (levelIndex === 40) {
-      return model(levelIndex, state, event, {
-        title: '飞珠现在也能撞动结构',
-        body: '弹射珠若落在另一座中心当前的进攻位，会替你完成一次纯翻转；撞完的珠仍停在落点，可以继续拾取。',
-        tip: '先沿喷口方向看终点，再检查终点是否正对另一座中心的白箭头',
-        focusDirs: [],
+      const sourceIndex = state.centers.findIndex((center) => center.ejects && center.hitCenters)
+      const source = state.centers[sourceIndex >= 0 ? sourceIndex : 0]
+      const targetIndex = state.centers.findIndex((center, i) => i !== sourceIndex && center.pos[0] === 0)
+      const target = state.centers[targetIndex >= 0 ? targetIndex : 1]
+      const [tdx, tdy] = DIR_VEC[target.leaving]
+      const landing: readonly [number, number] = [target.pos[0] - tdx, target.pos[1] - tdy]
+      const pages: RevealPage[] = [
+        {
+          title: '这座弹射中心能撞动结构',
+          body: '它的飞珠不只会落地；若弹道终点对准另一座中心的进攻面，还会触发一次结构翻转。',
+          spotlight: { pos: source.pos, radiusCells: 0.92 },
+        },
+        {
+          title: '这是飞珠要撞动的中心',
+          body: '远端中心仍遵守普通进攻方向：只有飞珠落在白箭头反面的进攻位，撞核才会生效。',
+          spotlight: { pos: target.pos, radiusCells: 0.84 },
+        },
+        {
+          title: '这个格子正是远端进攻位',
+          body: '飞珠沿直线停在这里时，会替你完成一次空手翻转，并继续检查共振传播。',
+          spotlight: { pos: landing, radiusCells: 0.46 },
+        },
+        {
+          title: '撞核后的珠仍留在落点',
+          body: '结构翻转不会消耗飞珠；之后仍可走到落点把它捡起，继续完成后续运输。',
+          spotlight: { pos: landing, radiusCells: 0.34 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'STRUCTURE HIT')
+      }
+      const group = state.groups[0]
+      const dir = group ? nextDirToward(state, group.pos) : undefined
+      return actionKicker(model(levelIndex, state, event, {
+        title: '先拿起紫珠，准备弹射',
+        body: '先完成取货；到达弹射中心进攻位后，用预演核对完整弹道。',
+        tip: '先看落点，再看落点是否正对远端白箭头',
+        focusDirs: dir ? [dir] : [],
         forecast: null,
-        spotlight: { pos: state.centers[1].pos, radiusCells: 0.9 },
-      })
+        spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'STRUCTURE HIT', 5)
+    }
+    if (levelIndex === 41) {
+      const light = state.lights[0] ?? ([1, 1] as const)
+      const targetIndex = state.centers.findIndex((center) => center.pos[0] === 0)
+      const target = state.centers[targetIndex >= 0 ? targetIndex : 1]
+      const pages: RevealPage[] = [
+        {
+          title: '飞珠也能触发光照格',
+          body: '这座弹射中心的飞珠落在金色格时，会像玩家踏入一样，让所有白箭头先转一次。',
+          spotlight: { pos: light, radiusCells: 0.62 },
+        },
+        {
+          title: '远端中心的白箭头会先转向',
+          body: '它现在朝下；飞珠触光后，白箭头顺时针转到左侧，合法进攻位随之改变。',
+          spotlight: { pos: target.pos, radiusCells: 0.3 },
+        },
+        {
+          title: '同一颗飞珠随后继续撞核',
+          body: '结算顺序是先触光、再检查撞核。箭头转到左侧后，金色格恰好成为远端中心的新进攻位。',
+          spotlight: { pos: light, radiusCells: 0.46 },
+        },
+        {
+          title: '捡起落点珠会再次触光',
+          body: '飞珠仍停在金色格；玩家之后走上去拾取时，光照格会再触发一次，白箭头继续顺时针移动。',
+          spotlight: { pos: light, radiusCells: 0.62 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'LIGHT IMPACT')
+      }
+      const group = state.groups[0]
+      const dir = group ? nextDirToward(state, group.pos) : undefined
+      return actionKicker(model(levelIndex, state, event, {
+        title: '先拿起紫珠，准备复合弹射',
+        body: '到达弹射进攻位后，按住预演并按顺序检查：落光、转箭头、再撞核。',
+        tip: '同一落点会被飞珠与玩家各触发一次',
+        focusDirs: dir ? [dir] : [],
+        forecast: null,
+        spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), 'LIGHT IMPACT', 5)
     }
     if (levelIndex === 42) {
-      const reactive = state.centers.find((center) => center.reactiveTo !== undefined)
-      return model(levelIndex, state, event, {
-        title: '带 R 的护罩会随控制臂开合',
-        body: '虚线指向它监听的彩色臂：中间产物被破坏时护罩重新关闭，修复后再次打开。关盾有时也是保护动作。',
-        tip: '按住预演可以先看护罩将生成还是消失',
-        focusDirs: [],
+      const reactiveIndex = state.centers.findIndex((center) => center.reactiveTo !== undefined)
+      const reactive = state.centers[reactiveIndex >= 0 ? reactiveIndex : 0]
+      const control = reactive.reactiveTo
+      const controlPoint = control
+        ? pointOnArm(state, control.center, control.arm)
+        : state.centers[0].pos
+      const linkMid: readonly [number, number] = [
+        (reactive.pos[0] + controlPoint[0]) / 2,
+        (reactive.pos[1] + controlPoint[1]) / 2,
+      ]
+      const neighbor = state.centers.find((center, i) =>
+        i !== reactiveIndex && center.pos[0] === reactive.pos[0] && Math.abs(center.pos[1] - reactive.pos[1]) === 1)
+      const bondMid: readonly [number, number] = neighbor
+        ? [(reactive.pos[0] + neighbor.pos[0]) / 2, (reactive.pos[1] + neighbor.pos[1]) / 2]
+        : reactive.pos
+      const pages: RevealPage[] = [
+        {
+          title: '带 R 的是再生护罩',
+          body: '它不是一次性打开的门，而会根据另一条控制臂的状态反复关闭与开放。',
+          spotlight: { pos: reactive.pos, radiusCells: 0.95 },
+        },
+        {
+          title: '这条红臂控制护罩',
+          body: '红臂保持指定颜色时护罩开放；颜色被翻走或破坏时，护罩会重新关闭。',
+          spotlight: { pos: controlPoint, radiusCells: 0.32 },
+        },
+        {
+          title: '虚线把护罩与控制臂连在一起',
+          body: '顺着这条控制线就能判断是哪条臂在开关护罩；修复红色后，护罩会再次开放。',
+          spotlight: { pos: linkMid, radiusCells: 0.5 },
+        },
+        {
+          title: '临时关盾可以切断危险共振',
+          body: '护罩关闭时会挡住这条相邻链路。关门有时不是障碍，而是在保护已经对齐的中心。',
+          spotlight: { pos: bondMid, radiusCells: 0.5 },
+        },
+      ]
+      if (introBeat < pages.length) {
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'REACTIVE SHIELD')
+      }
+      const attack = immediateAttack(state)
+      return actionKicker(model(levelIndex, state, event, {
+        title: '现在先改变控制臂',
+        body: '出手前预测：红臂翻走后，R 护罩会从开放变为关闭。',
+        tip: '按住预演可以先看护罩生成',
+        focusDirs: attack ? [attack.dir] : [],
         forecast: null,
-        spotlight: { pos: reactive?.pos ?? state.centers[0].pos, radiusCells: 0.95 },
-      })
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: attack ? { from: state.player, dir: attack.dir, distanceCells: 0.88, hold: true } : undefined,
+      }), 'REACTIVE SHIELD', 5)
     }
   }
 
   if (levelIndex < 0 || levelIndex > 4) {
-    // 弹射教学在真正站到进攻位时再补一拍弹道提示。
+    // 弹射教学：拾珠后先引导就位，再逐物说明离去珠与弹道落点。
     if (levelIndex === 26 && state.holding !== null) {
       const ejectAttack = immediateAttack(state)
       if (ejectAttack) {
-        return model(levelIndex, state, event, {
+        const center = state.centers[ejectAttack.center]
+        const preview = getEjectionPreview(state, ejectAttack.center)
+        const pages: RevealPage[] = [
+          {
+            title: '开口原珠会被弹出',
+            body: '普通中心会把开口原珠换到手中；弹射中心改为把这颗离去珠从背后喷口推出。',
+            spotlight: { pos: pointOnArm(state, ejectAttack.center, center.leaving), radiusCells: 0.32 },
+          },
+          {
+            title: '虚线弹道终点就是落点',
+            body: '离去珠沿喷口直线飞到最后一个空格；执行后珠留在这里，而你的手会变空。',
+            spotlight: { pos: preview?.landing ?? state.player, radiusCells: 0.42 },
+          },
+        ]
+        if (introBeat < 4) {
+          const step = Math.max(0, introBeat - 2)
+          return revealModel(levelIndex, state, event, pages[step], step + 4, 6, 'EJECTION')
+        }
+        return actionKicker(model(levelIndex, state, event, {
           title: '喷口已对齐，长按先看飞珠落点',
           body: '这次撞击后你的手会变空；开口原珠沿进攻反方向飞到射线最后一个空格。',
           tip: '松开执行；身后第一格被堵时整次进攻无效',
           focusDirs: [ejectAttack.dir],
           forecast: exchangeForecast(state, false),
-          spotlight: { pos: state.centers[ejectAttack.center].pos, radiusCells: 0.92 },
-          gesture: { from: state.player, dir: ejectAttack.dir, distanceCells: 1 },
-        })
+          spotlight: { pos: state.player, radiusCells: 0.58 },
+          gesture: { from: state.player, dir: ejectAttack.dir, distanceCells: 1, hold: true },
+        }), 'EJECTION', 6)
       }
+      const center = state.centers[0]
+      const [dx, dy] = DIR_VEC[center.leaving]
+      const attackPos: readonly [number, number] = [center.pos[0] - dx, center.pos[1] - dy]
+      const dir = nextDirToward(state, attackPos)
+      return { ...model(levelIndex, state, event, {
+        title: '把手持珠带到弹射中心的进攻位',
+        body: '站到白箭头反面后，引导会继续指出哪颗珠被弹出、最终落在哪里。',
+        tip: '弹射中心仍然只能从白箭头反面进攻',
+        focusDirs: dir ? [dir] : [],
+        forecast: null,
+        spotlight: { pos: state.player, radiusCells: 0.58 },
+        gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
+      }), kicker: 'EJECTION · POSITIONING' }
     }
     return null
   }
@@ -324,21 +698,72 @@ export function getChemTutorial(
     const attackPos: readonly [number, number] = [center.pos[0] - ax, center.pos[1] - ay]
     const travelDir = nextDirToward(state, attackPos)
     const keyboard = inputMode === 'keyboard'
-    return model(levelIndex, state, event, {
+
+    if (state.moves === 0 && !attack && introBeat < 4) {
+      const goal = state.stages[state.stage]?.goals[0]
+      const goalCenter = goal ? state.centers[goal.center] : center
+      const goalDir = goal?.arm ?? 'N'
+      const [gdx, gdy] = DIR_VEC[goalDir]
+      const sourceDir = goal
+        ? DIRS.find((dir) => dir !== goalDir && goalCenter.arms[dir] === goal.color) ?? 'S'
+        : 'S'
+      const [sdx, sdy] = DIR_VEC[sourceDir]
+      const beats = [
+        {
+          title: '这是你',
+          body: '棋盘上的白色光环代表你。接下来先认识目标和中心，再开始移动。',
+          spotlight: { pos: state.player, radiusCells: 0.58 },
+        },
+        {
+          title: '绿色虚线圈是目标',
+          body: '虚线圈的颜色表示这里需要什么色珠：绿色虚线圈里最终要放进绿色珠。',
+          spotlight: {
+            pos: [goalCenter.pos[0] + gdx * 0.46, goalCenter.pos[1] + gdy * 0.46] as const,
+            radiusCells: 0.34,
+          },
+        },
+        {
+          title: '把这颗绿色珠送进目标圈',
+          body: '这颗绿色珠现在在中心下方。你需要通过一次正确的顶撞，把它送进目标圈，也就是上方的绿色虚线圈。',
+          spotlight: {
+            pos: [goalCenter.pos[0] + sdx * 0.46, goalCenter.pos[1] + sdy * 0.46] as const,
+            radiusCells: 0.32,
+          },
+        },
+        {
+          title: '白箭头表示顶撞方向',
+          body: '先站到箭头所指方向的反面，再沿箭头方向撞入中心。撞对以后，整个中心会翻转 180°。',
+          spotlight: { pos: center.pos, radiusCells: 0.3 },
+        },
+      ] as const
+      const beat = beats[introBeat]
+      const intro = model(levelIndex, state, event, {
+        title: beat.title,
+        body: beat.body,
+        tip: '点击或轻触棋盘任意位置继续',
+        focusDirs: [],
+        forecast: null,
+        advanceOnTap: true,
+        spotlight: beat.spotlight,
+      })
+      return { ...intro, kicker: `FIRST CONTACT · 0${introBeat + 1} / 05` }
+    }
+
+    const guide = model(levelIndex, state, event, {
       title: attack
-        ? '这是四元中心：从背面沿箭头撞入'
-        : keyboard && travelDir
-          ? `按 ${tutorialKeyForDir(travelDir)}，移动到进攻位`
-          : `在棋盘上向${travelDir ? tutorialDirText(travelDir) : '目标方向'}滑动`,
-      body: attack
-        ? '四颗色珠组成四条臂，核内白箭头指向开口。有效撞击会让四条臂和箭头整体翻转到对侧。'
+        ? '站在箭头反面，沿箭头方向撞入'
         : keyboard
-          ? '亮色光环是你。WASD 或方向键每次移动一格；先移动到中心左侧的进攻位。'
-          : '亮色光环是你。手指在棋盘上滑动，就会向同一方向走一格；先移动到中心左侧的进攻位。',
+          ? '现在用 WASD 或方向键移动'
+          : '现在在棋盘上滑动',
+      body: attack
+        ? '白箭头指向开口，也指明撞入方向。有效撞击后，中心、四条色臂和箭头会整体翻转 180°；上下、左右各自交换位置。'
+        : keyboard
+          ? `每次移动一格。先按 ${travelDir ? tutorialKeyForDir(travelDir) : 'S'}，走到中心左侧的进攻位。`
+          : `手指向一个方向滑动，就会移动一格。先向${travelDir ? tutorialDirText(travelDir) : '下'}滑到中心左侧。`,
       tip: attack
         ? keyboard
-          ? `现在按 ${tutorialKeyForDir(attack.dir)}，亲手触发第一次翻转`
-          : `现在向${tutorialDirText(attack.dir)}滑动，亲手触发第一次翻转`
+          ? `现在按 ${tutorialKeyForDir(attack.dir)} 沿箭头撞入；翻转后绿色珠会进入绿色虚线圈`
+          : `现在向${tutorialDirText(attack.dir)}沿箭头撞入；翻转后绿色珠会进入绿色虚线圈`
         : keyboard
           ? 'W / A / S / D = 上 / 左 / 下 / 右；方向键也可以'
           : '也可以点按下方的方向按钮',
@@ -353,6 +778,9 @@ export function getChemTutorial(
           ? { from: state.player, dir: travelDir, distanceCells: 0.88 }
           : undefined,
     })
+    return state.moves === 0 && !attack
+      ? { ...guide, kicker: 'FIRST CONTACT · 05 / 05' }
+      : guide
   }
 
   if (levelIndex === 1) {
@@ -373,7 +801,76 @@ export function getChemTutorial(
     const group = state.groups[0]
     const pickupDir = group ? nextDirToward(state, group.pos) : undefined
     const keyboard = inputMode === 'keyboard'
-    return model(levelIndex, state, event, {
+    const center = state.centers[0]
+    const goal = state.stages[state.stage]?.goals[0]
+    const goalDir = goal?.arm ?? opposite(center.leaving)
+    const [gdx, gdy] = DIR_VEC[goalDir]
+    const goalPos: readonly [number, number] = [
+      center.pos[0] + gdx * 0.46,
+      center.pos[1] + gdy * 0.46,
+    ]
+
+    if (state.holding === null && state.moves === 0 && introBeat < 2) {
+      const beats = [
+        {
+          title: '这是游离的紫珠',
+          body: '场上的彩色小球可以被拾取。等会儿走到这颗紫珠上，它就会跟着你移动。',
+          spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.32 },
+        },
+        {
+          title: '紫色虚线圈是这次的目标',
+          body: '目标圈需要同色珠。染色完成后，刚才那颗紫珠要出现在这里。',
+          spotlight: { pos: goalPos, radiusCells: 0.34 },
+        },
+      ] as const
+      const beat = beats[introBeat]
+      const intro = model(levelIndex, state, event, {
+        title: beat.title,
+        body: beat.body,
+        tip: '点击或轻触棋盘任意位置继续',
+        focusDirs: [],
+        forecast: null,
+        advanceOnTap: true,
+        spotlight: beat.spotlight,
+      })
+      return { ...intro, kicker: `COLORING FLOW · 0${introBeat + 1} / 07` }
+    }
+
+    if (state.holding !== null && attack && state.moves === 1 && introBeat < 5) {
+      const beats = [
+        {
+          title: '紫珠现在拿在手中',
+          body: '玩家右上角的小紫珠表示“手持紫珠”，上方状态栏的「手持」也会显示紫色。',
+          spotlight: {
+            pos: [state.player[0] + 0.3, state.player[1] - 0.3] as const,
+            radiusCells: 0.24,
+          },
+        },
+        {
+          title: '持珠会从白箭头开口进入',
+          body: '你已经站在正确的进攻位。沿白箭头撞入时，手里的紫珠会先进入箭头对应的开口。',
+          spotlight: { pos: center.pos, radiusCells: 0.3 },
+        },
+        {
+          title: '翻转后，紫珠会落在这里',
+          body: '紫珠进入开口后，整个中心翻转 180°，于是紫珠来到对侧，正好进入紫色目标圈。这就是染色。',
+          spotlight: { pos: goalPos, radiusCells: 0.34 },
+        },
+      ] as const
+      const beat = beats[introBeat - 2]
+      const intro = model(levelIndex, state, event, {
+        title: beat.title,
+        body: beat.body,
+        tip: '点击或轻触棋盘任意位置继续',
+        focusDirs: [],
+        forecast: null,
+        advanceOnTap: true,
+        spotlight: beat.spotlight,
+      })
+      return { ...intro, kicker: `COLORING FLOW · 0${introBeat + 2} / 07` }
+    }
+
+    const guide = model(levelIndex, state, event, {
       title: holdingText
         ? attack
           ? previewing
@@ -401,9 +898,13 @@ export function getChemTutorial(
           : '走上色珠不需要额外的拾取按钮',
       focusDirs: attack ? [attack.dir] : pickupDir ? [pickupDir] : pickupDirs,
       forecast: previewing ? forecast : null,
-      spotlight: holdingText
+      spotlight: previewing
         ? { pos: state.centers[0].pos, radiusCells: 0.9 }
-        : { pos: group?.pos ?? state.player, radiusCells: 0.58 },
+        : holdingText && attack
+          ? { pos: state.player, radiusCells: 0.58 }
+          : holdingText
+            ? { pos: state.centers[0].pos, radiusCells: 0.9 }
+            : { pos: group?.pos ?? state.player, radiusCells: 0.58 },
       gesture: (attack || pickupDir || pickupDirs[0])
         ? {
             from: state.player,
@@ -411,13 +912,40 @@ export function getChemTutorial(
             distanceCells: 0.88,
             hold: attack !== null,
           }
-        : undefined,
+          : undefined,
     })
+    if (state.holding === null && state.moves === 0) {
+      return { ...guide, kicker: 'COLORING FLOW · 03 / 07' }
+    }
+    if (state.holding !== null && attack && state.moves === 1 && introBeat >= 5) {
+      return { ...guide, kicker: 'COLORING FLOW · 07 / 07' }
+    }
+    return guide
   }
 
   if (levelIndex === 3) {
     const forecast = exchangeForecast(state, true)
-    return model(levelIndex, state, event, {
+    const previewing = event?.kind === 'preview' && forecast !== null
+    const center = state.centers[0]
+    if (state.holding !== null && attack && state.moves === 1 && introBeat < 2) {
+      const pages: RevealPage[] = [
+        {
+          title: '先看开口上原来的蓝珠',
+          body: '持珠撞入时，这颗开口原珠会离开中心，不会消失；它将换到你的手中。',
+          spotlight: { pos: pointOnArm(state, 0, center.leaving), radiusCells: 0.32 },
+        },
+        {
+          title: '再看手里准备放入的紫珠',
+          body: '紫珠进入刚才的开口，同时蓝珠换到手中；随后整个中心才翻转 180°。',
+          spotlight: {
+            pos: [state.player[0] + 0.3, state.player[1] - 0.3],
+            radiusCells: 0.24,
+          },
+        },
+      ]
+      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 2, 4, 'EXCHANGE')
+    }
+    const guide = model(levelIndex, state, event, {
       title: holdingText ? (attack ? '出手前，先读懂这次交换' : `把${holdingText}带到进攻位`) : '先拿起游离的紫珠',
       body: holdingText
         ? '持珠进攻会同时发生两件事：手中珠进入中心，开口臂原来的珠换到手中；随后整个结构翻转。'
@@ -425,9 +953,26 @@ export function getChemTutorial(
       tip: forecast ? '试着先说出两条结果，再长按方向核对预演' : '靠近正确进攻位后会出现交换预报',
       focusDirs: attack ? [attack.dir] : pickupDirs,
       forecast,
-      spotlight: forecast ? { pos: state.centers[forecast.center].pos, radiusCells: 0.9 } : undefined,
-      gesture: forecast ? { from: state.player, dir: forecast.dir, distanceCells: 0.88 } : undefined,
+      spotlight: forecast
+        ? previewing
+          ? { pos: state.centers[forecast.center].pos, radiusCells: 0.9 }
+          : { pos: state.player, radiusCells: 0.58 }
+        : state.holding === null
+          ? { pos: state.groups[0]?.pos ?? state.player, radiusCells: 0.32 }
+          : { pos: state.player, radiusCells: 0.58 },
+      gesture: forecast
+        ? { from: state.player, dir: forecast.dir, distanceCells: 0.88, hold: true }
+        : pickupDirs[0]
+          ? { from: state.player, dir: pickupDirs[0], distanceCells: 0.88 }
+          : undefined,
     })
+    if (state.holding === null && state.moves === 0) {
+      return { ...guide, kicker: 'EXCHANGE · 01 / 04' }
+    }
+    if (forecast && state.moves === 1 && introBeat >= 2) {
+      return { ...guide, kicker: 'EXCHANGE · 04 / 04' }
+    }
+    return guide
   }
 
   const forecast = exchangeForecast(state, true)
