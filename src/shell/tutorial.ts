@@ -56,6 +56,8 @@ export interface TutorialModel {
   feedbackTone: 'info' | 'warning'
   /** 这一拍只做对象辨认；轻触棋盘或方向输入推进讲解，不执行游戏动作。 */
   advanceOnTap?: boolean
+  /** 棋盘外的具体操作按钮；壳层负责高亮，模型不读取 DOM。 */
+  controlTarget?: 'hint'
   spotlight?: TutorialSpotlight
   gesture?: TutorialGesture
 }
@@ -784,6 +786,18 @@ export function getChemTutorial(
   }
 
   if (levelIndex === 1) {
+    if (state.moves === 0 && event === null && introBeat === 0) {
+      const intro = model(levelIndex, state, event, {
+        title: '卡住时，用“提示一步”',
+        body: '底部发光的按钮只会告诉你当前局面的下一步，不会替你行动，也不限使用次数。',
+        tip: '点一下“提示一步”试用，或轻触棋盘跳过',
+        focusDirs: [],
+        forecast: null,
+        advanceOnTap: true,
+        controlTarget: 'hint',
+      })
+      return { ...intro, kicker: 'ASSIST · STEP HINT' }
+    }
     return model(levelIndex, state, event, {
       title: attack ? `位置对了，向${tutorialDirText(attack.dir)}撞入` : '绕到白箭头的反面',
       body: '从错误的一面撞，中心不会动；普通空格仍可行走。找到箭头反面的进攻位，再沿箭头方向出手。',

@@ -48,12 +48,44 @@ const FAINT = '#39424f' // 墙 / 刻度 / 角框
 const TETRA = '#4f8ef7' // 背景四面体线框
 const FLASH = '#e5484d' // 无效进攻红闪
 
-const FLIP_MS = 260 // 翻转旋转动画时长
-const WALK_MS = 110 // 行走补间时长
 const SHAKE_MS = 240 // 无效进攻抖动时长
-const HOP_MS = 90 // 共振连锁：每传播一级的动画延迟
-const EJECT_MS_PER_CELL = 90 // 弹射飞珠每格时长
-const SHIELD_BURST_MS = 420 // 阶段护罩解除碎裂时长
+
+export type ChemAnimationMode = 'clear' | 'fast'
+
+interface AnimationTiming {
+  walkMs: number
+  contactMs: number
+  exchangeMs: number
+  flipMs: number
+  hopMs: number
+  ejectMsPerCell: number
+  shieldBurstMs: number
+}
+
+const ANIMATION_TIMINGS: Record<ChemAnimationMode, AnimationTiming> = {
+  clear: {
+    walkMs: 140,
+    contactMs: 120,
+    exchangeMs: 360,
+    flipMs: 420,
+    // 下一级等上一级完整落定，再留一小拍显示刚接通的共振键。
+    hopMs: 470,
+    ejectMsPerCell: 120,
+    shieldBurstMs: 520,
+  },
+  fast: {
+    walkMs: 110,
+    contactMs: 0,
+    exchangeMs: 0,
+    flipMs: 260,
+    hopMs: 90,
+    ejectMsPerCell: 90,
+    shieldBurstMs: 420,
+  },
+}
+
+let animationMode: ChemAnimationMode = 'clear'
+const animationTiming = (): AnimationTiming => ANIMATION_TIMINGS[animationMode]
 const ARM_LEN = 0.46 // 普通臂长（格）：收在中心附近，避免与进攻位上的玩家重叠
 const ARM_LEN_SHORT = 0.34 // 相邻中心侧进一步缩短，留出共振键
 const TETRA_SPIN = 0.00012 // 背景四面体自转（rad/ms）
@@ -129,6 +161,16 @@ interface FlipAnim {
   start: number
   before: ChemCenterState
   after: ChemCenterState
+  exchange?: SubstitutionAnim
+}
+
+interface SubstitutionAnim {
+  start: number
+  end: number
+  dir: Dir
+  player: Vec
+  injected: string
+  extracted: string
 }
 
 interface CenterPose {
@@ -163,6 +205,17 @@ let animationEndsAt = 0
  */
 export function getChemAnimationRemainingMs(now = performance.now()): number {
   return Math.max(0, animationEndsAt - now)
+}
+
+/** 动画节奏与文字教程独立；切换只清空渲染时间线，不触碰游戏状态。 */
+export function setChemAnimationMode(mode: ChemAnimationMode): void {
+  if (animationMode === mode) return
+  animationMode = mode
+  resetChemAnim()
+}
+
+export function getChemAnimationMode(): ChemAnimationMode {
+  return animationMode
 }
 
 /** 无效进攻 / 撞墙反馈入口：shell 在 step 无效果（stateKey 不变）时调用 */
@@ -224,6 +277,21 @@ function flipPose(
   }
 }
 
+function flipAnimationPose(
+  flip: FlipAnim,
+  now: number,
+  timing: AnimationTiming,
+): CenterPose | null {
+  const progress = (now - flip.start) / timing.flipMs
+  if (progress >= 1) return null
+  if (flip.exchange && now < flip.start) {
+    const arms = { ...flip.before.arms }
+    if (now >= flip.exchange.start) delete arms[flip.exchange.dir]
+    return { arms, leaving: flip.before.leaving, rot: 0 }
+  }
+  return flipPose(flip.before, flip.after, progress)
+}
+
 /** 由 stateKey 变化驱动动画：行走补间、翻转时钟、手持脉冲；大跳（重开/换关）则全部重置 */
 function sync(s: ChemState, now: number): void {
   const dims = `${s.width}x${s.height}`
@@ -241,13 +309,14 @@ function sync(s: ChemState, now: number): void {
   const key = stateKey(s)
   if (lastState && key !== lastKey) {
     const prev = lastState
+    const timing = animationTiming()
     const dist =
       Math.abs(s.player[0] - prev.player[0]) + Math.abs(s.player[1] - prev.player[1])
     if (Math.abs(s.moves - prev.moves) === 1 && dist <= 1) {
       if (s.player[0] !== prev.player[0] || s.player[1] !== prev.player[1]) {
-        walk.set('px', s.player[0], now, WALK_MS)
-        walk.set('py', s.player[1], now, WALK_MS)
-        animationEndsAt = Math.max(animationEndsAt, now + WALK_MS)
+        walk.set('px', s.player[0], now, timing.walkMs)
+        walk.set('py', s.player[1], now, timing.walkMs)
+        animationEndsAt = Math.max(animationEndsAt, now + timing.walkMs)
       }
       const changed = s.centers
         .map((c, i) => i)
@@ -257,16 +326,30 @@ function sync(s: ChemState, now: number): void {
           // 只给「臂面变化」的中心播翻转动画；仅开口变化（光照格转轴）不播（不是翻转）
           return p !== undefined && p.arms !== c.arms
         })
+      const root = changed.find((i) => {
+        const c = s.centers[i]
+        return Math.abs(c.pos[0] - s.player[0]) + Math.abs(c.pos[1] - s.player[1]) === 1
+      })
+      const ejectIndex = prev.centers.findIndex((c, i) => {
+        const plan = getEjectionPreview(prev, i)
+        return c.ejects && plan?.landing != null && prev.centers[i].arms !== s.centers[i]?.arms
+      })
+      const ejectPlan = ejectIndex >= 0 ? getEjectionPreview(prev, ejectIndex) : null
+      const flightMs = ejectPlan
+        ? Math.max(1, ejectPlan.path.length) * timing.ejectMsPerCell
+        : 0
+      const hasExchange =
+        animationMode === 'clear' &&
+        root !== undefined &&
+        prev.holding !== null &&
+        prev.centers[root].arms[prev.centers[root].leaving] !== undefined
+      const exchangeStart = now + timing.contactMs
+      const rootFlipStart = exchangeStart + (hasExchange ? timing.exchangeMs : 0)
+      let actionEndsAt = animationEndsAt
       if (changed.length > 0) {
         // 共振连锁阶梯动画：从被进攻的中心（玩家相邻、臂有变化者）出发，
-        // 按相邻关系 BFS 出传播距离，每级延迟 HOP_MS。顺序只影响观感。
+        // 按相邻关系 BFS 出传播距离。清晰模式逐核落定，快速模式允许重叠。
         const hop = new Map<number, number>()
-        const root = changed.find((i) => {
-          const c = s.centers[i]
-          return (
-            Math.abs(c.pos[0] - s.player[0]) + Math.abs(c.pos[1] - s.player[1]) === 1
-          )
-        })
         if (root !== undefined) {
           hop.set(root, 0)
           const q = [root]
@@ -283,48 +366,80 @@ function sync(s: ChemState, now: number): void {
             }
           }
         }
-        for (const i of changed) {
-          const delay = (hop.get(i) ?? 0) * HOP_MS
-          flips.set(i, {
-            start: now + delay,
-            before: prev.centers[i],
-            after: s.centers[i],
-          })
-          animationEndsAt = Math.max(animationEndsAt, now + delay + FLIP_MS)
-        }
-      }
-      const ejectIndex = prev.centers.findIndex((c, i) => {
-        const plan = getEjectionPreview(prev, i)
-        return c.ejects && plan?.landing != null && prev.centers[i].arms !== s.centers[i]?.arms
-      })
-      if (ejectIndex >= 0) {
-        const plan = getEjectionPreview(prev, ejectIndex)
-        if (plan?.landing) {
-          ejectionAnim = {
-            start: now,
-            from: prev.player,
-            color: plan.color,
-            path: plan.path,
-            landing: plan.landing,
+        // 弹射撞核形成第二个传播源：等源中心翻完、飞珠抵达后，再从落点逐核展开。
+        const remoteHop = new Map<number, number>()
+        const remoteRoot = ejectPlan?.blockedCenter ?? null
+        if (remoteRoot !== null && changed.includes(remoteRoot) && !hop.has(remoteRoot)) {
+          remoteHop.set(remoteRoot, 0)
+          const q = [remoteRoot]
+          while (q.length > 0) {
+            const x = q.shift()!
+            for (const y of changed) {
+              if (hop.has(y) || remoteHop.has(y)) continue
+              const a = s.centers[x]
+              const b = s.centers[y]
+              if (Math.abs(a.pos[0] - b.pos[0]) + Math.abs(a.pos[1] - b.pos[1]) === 1) {
+                remoteHop.set(y, remoteHop.get(x)! + 1)
+                q.push(y)
+              }
+            }
           }
-          animationEndsAt = Math.max(
-            animationEndsAt,
-            now + Math.max(1, plan.path.length) * EJECT_MS_PER_CELL,
-          )
+        }
+        for (const i of changed) {
+          let start = rootFlipStart + (hop.get(i) ?? 0) * timing.hopMs
+          if (remoteHop.has(i)) {
+            start = rootFlipStart + timing.flipMs + flightMs + remoteHop.get(i)! * timing.hopMs
+          } else if (!hop.has(i) && root !== undefined && animationMode === 'clear') {
+            start = rootFlipStart + timing.hopMs
+          }
+          const before = prev.centers[i]
+          const extracted = before.arms[before.leaving]
+          const exchange: SubstitutionAnim | undefined =
+            hasExchange && i === root && prev.holding !== null && extracted !== undefined
+              ? {
+                  start: exchangeStart,
+                  end: rootFlipStart,
+                  dir: before.leaving,
+                  player: prev.player,
+                  injected: prev.holding,
+                  extracted,
+                }
+              : undefined
+          flips.set(i, {
+            start,
+            before,
+            after: s.centers[i],
+            exchange,
+          })
+          actionEndsAt = Math.max(actionEndsAt, start + timing.flipMs)
         }
       }
+      if (ejectPlan?.landing) {
+        const ejectStart = rootFlipStart + timing.flipMs
+        ejectionAnim = {
+          start: ejectStart,
+          from: prev.player,
+          color: ejectPlan.color,
+          path: ejectPlan.path,
+          landing: ejectPlan.landing,
+        }
+        actionEndsAt = Math.max(actionEndsAt, ejectStart + flightMs)
+      }
+      const shieldStart = actionEndsAt
       for (let i = 0; i < s.centers.length; i++) {
         const before = prev.centers[i]
         const after = s.centers[i]
         if (before && after && isShielded(prev, before) && !isShielded(s, after)) {
-          shieldBursts.set(i, now)
-          animationEndsAt = Math.max(animationEndsAt, now + SHIELD_BURST_MS)
+          shieldBursts.set(i, shieldStart)
+          actionEndsAt = Math.max(actionEndsAt, shieldStart + timing.shieldBurstMs)
         }
       }
       if (s.holding !== prev.holding) {
-        handPulse = { start: now, color: s.holding }
-        animationEndsAt = Math.max(animationEndsAt, now + 220)
+        const pulseStart = hasExchange ? rootFlipStart : now
+        handPulse = { start: pulseStart, color: s.holding }
+        actionEndsAt = Math.max(actionEndsAt, pulseStart + 220)
       }
+      animationEndsAt = Math.max(animationEndsAt, actionEndsAt)
     } else {
       walk = new Tweens()
       flips.clear()
@@ -341,9 +456,16 @@ function sync(s: ChemState, now: number): void {
 export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H: number): void {
   const now = performance.now()
   sync(s, now)
+  const timing = animationTiming()
   const { cell, ox, oy } = chemLayout(s, W, H)
   const cx = (x: number): number => ox + x * cell + cell / 2
   const cy = (y: number): number => oy + y * cell + cell / 2
+  const visualPoses = new Map<number, CenterPose>()
+  for (const [i, flip] of flips) {
+    const pose = flipAnimationPose(flip, now, timing)
+    if (pose) visualPoses.set(i, pose)
+    else flips.delete(i)
+  }
 
   ctx.fillStyle = '#0b1018'
   ctx.fillRect(0, 0, W, H)
@@ -444,8 +566,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       if (j < 0 || j <= i) continue // 每对只画一次
       const ci = s.centers[i]
       const cj = s.centers[j]
-      const fi = ci.arms[d]
-      const fj = cj.arms[opposite(d)]
+      const fi = (visualPoses.get(i)?.arms ?? ci.arms)[d]
+      const fj = (visualPoses.get(j)?.arms ?? cj.arms)[opposite(d)]
       if (fi === undefined || fj === undefined) continue // 三臂中心当前缺少面对臂：不连
       const [dx, dy] = DIR_VEC[d]
       const x1 = cx(ci.pos[0]) + dx * cell * ARM_LEN_SHORT
@@ -470,7 +592,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 
   // 游离色珠（v1 基团搬运）：小原子点 + 虚线外圈（拾取物标记）
   const flightDuration = ejectionAnim
-    ? Math.max(1, ejectionAnim.path.length) * EJECT_MS_PER_CELL
+    ? Math.max(1, ejectionAnim.path.length) * timing.ejectMsPerCell
     : 0
   if (ejectionAnim && now - ejectionAnim.start >= flightDuration) ejectionAnim = null
   for (const g of s.groups) {
@@ -503,29 +625,24 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       if (p && c && !isShielded(s, c) && isShielded(preview, p)) previewShieldFormed.push(i)
     }
   }
+  const pendingExchange = [...flips.values()]
+    .map((flip) => flip.exchange)
+    .find((exchange): exchange is SubstitutionAnim => exchange !== undefined && now < exchange.end)
   for (let i = 0; i < s.centers.length; i++) {
     const c = s.centers[i]
     const ghosted = previewChanged.includes(i)
     const px = cx(c.pos[0])
     const py = cy(c.pos[1])
     const flip = flips.get(i)
-    let rot = 0
-    let arms = c.arms
-    let leaving = c.leaving
-    let armRot: Partial<Record<Dir, number>> | undefined
-    if (flip) {
-      const t = (now - flip.start) / FLIP_MS
-      if (t >= 1) {
-        flips.delete(i)
-      } else {
-        const pose = flipPose(flip.before, flip.after, t)
-        arms = pose.arms
-        leaving = pose.leaving
-        rot = pose.rot
-        armRot = pose.armRot
-      }
-    }
+    const visualPose = visualPoses.get(i)
+    const rot = visualPose?.rot ?? 0
+    const arms = visualPose?.arms ?? c.arms
+    const leaving = visualPose?.leaving ?? c.leaving
+    const armRot = visualPose?.armRot
     drawCenter(ctx, px, py, cell, arms, leaving, rot, neighborsOf(i), c.kind, c.ejects, armRot)
+    if (flip?.exchange && now >= flip.exchange.start && now < flip.exchange.end) {
+      drawSubstitutionTransfer(ctx, flip.exchange, px, py, cx, cy, cell, now)
+    }
 
     // 持珠且已经站到合法进攻位：用手持色预览本次染色最终落到哪条臂。
     // 只做渲染提示，不提前计算或修改游戏状态。（ghost 中心改由预演层绘制）
@@ -554,21 +671,23 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       }
     }
 
-    // 阶段护罩（v3.2）与再生护罩（v4）：六边形罩 + 微填充；阶段罩显示编号，再生罩显示 R
-    if (isShielded(s, c)) {
+    // 阶段护罩（v3.2）与再生护罩（v4）：清晰模式在整次动作结算前保留旧罩，
+    // 然后才播放碎裂，避免状态已推进却提前消失。
+    const burstAt = shieldBursts.get(i)
+    const waitingToBurst = burstAt !== undefined && now < burstAt
+    if (isShielded(s, c) || waitingToBurst) {
       const shieldLabel =
-        c.shieldUntilStage !== undefined && s.stage < c.shieldUntilStage
+        c.shieldUntilStage !== undefined && (s.stage < c.shieldUntilStage || waitingToBurst)
           ? c.shieldUntilStage + 1
           : 'R'
       drawShield(ctx, px, py, cell, shieldLabel)
     } else if (c.reactiveTo) {
       drawDormantReactiveShield(ctx, px, py, cell)
     }
-    const burstAt = shieldBursts.get(i)
     if (burstAt !== undefined) {
-      const progress = (now - burstAt) / SHIELD_BURST_MS
+      const progress = (now - burstAt) / timing.shieldBurstMs
       if (progress >= 1) shieldBursts.delete(i)
-      else drawShieldBurst(ctx, px, py, cell, c.shieldUntilStage ?? 0, progress)
+      else if (progress >= 0) drawShieldBurst(ctx, px, py, cell, c.shieldUntilStage ?? 0, progress)
     }
 
     // 已达标锁定圈 + ✓ 徽标（当前段中该中心的所有目标均已满足且至少有一个）
@@ -577,7 +696,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       s.stage < s.stages.length
         ? s.stages[s.stage].goals.filter((g) => g.center === i)
         : []
-    if (!ghosted && activeGoals.length > 0 && activeGoals.every((g) => c.arms[g.arm] === g.color)) {
+    if (!ghosted && activeGoals.length > 0 && activeGoals.every((g) => arms[g.arm] === g.color)) {
       drawLockRing(ctx, px, py, cell)
     }
 
@@ -610,7 +729,9 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     }
   }
 
-  if (ejectionAnim) drawEjectionFlight(ctx, ejectionAnim, cx, cy, cell, now)
+  if (ejectionAnim && now >= ejectionAnim.start) {
+    drawEjectionFlight(ctx, ejectionAnim, cx, cy, cell, now)
+  }
 
   // 玩家（最后画）：行走补间 + 无效进攻抖动 + 手持色珠
   let px = walk.value('px', now)
@@ -665,17 +786,22 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   ctx.fill()
 
   // 手持色珠：玩家右上角小原子 + 键线；拾取/换手时脉冲扩散
-  if (s.holding !== null) {
+  const displayHolding = pendingExchange
+    ? now < pendingExchange.start
+      ? pendingExchange.injected
+      : null
+    : s.holding
+  if (displayHolding !== null) {
     const hx = sx + cell * 0.3
     const hy = sy - cell * 0.3
     ctx.strokeStyle = BOND
     ctx.lineWidth = Math.max(1, cell * 0.04)
     line(ctx, sx + cell * 0.14, sy - cell * 0.14, hx, hy)
-    drawAtom(ctx, hx, hy, cell * 0.12, s.holding)
+    drawAtom(ctx, hx, hy, cell * 0.12, displayHolding)
   }
   if (handPulse) {
     const age = now - handPulse.start
-    if (age < 220 && handPulse.color !== null) {
+    if (age >= 0 && age < 220 && handPulse.color !== null) {
       const t = age / 220
       ctx.save()
       ctx.strokeStyle = colorOf(handPulse.color)
@@ -736,7 +862,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         const gy = cy(pc.pos[1])
         const armChanged = c.arms !== pc.arms
         const progress =
-          (now - previewStartedAt - (hop.get(i) ?? 0) * HOP_MS) / FLIP_MS
+          (now - previewStartedAt - (hop.get(i) ?? 0) * timing.hopMs) / timing.flipMs
         const pose = armChanged
           ? flipPose(c, pc, progress)
           : { arms: pc.arms, leaving: pc.leaving, rot: 0 }
@@ -750,7 +876,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         ctx.arc(gx, gy, cell * 0.58, 0, Math.PI * 2)
         ctx.stroke()
         ctx.restore()
-        // 复用正式执行的翻转姿态；共振链也按相同 HOP_MS 逐级启动。
+        // 复用正式执行的翻转姿态；共振链也按当前节奏逐级启动。
         // 仅开口变化（光照格转轴）不是翻转，仍直接展示动作后方向。
         drawCenter(
           ctx,
@@ -1661,6 +1787,53 @@ function drawAtom(
   ctx.restore()
 }
 
+/**
+ * 清晰节奏的取代分镜：两颗珠沿平行弧线反向交换，明确“谁离开 / 谁进入”。
+ * 中心开口与玩家手持的静态珠在这段时间隐藏，避免结果态瞬间覆盖因果过程。
+ */
+function drawSubstitutionTransfer(
+  ctx: CanvasRenderingContext2D,
+  exchange: SubstitutionAnim,
+  centerX: number,
+  centerY: number,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  now: number,
+): void {
+  const raw = (now - exchange.start) / Math.max(1, exchange.end - exchange.start)
+  const t = easeInOutQuad(Math.max(0, Math.min(1, raw)))
+  const [dx, dy] = DIR_VEC[exchange.dir]
+  const armX = centerX + dx * cell * ARM_LEN
+  const armY = centerY + dy * cell * ARM_LEN
+  const handX = cx(exchange.player[0]) + cell * 0.3
+  const handY = cy(exchange.player[1]) - cell * 0.3
+  const vx = armX - handX
+  const vy = armY - handY
+  const length = Math.max(1, Math.hypot(vx, vy))
+  const nx = -vy / length
+  const ny = vx / length
+  const arc = Math.sin(Math.PI * t) * cell * 0.11
+  const injectedX = handX + vx * t + nx * arc
+  const injectedY = handY + vy * t + ny * arc
+  const extractedX = armX - vx * t - nx * arc
+  const extractedY = armY - vy * t - ny * arc
+
+  ctx.save()
+  ctx.lineWidth = Math.max(1.5, cell * 0.025)
+  ctx.setLineDash([4, 4])
+  ctx.globalAlpha = 0.48
+  ctx.strokeStyle = colorOf(exchange.injected)
+  line(ctx, handX, handY, armX, armY)
+  ctx.strokeStyle = colorOf(exchange.extracted)
+  line(ctx, armX, armY, handX, handY)
+  ctx.setLineDash([])
+  ctx.globalAlpha = 1
+  drawAtom(ctx, injectedX, injectedY, cell * 0.13, exchange.injected)
+  drawAtom(ctx, extractedX, extractedY, cell * 0.13, exchange.extracted)
+  ctx.restore()
+}
+
 /** 染色落点预览：从玩家手中流向翻转后的最终臂位。 */
 function drawLandingPreview(
   ctx: CanvasRenderingContext2D,
@@ -1783,7 +1956,7 @@ function drawEjectionFlight(
   now: number,
 ): void {
   const points = [anim.from, ...anim.path]
-  const duration = Math.max(1, anim.path.length) * EJECT_MS_PER_CELL
+  const duration = Math.max(1, anim.path.length) * animationTiming().ejectMsPerCell
   const scaled = Math.min(0.999, Math.max(0, (now - anim.start) / duration)) * (points.length - 1)
   const segment = Math.min(points.length - 2, Math.floor(scaled))
   const local = scaled - segment

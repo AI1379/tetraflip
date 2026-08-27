@@ -6,9 +6,11 @@ export {
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
+  setChemAnimationMode,
+  getChemAnimationMode,
   setChemPreview,
   setChemInspect,
   setChemMarks,
   chemHitTest,
 } from './render'
-export type { ChemMark } from './render'
+export type { ChemAnimationMode, ChemMark } from './render'

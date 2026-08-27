@@ -5,6 +5,8 @@ import {
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
+  getChemAnimationMode,
+  setChemAnimationMode,
   setChemPreview,
   setChemInspect,
   setChemMarks,
@@ -90,6 +92,29 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
     // 已胜利状态重复渲染（锁定圈路径）
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
+  })
+
+  it('清晰 / 快速节奏独立切换，清晰取代为交换后翻转并占用更长时间线', () => {
+    const ctx = stubCtx()
+    const start = initialState(chemGame.parseLevel(level03))
+    const carrying = step(start, 'E')
+    const attacked = step(carrying, 'S')
+
+    setChemAnimationMode('clear')
+    resetChemAnim()
+    render(carrying, ctx, 480, 480)
+    expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
+    const clearRemaining = getChemAnimationRemainingMs()
+    expect(getChemAnimationMode()).toBe('clear')
+
+    setChemAnimationMode('fast')
+    render(carrying, ctx, 480, 480)
+    expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
+    const fastRemaining = getChemAnimationRemainingMs()
+    expect(getChemAnimationMode()).toBe('fast')
+    expect(clearRemaining).toBeGreaterThan(fastRemaining + 500)
+
+    setChemAnimationMode('clear')
   })
 
   it('v2 共振关（相邻中心 / 共轭键 / 连锁翻转转移）渲染不抛错', () => {

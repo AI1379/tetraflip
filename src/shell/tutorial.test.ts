@@ -101,6 +101,20 @@ describe('01–05 状态驱动操作引导', () => {
     expect(guide?.feedback).toContain('白箭头')
   })
 
+  it('第二关开场直接指向提示一步按钮，跳过后恢复原有关卡引导', () => {
+    const state = initial(level02Json)
+    const hint = getChemTutorial(1, state, null, 'touch', 0)
+    expect(hint?.title).toContain('提示一步')
+    expect(hint?.body).toContain('不会替你行动')
+    expect(hint?.controlTarget).toBe('hint')
+    expect(hint?.advanceOnTap).toBe(true)
+    expect(hint?.focusDirs).toEqual([])
+
+    const guide = getChemTutorial(1, state, null, 'touch', 1)
+    expect(guide?.controlTarget).toBeUndefined()
+    expect(guide?.title).toContain('白箭头')
+  })
+
   it('第三关依次建立游离珠、目标、手持、开口与落点，最后才教按住预演', () => {
     const beforePickup = initial(level03Json)
     const group = getChemTutorial(2, beforePickup, null, 'touch', 0)

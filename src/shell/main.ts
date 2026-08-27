@@ -13,12 +13,13 @@ import {
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
+  setChemAnimationMode,
   setChemPreview,
   setChemInspect,
   setChemMarks,
   chemHitTest,
 } from '../games/chem'
-import type { ChemMark } from '../games/chem'
+import type { ChemAnimationMode, ChemMark } from '../games/chem'
 import {
   getChemTutorial,
   initialTutorialInputMode,
@@ -131,6 +132,10 @@ app.innerHTML = `
       <strong id="move-label">0</strong>
     </div>
     <div id="game-stats" class="game-stats"></div>
+    <button id="animation-toggle" class="tutorial-toggle animation-toggle" role="switch" aria-checked="false" aria-label="动画速度：1 倍速" title="动画速度：1×（点击开启 2×）">
+      <span class="tutorial-toggle-copy"><small>动画</small><strong id="animation-toggle-state">1×</strong></span>
+      <span class="tutorial-switch-track" aria-hidden="true"><i></i></span>
+    </button>
     <button id="tutorial-toggle" class="tutorial-toggle" role="switch" aria-checked="true" aria-label="新手教程已开启">
       <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
       <span class="tutorial-switch-track" aria-hidden="true"><i></i></span>
@@ -312,6 +317,7 @@ app.innerHTML = `
         <section class="rules-controls" aria-label="通用操作">
           <strong>通用操作</strong>
           <p><kbd>WASD</kbd> / <kbd>方向键</kbd> 移动 · <kbd>Z</kbd> 撤销 · <kbd>R</kbd> 重开 · <kbd>H</kbd> 下一步提示 · <kbd>G</kbd> 规则 · <kbd>Esc</kbd> 取消预演或关闭弹窗</p>
+          <p>状态栏的「动画」可独立切换 1× / 2×；默认 1× 会依次播放交换、翻转与共振，不依赖文字教程。</p>
         </section>
       </div>
     </section>
@@ -326,8 +332,11 @@ const levelNumber = app.querySelector('#level-number') as HTMLElement
 const levelLabel = app.querySelector('#level-label') as HTMLElement
 const moveLabel = app.querySelector('#move-label') as HTMLElement
 const gameStats = app.querySelector('#game-stats') as HTMLElement
+const animationToggle = app.querySelector('#animation-toggle') as HTMLButtonElement
+const animationToggleState = app.querySelector('#animation-toggle-state') as HTMLElement
 const tutorialToggle = app.querySelector('#tutorial-toggle') as HTMLButtonElement
 const tutorialToggleState = app.querySelector('#tutorial-toggle-state') as HTMLElement
+const hintBtn = app.querySelector('#hint') as HTMLButtonElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
@@ -389,6 +398,7 @@ const progressStore = (() => {
   }
 })()
 const TUTORIAL_PREF_KEY = 'lexin-games:tutorial-enabled'
+const ANIMATION_PREF_KEY = 'lexin-games:chem-animation-mode'
 let tutorialEnabled = (() => {
   try {
     return progressStore?.getItem(TUTORIAL_PREF_KEY) !== 'off'
@@ -396,6 +406,14 @@ let tutorialEnabled = (() => {
     return true
   }
 })()
+let chemAnimationMode: ChemAnimationMode = (() => {
+  try {
+    return progressStore?.getItem(ANIMATION_PREF_KEY) === 'fast' ? 'fast' : 'clear'
+  } catch {
+    return 'clear'
+  }
+})()
+setChemAnimationMode(chemAnimationMode)
 const savedProgress = progressStore ? loadProgress(progressStore) : emptyProgress()
 const completed = new Set<string>(savedProgress.completed)
 const gameIndices: Record<string, number> = {
@@ -604,6 +622,28 @@ function updateTutorialToggle(): void {
   tutorialToggleState.textContent = tutorialEnabled ? '开' : '关'
 }
 
+function updateAnimationToggle(): void {
+  const doubled = chemAnimationMode === 'fast'
+  animationToggle.classList.toggle('hidden', current.id !== 'chem')
+  animationToggle.dataset.enabled = String(doubled)
+  animationToggle.setAttribute('aria-checked', String(doubled))
+  animationToggle.setAttribute('aria-label', `动画速度：${doubled ? '2' : '1'} 倍速`)
+  animationToggle.title = `动画速度：${doubled ? '2×' : '1×'}（点击切换到 ${doubled ? '1×' : '2×'}）`
+  animationToggleState.textContent = doubled ? '2×' : '1×'
+}
+
+function setAnimationMode(mode: ChemAnimationMode): void {
+  chemAnimationMode = mode
+  setChemAnimationMode(mode)
+  try {
+    progressStore?.setItem(ANIMATION_PREF_KEY, mode)
+  } catch {
+    // 隐私模式下偏好只保留到当前页面；不影响动画节奏本身。
+  }
+  updateAnimationToggle()
+  draw()
+}
+
 function setTutorialEnabled(enabled: boolean): void {
   tutorialEnabled = enabled
   tutorialEvent = null
@@ -631,6 +671,24 @@ function advanceTutorialIntro(): boolean {
   return true
 }
 
+function isTutorialControlAwaiting(target: 'hint'): boolean {
+  if (!tutorialEnabled || current.id !== 'chem') return false
+  const state = hist.current as Parameters<typeof getChemTutorial>[1] | undefined
+  if (!state) return false
+  return getChemTutorial(index, state, tutorialEvent, tutorialInputMode, tutorialIntroBeat)?.controlTarget === target
+}
+
+/** 实际试用提示按钮也完成这一拍；玩家仍可轻触棋盘直接跳过。 */
+function requestStepHint(): void {
+  const completesTutorial = isTutorialControlAwaiting('hint')
+  cancelPending()
+  showHint()
+  if (completesTutorial) {
+    tutorialIntroBeat++
+    updateTutorial()
+  }
+}
+
 function updateTutorial(): void {
   const state = hist.current as Parameters<typeof getChemTutorial>[1]
   const guide = current.id === 'chem' && tutorialEnabled
@@ -640,12 +698,14 @@ function updateTutorial(): void {
   for (const button of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
     button.classList.remove('tutorial-focus')
   }
+  hintBtn.classList.toggle('tutorial-focus', guide?.controlTarget === 'hint')
 
   const hasBoardCue = guide !== null && (
     guide.spotlight !== undefined ||
     guide.gesture !== undefined ||
     guide.forecast !== null ||
-    guide.feedback !== null
+    guide.feedback !== null ||
+    guide.controlTarget !== undefined
   )
   if (!guide || !hasBoardCue || visualBlindMode) {
     boardGuide.classList.add('hidden')
@@ -858,6 +918,7 @@ function loadGame(id: string): void {
   current = bundles[id]
   app.dataset.game = id
   updateTutorialToggle()
+  updateAnimationToggle()
   rulesTitle.textContent = id === 'chem' ? '《109.5°》全部规则' : '《t+3》全部规则'
   for (const ruleBook of app.querySelectorAll<HTMLElement>('[data-rules-game]')) {
     ruleBook.classList.toggle('hidden', ruleBook.dataset.rulesGame !== id)
@@ -956,6 +1017,13 @@ function clearPreview(): void {
 /** 方向按下：若正按住别的方向，先提交它（换键滚动），再开始新的等待 */
 function dirDown(dir: Dir): void {
   if (!overlay.classList.contains('hidden')) return // 胜利面板显示时不吃方向输入
+  if (
+    current.id === 'chem' &&
+    chemAnimationMode === 'clear' &&
+    (current.animationRemainingMs?.() ?? 0) > 0
+  ) {
+    return // 清晰节奏逐个结算；撤销 / 重开 / 换关仍可随时打断。
+  }
   if (advanceTutorialIntro()) return
   if (pending && pending.dir === dir) return // 键盘连发（repeat）忽略
   if (pending && pending.dir !== dir) commitPending()
@@ -1250,11 +1318,11 @@ undoBtn.addEventListener('click', () => {
   cancelPending()
   restart()
 })
-;(app.querySelector('#hint') as HTMLButtonElement).addEventListener('click', () => {
-  cancelPending()
-  showHint()
-})
+hintBtn.addEventListener('click', requestStepHint)
 rulesBtn.addEventListener('click', toggleRules)
+animationToggle.addEventListener('click', () => {
+  setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear')
+})
 tutorialToggle.addEventListener('click', () => setTutorialEnabled(!tutorialEnabled))
 levelsBtn.addEventListener('click', togglePicker)
 ;(app.querySelector('#picker-close') as HTMLButtonElement).addEventListener('click', closePicker)
@@ -1439,8 +1507,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.key === 'h' || e.key === 'H') {
     e.preventDefault()
-    cancelPending()
-    showHint()
+    requestStepHint()
     return
   }
   if (e.key === 'g' || e.key === 'G') {

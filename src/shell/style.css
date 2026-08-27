@@ -278,6 +278,13 @@ button:disabled { cursor: default; opacity: 0.3; }
 .tutorial-toggle[data-enabled="false"] .tutorial-toggle-copy strong { color: var(--muted); }
 .tutorial-toggle[data-enabled="false"] .tutorial-switch-track { border-color: #526b82; background: rgba(82, 107, 130, 0.14); }
 .tutorial-toggle[data-enabled="false"] .tutorial-switch-track i { background: #71869a; box-shadow: none; }
+.animation-toggle {
+  position: static;
+  margin-left: auto;
+  box-shadow: none;
+}
+.animation-toggle[data-enabled="false"] .tutorial-toggle-copy strong { color: #bfe7ff; }
+.animation-toggle + .tutorial-toggle { margin-left: 0; }
 .stat {
   min-width: 76px;
   padding: 2px 12px;
@@ -1017,6 +1024,7 @@ canvas {
 }
 .control-button.active .control-icon { color: var(--accent); }
 .hint-button {
+  position: relative;
   min-width: 92px;
   justify-self: end;
   border-color: rgba(240, 198, 90, 0.38);
@@ -1024,6 +1032,28 @@ canvas {
   color: var(--accent);
 }
 .hint-button .control-icon { color: var(--accent); }
+.hint-button.tutorial-focus {
+  z-index: 2;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(240, 198, 90, 0.16), 0 0 22px rgba(240, 198, 90, 0.32);
+  animation: hint-tutorial-focus 1.15s ease-in-out infinite;
+}
+.hint-button.tutorial-focus::after {
+  content: "这里 · 单步提示";
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 7px);
+  width: max-content;
+  padding: 4px 7px;
+  border: 1px solid rgba(240, 198, 90, 0.55);
+  border-radius: 5px;
+  background: rgba(13, 19, 28, 0.96);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
 .rules-button {
   min-width: 76px;
   justify-self: end;
@@ -1087,6 +1117,11 @@ canvas {
 @keyframes tutorial-key {
   0%, 100% { box-shadow: inset 0 0 18px rgba(240, 198, 90, 0.1), 0 0 0 2px rgba(240, 198, 90, 0.06); }
   50% { box-shadow: inset 0 0 24px rgba(240, 198, 90, 0.18), 0 0 0 4px rgba(240, 198, 90, 0.12); }
+}
+
+@keyframes hint-tutorial-focus {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
 }
 
 @keyframes overlay-in {
@@ -1279,7 +1314,8 @@ canvas {
   .assist-actions { grid-template-columns: 48px; gap: 4px; }
   .control-button { width: 44px; min-width: 44px; min-height: 44px; padding: 0; gap: 0; }
   .control-button > span:last-child { display: none; }
-  .hint-button { width: 48px; min-width: 48px; }
+  .hint-button { width: 48px; min-width: 48px; gap: 1px; }
+  .hint-button > span:last-child { display: block; font-size: 9px; line-height: 1; }
   .rules-button { width: 48px; min-width: 48px; }
   .dpad { width: 140px; }
   .shortcut-hint { display: none; }
