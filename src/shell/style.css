@@ -260,9 +260,9 @@ button:disabled { cursor: default; opacity: 0.3; }
   gap: 4px;
 }
 .tutorial-toggle {
-  min-width: 54px;
+  min-width: 44px;
   min-height: 36px;
-  padding: 4px 7px;
+  padding: 4px 8px;
   flex: 0 0 auto;
   align-self: center;
   display: flex;
@@ -272,18 +272,40 @@ button:disabled { cursor: default; opacity: 0.3; }
   background: transparent;
   box-shadow: none;
 }
-.tutorial-toggle-copy { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
-.tutorial-toggle-copy small { color: var(--muted); font-size: 9px; letter-spacing: 0.08em; }
-.tutorial-toggle-copy strong { color: var(--muted); font-size: 12px; }
 .tutorial-toggle[data-enabled="true"] {
   border-color: rgba(107, 197, 255, 0.58);
   background: var(--signal-soft);
   box-shadow: inset 0 0 14px rgba(107, 197, 255, 0.08), 0 0 12px rgba(107, 197, 255, 0.1);
 }
-.tutorial-toggle[data-enabled="true"] .tutorial-toggle-copy small { color: #8fccec; }
-.tutorial-toggle[data-enabled="true"] .tutorial-toggle-copy strong { color: var(--signal); }
 .tutorial-toggle[data-enabled="false"] { border-color: var(--border); background: transparent; box-shadow: none; }
-.tutorial-toggle[data-enabled="false"] .tutorial-toggle-copy strong { color: var(--muted); }
+
+/* 开关图标（全平台，文字由 aria-label / title 承担）：内联 Lucide（ISC 协议）SVG 路径，零依赖零联网，
+   颜色走 currentColor，状态由既有 data-enabled 属性切换图形变体：
+   主题 = 月亮(暗)/太阳(浅)；教程 = 打开的书，关闭时叠对角斜线；动画 = 单箭头(1×)/双箭头(2×)。 */
+.toggle-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  color: var(--muted);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tutorial-toggle[data-enabled="true"] .toggle-icon { color: var(--signal); }
+
+.icon-theme .sun { display: none; }
+.theme-toggle[data-enabled="false"] .toggle-icon { color: var(--accent); }
+.theme-toggle[data-enabled="false"] .icon-theme .moon { display: none; }
+.theme-toggle[data-enabled="false"] .icon-theme .sun { display: block; }
+
+.icon-tutorial .slash { display: none; }
+.tutorial-toggle[data-enabled="false"] .icon-tutorial .slash { display: block; }
+
+.icon-anim .chev-lead { display: none; }
+.animation-toggle[data-enabled="true"] .icon-anim .chev-lead { display: block; }
+.animation-toggle[data-enabled="false"] .icon-anim .chev-main { transform: translateX(-7px); }
 .stat {
   min-width: 76px;
   padding: 2px 12px;
@@ -1261,7 +1283,7 @@ canvas {
     linear-gradient(rgba(8, 119, 184, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(8, 119, 184, 0.05) 1px, transparent 1px);
 }
-:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.brand-kicker, .stat-label, .tutorial-toggle-copy small) { color: #597d96; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.brand-kicker, .stat-label) { color: #597d96; }
 :root[data-theme="light"]:not([data-level-theme="lv999"]) .level-identity {
   border-color: #aac0cf;
   background:
@@ -1284,7 +1306,6 @@ canvas {
   background: transparent;
   box-shadow: none;
 }
-:root[data-theme="light"]:not([data-level-theme="lv999"]) .tutorial-toggle[data-enabled="true"] .tutorial-toggle-copy small { color: #266f98; }
 :root[data-theme="light"]:not([data-level-theme="lv999"]) .level-brief {
   border-color: #b8c8d4;
   background: linear-gradient(90deg, rgba(8, 119, 184, 0.04), transparent 22%), var(--panel);
@@ -1515,7 +1536,6 @@ canvas {
   background: linear-gradient(135deg, rgba(189, 124, 255, 0.16), rgba(88, 217, 255, 0.08));
   box-shadow: inset 0 0 14px rgba(189, 124, 255, 0.12), 0 0 12px rgba(255, 94, 219, 0.12);
 }
-:root[data-level-theme="lv999"] .theme-toggle[data-enabled="true"] .tutorial-toggle-copy :is(small, strong) { color: #ff83e5; }
 
 :root[data-level-theme="lv999"] .level-brief {
   border-color: rgba(189, 124, 255, 0.54);
@@ -1600,6 +1620,72 @@ canvas {
   95% { transform: translateX(-1px); filter: saturate(1.35); }
   96% { transform: translateX(2px); }
   97% { transform: translateX(0); filter: none; }
+}
+
+/* 进入 / 退出 LV.999 的全屏过渡层：进入由 data-level-theme 属性出现直接触发（纯 CSS）；
+   退出时属性被移除无法动画，由壳层挂 620ms 的瞬态 data-lv999-exit 播同一套故障语言（CRT 关机式收束）。 */
+.lv999-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 5px, rgba(189, 124, 255, 0.26) 5px 6px),
+    linear-gradient(to bottom, #0c0418, #211039 78%);
+}
+
+.lv999-flash::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  transform: scaleX(0.2);
+  background: linear-gradient(90deg, transparent, #58d9ff 30%, #ff5edb 70%, transparent);
+  box-shadow: 0 0 28px rgba(88, 217, 255, 0.75), 0 0 12px rgba(255, 94, 219, 0.55);
+  opacity: 0;
+}
+
+:root[data-level-theme="lv999"] .lv999-flash { animation: lv999-flash-in 700ms ease-out both; }
+:root[data-level-theme="lv999"] .lv999-flash::before { animation: lv999-line-in 700ms ease-out both; }
+:root[data-lv999-exit] .lv999-flash { animation: lv999-flash-out 620ms ease-in both; }
+:root[data-lv999-exit] .lv999-flash::before { animation: lv999-line-out 620ms ease-in both; }
+
+/* 进入：黑紫故障条断续闪烁 + 横向撕裂位移，霓虹线自中心扫向顶部后熄灭 */
+@keyframes lv999-flash-in {
+  0% { opacity: 0; transform: translateX(0); }
+  7% { opacity: 0.92; transform: translateX(-6px); }
+  12% { opacity: 0.12; transform: translateX(4px); }
+  18% { opacity: 1; transform: translateX(-2px); }
+  26% { opacity: 0.3; transform: translateX(5px); }
+  34% { opacity: 0.95; transform: translateX(-3px); }
+  44% { opacity: 0.42; transform: translateX(2px); }
+  56% { opacity: 0.8; transform: translateX(0); }
+  70% { opacity: 0.16; }
+  84% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+@keyframes lv999-line-in {
+  0%, 8% { opacity: 0; transform: scaleX(0.2) translateY(0); }
+  18% { opacity: 1; transform: scaleX(1) translateY(0); }
+  55% { opacity: 0.85; transform: scaleX(1) translateY(-38vh); }
+  90%, 100% { opacity: 0; transform: scaleX(0.6) translateY(-46vh); }
+}
+/* 退出：整层先压亮再纵向收束成一条过曝亮线，CRT 断电 */
+@keyframes lv999-flash-out {
+  0% { opacity: 0; transform: scaleY(1); filter: brightness(1); }
+  12% { opacity: 0.88; }
+  38% { opacity: 0.94; transform: scaleY(1); filter: brightness(1.5); }
+  74% { opacity: 0.96; transform: scaleY(0.008); filter: brightness(2.2); }
+  100% { opacity: 0; transform: scaleY(0.002); filter: brightness(2.8); }
+}
+@keyframes lv999-line-out {
+  0%, 20% { opacity: 0; transform: scaleX(0.2); }
+  45% { opacity: 1; transform: scaleX(1); }
+  80% { opacity: 0.9; transform: scaleX(0.55); }
+  100% { opacity: 0; transform: scaleX(0.1); }
 }
 
 /* 真人视觉盲测入口（?game=chem&level=XX&blind=1）：只保留棋盘，避免标题 / hint 泄露机制。 */
@@ -1765,19 +1851,22 @@ canvas {
   .level-identity { padding: 8px 12px; }
   .level-picker-cue { font-size: 0; }
   .status-bar {
-    min-height: 52px;
-    padding: 6px 8px;
+    min-height: 46px;
+    padding: 4px 6px 3px;
     flex-wrap: wrap;
     overflow-x: visible;
+    justify-content: space-between;
   }
-  .stat { min-width: 64px; padding: 2px 9px; }
+  .stat { min-width: 0; padding: 2px 6px; }
+  .stat strong { font-size: 13px; }
+  .stat-label { font-size: 9px; }
   .status-toggles {
     flex: 0 0 100%;
     justify-content: flex-end;
-    padding-top: 4px;
+    padding-top: 3px;
     border-top: 1px solid var(--border);
   }
-  .tutorial-toggle { min-width: 50px; min-height: 34px; padding-inline: 5px; }
+  .tutorial-toggle { min-width: 44px; min-height: 34px; padding: 0; }
   .level-brief p { padding-left: 16px; }
   .board-guide-card { left: 10px; width: min(310px, calc(100% - 20px)); padding: 10px 54px 10px 11px; }
   .board-guide[data-placement="top"] .board-guide-card { top: 10px; }
@@ -1793,9 +1882,6 @@ canvas {
   .assist-actions { grid-template-columns: 48px; gap: 4px; }
   .control-button { width: 44px; min-width: 44px; min-height: 44px; padding: 0; gap: 0; }
   .control-button > span:last-child { display: none; }
-  .hint-button { width: 48px; min-width: 48px; gap: 1px; }
-  .hint-button > span:last-child { display: block; font-size: 9px; line-height: 1; }
-  .rules-button { width: 48px; min-width: 48px; }
   .dpad { width: 140px; }
   .shortcut-hint { display: none; }
   .picker-backdrop { padding: 10px; }
@@ -1834,8 +1920,10 @@ canvas {
   .level-header { grid-column: 2; grid-row: 2; }
   .level-arrow, .level-identity { min-height: 48px; }
   .level-picker-cue { display: none; }
-  .status-bar { grid-column: 2; grid-row: 3; min-height: 42px; }
-  .status-bar { flex-wrap: wrap; overflow-x: visible; }
+  .status-bar { grid-column: 2; grid-row: 3; min-height: 40px; flex-wrap: wrap; overflow-x: visible; justify-content: space-between; }
+  .stat { min-width: 0; padding: 2px 5px; }
+  .stat strong { font-size: 12px; }
+  .stat-label { font-size: 9px; }
   .status-toggles {
     flex: 0 0 100%;
     justify-content: flex-end;
@@ -1886,6 +1974,8 @@ canvas {
   .overlay, .overlay-card { animation: none !important; }
   :root[data-level-theme="lv999"] .brand strong,
   :root[data-level-theme="lv999"] .stage::after { animation: none !important; }
+  .lv999-flash,
+  .lv999-flash::before { animation: none !important; }
   .budget-alarm.pulse { animation: none !important; }
   .guide-spotlight, .gesture-finger, .guide-key kbd, .dpad-key.tutorial-focus { animation: none !important; }
   .guide-orbit i {

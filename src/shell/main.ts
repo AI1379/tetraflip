@@ -161,13 +161,13 @@ app.innerHTML = `
     <div id="game-stats" class="game-stats"></div>
     <div class="status-toggles" aria-label="显示设置">
       <button id="animation-toggle" class="tutorial-toggle animation-toggle" role="switch" aria-checked="false" aria-label="动画速度：1 倍速" title="动画速度：1×（点击开启 2×）">
-        <span class="tutorial-toggle-copy"><small>动画</small><strong id="animation-toggle-state">1×</strong></span>
+        <svg class="toggle-icon icon-anim" viewBox="0 0 24 24" aria-hidden="true"><path class="chev-lead" d="m6 17 5-5-5-5"/><path class="chev-main" d="m13 17 5-5-5-5"/></svg>
       </button>
       <button id="tutorial-toggle" class="tutorial-toggle" role="switch" aria-checked="true" aria-label="新手教程已开启">
-        <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
+        <svg class="toggle-icon icon-tutorial" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><line class="slash" x1="4" y1="20" x2="20" y2="4"/></svg>
       </button>
       <button id="theme-toggle" class="tutorial-toggle theme-toggle" role="switch" aria-checked="true" aria-label="暗色模式已开启">
-        <span class="tutorial-toggle-copy"><small id="theme-toggle-label">暗色</small><strong id="theme-toggle-state">开</strong></span>
+        <svg class="toggle-icon icon-theme" viewBox="0 0 24 24" aria-hidden="true"><path class="moon" d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><g class="sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></svg>
       </button>
     </div>
   </section>
@@ -342,6 +342,7 @@ app.innerHTML = `
       </div>
     </section>
   </div>
+  <div class="lv999-flash" aria-hidden="true"></div>
 `
 app.classList.toggle('visual-blind', visualBlindMode)
 
@@ -380,12 +381,8 @@ const levelLabel = app.querySelector('#level-label') as HTMLElement
 const moveLabel = app.querySelector('#move-label') as HTMLElement
 const gameStats = app.querySelector('#game-stats') as HTMLElement
 const animationToggle = app.querySelector('#animation-toggle') as HTMLButtonElement
-const animationToggleState = app.querySelector('#animation-toggle-state') as HTMLElement
 const tutorialToggle = app.querySelector('#tutorial-toggle') as HTMLButtonElement
-const tutorialToggleState = app.querySelector('#tutorial-toggle-state') as HTMLElement
 const themeToggle = app.querySelector('#theme-toggle') as HTMLButtonElement
-const themeToggleLabel = app.querySelector('#theme-toggle-label') as HTMLElement
-const themeToggleState = app.querySelector('#theme-toggle-state') as HTMLElement
 const hintBtn = app.querySelector('#hint') as HTMLButtonElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const winMark = app.querySelector('#win-mark') as HTMLElement
@@ -731,7 +728,6 @@ function updateTutorialToggle(): void {
   tutorialToggle.dataset.enabled = String(tutorialEnabled)
   tutorialToggle.setAttribute('aria-checked', String(tutorialEnabled))
   tutorialToggle.setAttribute('aria-label', `新手教程已${tutorialEnabled ? '开启' : '关闭'}`)
-  tutorialToggleState.textContent = tutorialEnabled ? '开' : '关'
 }
 
 function updateAnimationToggle(): void {
@@ -741,7 +737,26 @@ function updateAnimationToggle(): void {
   animationToggle.setAttribute('aria-checked', String(doubled))
   animationToggle.setAttribute('aria-label', `动画速度：${doubled ? '2' : '1'} 倍速`)
   animationToggle.title = `动画速度：${doubled ? '2×' : '1×'}（点击切换到 ${doubled ? '1×' : '2×'}）`
-  animationToggleState.textContent = doubled ? '2×' : '1×'
+}
+
+/** LV.999 退出闪烁：CSS 动画时长 620ms，属性保留 700ms 后撤下。 */
+let lv999ExitTimer: ReturnType<typeof setTimeout> | null = null
+
+function triggerLv999ExitFlash(): void {
+  if (lv999ExitTimer !== null) clearTimeout(lv999ExitTimer)
+  document.documentElement.dataset.lv999Exit = ''
+  lv999ExitTimer = setTimeout(() => {
+    lv999ExitTimer = null
+    clearLv999ExitFlash()
+  }, 700)
+}
+
+function clearLv999ExitFlash(): void {
+  if (lv999ExitTimer !== null) {
+    clearTimeout(lv999ExitTimer)
+    lv999ExitTimer = null
+  }
+  delete document.documentElement.dataset.lv999Exit
 }
 
 function updateThemeToggle(): void {
@@ -749,13 +764,13 @@ function updateThemeToggle(): void {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   const lv999 = isLv999Level()
   if (lv999) {
+    // 中途回到彩蛋关时撤下未播完的退出闪烁，避免两段动画叠在同一层
+    clearLv999ExitFlash()
     document.documentElement.dataset.levelTheme = 'lv999'
     app.dataset.levelTheme = 'lv999'
     setChemRenderTheme('lv999')
     brandKicker.textContent = 'PUNKLORDE // GODMODE PLAYER'
     brandTitle.textContent = '109.5° // LV.999'
-    themeToggleLabel.textContent = '主题'
-    themeToggleState.textContent = '999'
     themeToggle.dataset.enabled = 'true'
     themeToggle.setAttribute('aria-checked', 'true')
     themeToggle.setAttribute('aria-label', 'LV.999 彩蛋主题已锁定')
@@ -763,17 +778,17 @@ function updateThemeToggle(): void {
     return
   }
 
+  // 离开彩蛋关：主题属性即将移除，CSS 无法对「属性消失」做动画，挂一个瞬态属性播放 CRT 关机式收束
+  if (document.documentElement.dataset.levelTheme === 'lv999') triggerLv999ExitFlash()
   delete document.documentElement.dataset.levelTheme
   delete app.dataset.levelTheme
   setChemRenderTheme(dark ? 'dark' : 'light')
   brandKicker.textContent = 'CHEM GAMES · STRUCTURAL PUZZLE'
   brandTitle.textContent = '109.5°'
-  themeToggleLabel.textContent = '暗色'
   themeToggle.dataset.enabled = String(dark)
   themeToggle.setAttribute('aria-checked', String(dark))
   themeToggle.setAttribute('aria-label', `暗色模式已${dark ? '开启' : '关闭'}`)
   themeToggle.title = dark ? '暗色模式：开（点击切换为浅色）' : '暗色模式：关（点击切换为深色）'
-  themeToggleState.textContent = dark ? '开' : '关'
 }
 
 function setAnimationMode(mode: ChemAnimationMode): void {
