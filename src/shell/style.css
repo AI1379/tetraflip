@@ -151,28 +151,6 @@ button:disabled { cursor: default; opacity: 0.3; }
   letter-spacing: 0.16em;
 }
 
-.header-tools, .tabs { display: flex; align-items: center; gap: 6px; }
-.tabs {
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: rgba(17, 23, 32, 0.74);
-}
-.tabs button {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-family: var(--font-data);
-  font-weight: 700;
-}
-.tabs button.active {
-  background: var(--panel-raised);
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-
 .icon-button { width: 44px; min-width: 44px; padding: 0; font-size: 18px; }
 
 .level-header {
@@ -1284,7 +1262,6 @@ canvas {
     linear-gradient(90deg, rgba(8, 119, 184, 0.05) 1px, transparent 1px);
 }
 :root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.brand-kicker, .stat-label, .tutorial-toggle-copy small) { color: #597d96; }
-:root[data-theme="light"]:not([data-level-theme="lv999"]) .tabs { background: rgba(255, 255, 255, 0.72); }
 :root[data-theme="light"]:not([data-level-theme="lv999"]) .level-identity {
   border-color: #aac0cf;
   background:
@@ -1487,7 +1464,7 @@ canvas {
   border-bottom: 1px solid rgba(88, 217, 255, 0.18);
 }
 :root[data-level-theme="lv999"] .app-header::after {
-  content: "[ PLAYER_999 // ACCESS_GRANTED ]";
+  content: "[ SILVER_WOLF_999 // ACCESS_GRANTED ]";
   color: var(--signal);
   font-family: var(--font-data);
   font-size: 8px;
@@ -1782,7 +1759,6 @@ canvas {
   .app-header { min-height: 50px; }
   .brand-kicker { display: none; }
   .brand strong { font-size: 16px; }
-  .tabs button { min-height: 34px; padding: 0 10px; font-size: 12px; }
   .icon-button { width: 40px; min-width: 40px; min-height: 40px; }
   .level-header { grid-template-columns: 46px minmax(0, 1fr) 46px; gap: 6px; }
   .level-arrow, .level-identity { min-height: 64px; }

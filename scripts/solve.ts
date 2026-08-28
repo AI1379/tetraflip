@@ -1,5 +1,5 @@
 /**
- * 命令行 solver：pnpm solve <t3|chem> <level-XX>
+ * 命令行 solver：pnpm solve chem <level-XX>
  * 验证关卡可解并打印最短解。未来 AI 关卡 pipeline 的「验证」环节复用同一逻辑。
  *
  * 引擎是零 DOM 纯函数，因此可以直接在 Node 侧被 import —— 这是架构刻意保证的。
@@ -10,11 +10,10 @@ import { DIR_ARROW } from '../src/core/protocol'
 import type { AnyGame, Dir } from '../src/core/protocol'
 import { solve } from '../src/core/solver'
 import { chemGame } from '../src/games/chem'
-import { t3Game } from '../src/games/t3'
 
-const registry: Record<string, AnyGame> = { t3: t3Game, chem: chemGame }
+const registry: Record<string, AnyGame> = { chem: chemGame }
 
-const [gameId = 't3', levelName = 'level-01'] = process.argv.slice(2)
+const [gameId = 'chem', levelName = 'level-01'] = process.argv.slice(2)
 const game = registry[gameId]
 if (!game) {
   console.error(`未知游戏：${gameId}（可选：${Object.keys(registry).join(', ')}）`)

@@ -39,7 +39,7 @@ describe('progress localStorage 读写', () => {
 
     storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify({
       completed: [42, 'chem:ok', null],
-      current: { chem: -1, t3: 1.5, ok: 2 },
+      current: { chem: -1, demo: 1.5, ok: 2 },
     }))
     expect(loadProgress(storage)).toEqual({ completed: ['chem:ok'], current: { ok: 2 } })
   })
@@ -56,9 +56,9 @@ describe('progress 数据操作', () => {
 
   it('setCurrentLevel 按游戏独立保存并覆盖旧值', () => {
     const base = setCurrentLevel(emptyProgress(), 'chem', 2)
-    const next = setCurrentLevel(base, 't3', 4)
-    expect(next.current).toEqual({ chem: 2, t3: 4 })
+    const next = setCurrentLevel(base, 'demo', 4)
+    expect(next.current).toEqual({ chem: 2, demo: 4 })
     const over = setCurrentLevel(next, 'chem', 8)
-    expect(over.current).toEqual({ chem: 8, t3: 4 })
+    expect(over.current).toEqual({ chem: 8, demo: 4 })
   })
 })

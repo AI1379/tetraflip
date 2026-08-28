@@ -5,7 +5,7 @@
 ## 项目一句话
 
 比赛 H5 解谜游戏（≥50 关、纯玩法）。已正式定题 `src/games/chem`（《109.5°》，SN2 立体化学抽象）作为唯一提交作品；
-`src/games/t3`（《t+3》，延迟多层控制）只保留为落选研发档，不进入正常提交入口。
+定题前的落选研发原型《t+3》已于 2026-08-28 从仓库删除（候选比较记录见 `docs/design.md`，历史代码在 git 记录中）。
 机制定义、命名与视觉包装方向见 `docs/design.md`，时间线见 `docs/iteration.md`。
 
 ## 硬约束（比赛规则）
@@ -144,4 +144,4 @@
 | `pnpm test` | 运行测试（vitest） |
 | `pnpm typecheck` | 类型检查（tsc --noEmit） |
 | `pnpm build` | 产出静态站点（dist/） |
-| `pnpm solve <t3\|chem> level-XX` | 命令行 solver 验证关卡可解并打印最短解 |
+| `pnpm solve chem level-XX` | 命令行 solver 验证关卡可解并打印最短解 |

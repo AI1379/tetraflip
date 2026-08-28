@@ -6,7 +6,6 @@ import { History } from '../core/undo'
 import { solveFrom } from '../core/solver'
 import { DIR_VEC, cellKey } from '../core/protocol'
 import type { AnyGame, Dir } from '../core/protocol'
-import { t3Game, render as renderT3, setT3Preview } from '../games/t3'
 import {
   chemGame,
   resolveChemStep,
@@ -33,6 +32,7 @@ import {
 } from './tutorial'
 import type { TutorialControlTarget, TutorialEvent, TutorialInputMode } from './tutorial'
 import { mountFeedback } from './feedback'
+import { BLOCKED_FEEDBACK_MS, redrawBudgetMs } from './frame-budget'
 import { logicalCanvasSize } from './viewport'
 import { SingleSlotInputBuffer } from './input-buffer'
 import {
@@ -50,7 +50,6 @@ import {
 
 /**
  * 《109.5°》正式浏览器壳：关卡导航、HUD、撤销/重开、画布宿主。
- * `t+3` 仅作为研发档保留，可用显式 ?game=t3 进入；正常提交入口不显示原型切换。
  * 这是唯一允许 any 的胶合层（桥接异构游戏类型），引擎保持严格类型。
  *
  * 认知外置层（design §11）在本层的落点：
@@ -77,12 +76,11 @@ interface Bundle {
   animationRemainingMs?: () => number
   /** 按住预演（design §11）：注入 / 清除 step(当前, 方向) 的 ghost 态；未实现则缺省 */
   setPreview?: (state: any | null) => void
-  /** 是否支持玩家标记（design §11 层 ③）；当前仅 chem（t3 的记忆负担由时间线完整外置） */
+  /** 是否支持玩家标记（design §11 层 ③）；当前仅 chem */
   supportsMarks?: boolean
 }
 
 const bundles: Record<string, Bundle> = {
-  t3: { id: 't3', label: 't+3', def: t3Game, render: renderT3, setPreview: setT3Preview },
   chem: {
     id: 'chem',
     label: '109.5°',
@@ -98,7 +96,7 @@ const bundles: Record<string, Bundle> = {
   },
 }
 
-// 一次 glob 两个游戏的关卡，按目录分流
+// 一次 glob 全部游戏的关卡，按目录分流
 const levelFiles = import.meta.glob('../games/*/levels/*.json', {
   eager: true,
   import: 'default',
@@ -137,15 +135,11 @@ document.documentElement.dataset.theme = effectiveTheme()
 const app = document.querySelector('#app') as HTMLElement
 const searchParams = new URLSearchParams(window.location.search)
 const visualBlindMode = searchParams.get('blind') === '1'
-const showPrototypeSwitcher = searchParams.get('devGames') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
       <span id="brand-kicker" class="brand-kicker">CHEM GAMES · STRUCTURAL PUZZLE</span>
       <strong id="brand-title">109.5°</strong>
-    </div>
-    <div class="header-tools">
-      <div class="tabs ${showPrototypeSwitcher ? '' : 'hidden'}" id="tabs" role="tablist" aria-label="研发原型切换"></div>
     </div>
   </header>
 
@@ -340,18 +334,6 @@ app.innerHTML = `
             </li>
           </ol>
         </div>
-        <div class="rules-game hidden" data-rules-game="t3">
-          <section class="rules-intro">
-            <span>一句话目标</span>
-            <strong>让所有棋子同时站进各自的目标格。</strong>
-            <p>你按下的每个方向都会沿时间线向后流动，并由不同延迟的回声原样重放。</p>
-          </section>
-          <ol class="rules-list">
-            <li><span class="rule-number">01</span><div><strong>移动</strong><p>方向键或 WASD 移动白色棋子；每一次按键也会写入所有回声的未来动作。</p></div></li>
-            <li><span class="rule-number">02</span><div><strong>延迟回声</strong><p>回声会在标明的拍数之后，原样执行你当时按下的方向；起点不同会让同一串输入走出不同路线。</p></div></li>
-            <li><span class="rule-number">03</span><div><strong>碰撞也计时</strong><p>撞墙或边界虽然不会移动，仍会消耗一拍并进入回声时间线，可把它当作等待。</p></div></li>
-          </ol>
-        </div>
         <section class="rules-controls" aria-label="通用操作">
           <strong>通用操作</strong>
           <p><kbd>WASD</kbd> / <kbd>方向键</kbd> 移动 · <kbd>Z</kbd> 撤销 · <kbd>R</kbd> 重开 · <kbd>H</kbd> 下一步提示 · <kbd>G</kbd> 规则 · <kbd>Esc</kbd> 取消预演或关闭弹窗</p>
@@ -391,7 +373,6 @@ function pulseBudgetAlarm(): void {
   void budgetAlarmEl.offsetWidth // 强制回流以重启动画
   budgetAlarmEl.classList.add('pulse')
 }
-const tabsEl = app.querySelector('#tabs') as HTMLElement
 const brandKicker = app.querySelector('#brand-kicker') as HTMLElement
 const brandTitle = app.querySelector('#brand-title') as HTMLElement
 const levelNumber = app.querySelector('#level-number') as HTMLElement
@@ -479,7 +460,6 @@ setChemAnimationMode(chemAnimationMode)
 const savedProgress = progressStore ? loadProgress(progressStore) : emptyProgress()
 const completed = new Set<string>(savedProgress.completed)
 const gameIndices: Record<string, number> = {
-  t3: savedProgress.current.t3 ?? 0,
   chem: savedProgress.current.chem ?? 0,
 }
 let progress = savedProgress
@@ -542,12 +522,29 @@ function observePointerInput(event: PointerEvent): void {
   if (next) setTutorialInputMode(next)
 }
 
+// 画布 CSS 尺寸用 ResizeObserver 维护缓存：每帧 getBoundingClientRect 会强制布局回流，
+// 渲染循环与事件处理器统一读缓存；DPR 变化（缩放 / 换屏）由 draw 每次对比后备存储尺寸自行纠正。
+const initialCanvasRect = canvas.getBoundingClientRect()
+let canvasCssWidth = initialCanvasRect.width
+let canvasCssHeight = initialCanvasRect.height
+new ResizeObserver((entries) => {
+  const rect = entries[0]?.contentRect
+  if (!rect) return
+  canvasCssWidth = rect.width
+  canvasCssHeight = rect.height
+}).observe(canvas)
+
 function currentCanvasSize(): { width: number; height: number } {
-  const rect = canvas.getBoundingClientRect()
-  return logicalCanvasSize(rect.width, rect.height, LOGICAL)
+  return logicalCanvasSize(canvasCssWidth, canvasCssHeight, LOGICAL)
 }
 
+/** 帧率门控记账：draw 内更新，frame 据此决定本帧是否重绘。 */
+let lastDrawAt = -Infinity
+let lastDrawnState: unknown
+
 function draw(): void {
+  lastDrawAt = performance.now()
+  lastDrawnState = hist.current
   const dpr = window.devicePixelRatio || 1
   const logical = currentCanvasSize()
   const pixelWidth = Math.round(logical.width * dpr)
@@ -560,8 +557,19 @@ function draw(): void {
   current.render(hist.current, ctx, logical.width, logical.height)
 }
 
-// 渲染循环：补间动画 / 背景自转 / 无效进攻反馈需要连续重绘（棋盘小，开销可忽略）；
-// 同时驱动「按住预演」：按住超过 280ms 注入一步预演态（design §11）。
+// 棋盘动画（补间 / 翻转 / 弹射 / 预演）期间全速重绘；静止与弹窗遮盖下的重绘限频见 frame-budget.ts。
+let blockedFeedbackUntil = 0
+
+function boardCoveredByModal(): boolean {
+  return (
+    !overlay.classList.contains('hidden') ||
+    !pickerBackdrop.classList.contains('hidden') ||
+    !rulesBackdrop.classList.contains('hidden')
+  )
+}
+
+// 渲染循环：驱动输入缓冲消费与「按住预演」（按住超过 280ms 注入一步预演态，design §11）；
+// 重绘按 frame-budget 的门控限频执行。
 function frame(): void {
   if (
     inputBuffer.pending !== undefined &&
@@ -576,7 +584,15 @@ function frame(): void {
     pending.previewing = true
     showPreview(pending.dir)
   }
-  draw()
+  const now = performance.now()
+  const budget = redrawBudgetMs({
+    animating: (current.animationRemainingMs?.() ?? 0) > 0,
+    stateChanged: hist.current !== lastDrawnState,
+    previewing: pending?.previewing === true,
+    feedbackActive: now < blockedFeedbackUntil,
+    covered: boardCoveredByModal(),
+  })
+  if (now - lastDrawAt >= budget) draw()
   requestAnimationFrame(frame)
 }
 
@@ -1078,23 +1094,17 @@ function loadGame(id: string): void {
   updateTutorialToggle()
   updateAnimationToggle()
   updateThemeToggle()
-  rulesTitle.textContent = id === 'chem' ? '《109.5°》全部规则' : '《t+3》全部规则'
+  rulesTitle.textContent = '《109.5°》全部规则'
   for (const ruleBook of app.querySelectorAll<HTMLElement>('[data-rules-game]')) {
     ruleBook.classList.toggle('hidden', ruleBook.dataset.rulesGame !== id)
   }
   levels = loadLevels(filesFor(id), current.def.parseLevel)
-  // 切游戏：清掉两个游戏的预演 / Inspect 瞬态，退出标记模式
+  // 换关重进：清掉预演 / Inspect 瞬态，退出标记模式
   for (const b of Object.values(bundles)) b.setPreview?.(null)
   setChemInspect(null)
   clearInspectTimer()
   setMarkMode(false)
   markBtn.classList.toggle('hidden', current.supportsMarks !== true)
-  for (const btn of Array.from(tabsEl.children)) {
-    const tab = btn as HTMLButtonElement
-    const active = tab.dataset.game === id
-    tab.classList.toggle('active', active)
-    tab.setAttribute('aria-selected', String(active))
-  }
   closePicker()
   openLevel(gameIndices[id] ?? 0)
 }
@@ -1107,6 +1117,7 @@ function applyDir(dir: Dir): void {
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.setTransition?.(null)
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
+    blockedFeedbackUntil = performance.now() + BLOCKED_FEEDBACK_MS // 抖动期间全速重绘
     tutorialEvent = { kind: 'blocked', dir }
     updateTutorial()
     return
@@ -1484,17 +1495,6 @@ function showHint(): void {
 
 // ---------- 事件 ----------
 
-if (showPrototypeSwitcher) {
-  for (const b of Object.values(bundles)) {
-    const btn = document.createElement('button')
-    btn.textContent = b.label
-    btn.dataset.game = b.id
-    btn.setAttribute('role', 'tab')
-    btn.setAttribute('aria-selected', 'false')
-    btn.addEventListener('click', () => loadGame(b.id))
-    tabsEl.appendChild(btn)
-  }
-}
 prevBtn.addEventListener('click', () => {
   cancelPending()
   prevLevel()

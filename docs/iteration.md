@@ -15,6 +15,24 @@
 
 ---
 
+## #70 2026-08-28 — 渲染循环帧率门控与布局回流治理（降 GPU 占用）
+
+- 改了什么：① 新增 `src/shell/frame-budget.ts` 纯函数模块：棋盘动画（`animationRemainingMs > 0`）、局面引用变化、按住预演、无效进攻抖动窗口（shell 侧 `blockedFeedbackUntil`，300ms）任一为真时全速重绘；静止时限频 30Hz，弹窗遮罩（胜利卡 / 选关 / 规则，均含 backdrop-filter）盖住棋盘时限频 8Hz。`frame()` 每帧只算预算，`now - lastDrawAt >= 预算` 才调 `draw()`；`draw()` 内记录时间戳与已绘局面引用，保持 applyDir / 撤销 / 换关的同步重绘语义不变。② 画布 CSS 尺寸改由 ResizeObserver 维护缓存（启动时同步读一次做初值），`currentCanvasSize` 不再每帧 `getBoundingClientRect` 强制布局回流；DPR 变化由 draw 每次对比后备存储尺寸自行纠正。③ 有意**不改**渲染层与任何动画时长 / 曲线：idle 呼吸脉冲周期 ≥690ms、背景四面体自转 0.12 rad/s，30Hz 采样视觉无差；曾评估把抖动计入 `animationEndsAt`，因该时钟同时是输入缓冲与通关卡门控信号（会让撞墙连点卡 240ms）而放弃，改用壳层独立信号。
+- 为什么：真机观察浏览器 GPU 占用异常偏高。原循环无条件以显示器刷新率全量重绘整张 DPR 缩放画布，idle 脉冲又保证画面每帧在变，高刷屏（120/144Hz）+ 高 DPR 下 GPU 栅格化永远满载；选关面板的 `backdrop-filter: blur(7px)` 叠在每帧重绘的画布上还迫使模糊持续失效重算，形成尖峰。
+- 如何验证：新增 `frame-budget.test.ts` 3 项（全速信号优先级、静止 30Hz、遮罩 8Hz、动画优先于遮罩）；`pnpm typecheck`、全量 13 文件 / 434 项 `pnpm test`、`pnpm build` 全部通过；`pnpm solve chem level-01` 正常。
+- 遗留问题：门控效果需真机复测 GPU 占用（重点：挂机、选关面板常开、LV.999）；若 30Hz 下仍有可感知的脉冲顿挫，可降到 24Hz 以下再观察。backdrop-filter 本身保留（是设计），其成本已随底层数据静止大幅下降；LV.999 的 CSS 无限动画（glitch / scan）为该关主题特性，未动。
+
+---
+
+## #69 2026-08-28 — 删除落选原型《t+3》全部代码与入口
+
+- 改了什么：① 删除 `src/games/t3/` 全目录（引擎 / 渲染 / 关卡 / 三份测试）与 `scripts/craft-t3.ts`，移除 `package.json` 的 `craft:t3` 脚本。② `src/shell/main.ts` 移除 t3 bundle、`?game=t3` 研发档说明、t3 规则书 DOM、gameIndices 的 t3 存档项；研发原型切换器（tabs / `devGames=1`）因只剩单游戏失去意义，连同 `style.css` 的 `.tabs` 样式一并删除；`?game=` 参数保留通用回退（未知值仍落到 chem）。③ `scripts/solve.ts` 注册表收敛为 chem，默认参数从 `t3` 改为 `chem`；`progress.test.ts` 把通用进度测试里的 `t3` 键改为中性 `demo` 键（模块本身与游戏无关）。④ README / AGENTS.md 的项目描述改为「《t+3》已删除，候选比较见 design.md，历史代码在 git 记录中」；`docs/design.md` 中的 t3 内容是候选比较与淘汰理由的历史决策记录，按原样保留。
+- 为什么：定题后 t3 长期无迭代（停在 10 关），保留它使壳层与脚本背负双游戏分支、切换器死代码与额外测试面；git 历史已完整保存原型证据，仓库内保留没有边际收益，与正式提交内容收敛一致。
+- 如何验证：`rg` 确认 `docs/` 之外无 `t3` / `t+3` / `craft:t3` 残留；`pnpm typecheck`、`pnpm test`（12 文件 / 431 项，较删除前少 3 个 t3 测试文件）、`pnpm build`、`pnpm solve chem level-01`（默认与显式参数均正常）全部通过。
+- 遗留问题：无。若未来需要复现候选比较，从 git 历史检出即可。
+
+---
+
 ## #68 2026-08-28 — 引擎输出因果事件，删除渲染器猜传播顺序
 
 - 改了什么：① 按协作者要求先把此前全部工作区差异提交为 `292d717`，再独立开展本次架构修复。② chem 引擎新增纯函数 `resolveChemStep(state, action) → { state, events }`；规则仍只在内部 `resolveState` 实现一次，`GameDefinition.step` 关闭事件收集、直接返回状态，因此 solver 不承担动画对象分配。事件轨迹覆盖直接 `attack`、每次 `flip`（中心、真实来源、attack / resonance / ejection 原因、波次、depth、翻前 / 翻后快照）和完整 `ejection` 弹道。③ `propagate` 在真实 FIFO 结算中记录“谁沿亮键触发了谁”，不再在规则结束后丢弃因果边。④ shell 的正式 chem 动作与按住预演都调用详细结算：正式动作把一次性 transition 交给 Canvas 后才推入历史；预演把同一轨迹与结果 ghost 一并交给渲染层；撤销显式清空时间线。solver、提示求解和其他游戏仍使用原 `step` 协议。⑤ render 删除“找变化中心 → 取第一个邻接玩家者当根 → 几何 BFS”的猜序逻辑，直接按事件 wave / depth 排拍；直接波完整落定后播放弹道，再播撞核波；同层分支同拍、父层始终先启动。翻转时间线从 `Map<center, flip>` 改为事件数组，同一中心在一步内被不同波次翻多次也能逐次播放。没有匹配 transition 的状态跳变只重置，不再伪造动画；预演徽标同样不再猜根。⑥ 74 截图局面的引擎与渲染回归测试锁定 `center 2（右侧直接撞）→ center 1（下方）→ center 3 / 0（下一层双分支）`；另锁定终步 `center 4` 直接波、红珠真实弹道与 `center 1` 弹射撞核波分离。
