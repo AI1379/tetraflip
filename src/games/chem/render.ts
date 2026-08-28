@@ -2,7 +2,14 @@ import { DIR_VEC, cellKey, opposite } from '../../core/protocol'
 import type { Dir, Vec } from '../../core/protocol'
 import { Tweens, easeInOutQuad, easeOutCubic } from '../../core/tween'
 import { getEjectionPreview, isShielded, peekFlip, stateKey } from './engine'
-import type { ChemCenterState, ChemState } from './engine'
+import type {
+  ChemAttackEvent,
+  ChemCenterState,
+  ChemEjectionEvent,
+  ChemFlipEvent,
+  ChemState,
+  ChemStepResult,
+} from './engine'
 import type { ChemEjectionPreview } from './engine'
 import type { CenterKind } from './level'
 
@@ -19,7 +26,8 @@ import type { CenterKind } from './level'
  * - 可读性：色珠同时使用颜色与内部纹样编码；玩家用亮环暗芯轮廓，与色珠 / 中心 / 目标区分。
  * - 手感：行走补间、整体 180° 翻转动画（连锁时按传播距离阶梯延迟；三臂中心的缺口也随骨架转动）、
  *   无效进攻抖动 + 撞面红闪；已达标中心画锁定圈 + ✓ 徽标。
- * - 动画状态是渲染层私有时钟（只读游戏状态、绝不改状态）；状态转移由 stateKey 变化驱动。
+ * - 动画状态是渲染层私有时钟（只读游戏状态、绝不改状态）；stateKey 只负责发现状态切换，
+ *   翻转源头、真实传播边与层级由引擎 `resolveChemStep` 的一次性事件轨迹提供。
  * - 纪律：装饰不压缩棋盘，不与玩法信息——开口箭头 / 目标虚线 / 共轭键 / 锁定徽标 / 特殊格——竞争。
  * - 全程不出现化学术语/化学式文字。
  *
@@ -250,10 +258,12 @@ export type ChemMark = '1' | '2' | '3' | '4' | '5' | 'star' | 'question' | 'cros
 
 /** 壳层按住方向时注入的一步预演态（= step(当前态, 按住方向)）；null = 无预演。 */
 let preview: ChemState | null = null
+let previewTransition: ChemStepResult | null = null
 let previewStartedAt = 0
-export function setChemPreview(next: ChemState | null): void {
-  preview = next
-  previewStartedAt = next === null ? 0 : performance.now()
+export function setChemPreview(next: ChemStepResult | ChemState | null): void {
+  previewTransition = next !== null && 'state' in next ? next : null
+  preview = previewTransition?.state ?? (next as ChemState | null)
+  previewStartedAt = preview === null ? 0 : performance.now()
 }
 
 /** Inspect 检视的中心下标；null = 关闭面板。 */
@@ -301,12 +311,17 @@ export function chemHitTest(
   return index >= 0 ? { kind: 'center', index } : { kind: 'cell', x, y }
 }
 
-// ---------- 渲染层私有动画状态（不进游戏状态，撤销/重开由 stateKey 大跳检测兜底） ----------
+// ---------- 渲染层私有动画状态（不进游戏状态；撤销 / 重开显式清空） ----------
 
 interface FlipAnim {
+  center: number
   start: number
   before: ChemCenterState
   after: ChemCenterState
+  source: number | null
+  cause: ChemFlipEvent['cause']
+  wave: number
+  depth: number
   exchange?: SubstitutionAnim
 }
 
@@ -347,7 +362,8 @@ let lastKey = ''
 let lastState: ChemState | null = null
 let lastDims = ''
 let walk = new Tweens()
-const flips = new Map<number, FlipAnim>()
+const flips: FlipAnim[] = []
+let pendingTransition: ChemStepResult | null = null
 let shake: { start: number; dir: Dir } | null = null
 let handPulse: { start: number; color: string | null } | null = null
 let ejectionAnim: EjectionAnim | null = null
@@ -406,11 +422,33 @@ export function getChemCenterFlipPhase(
   center: number,
   now = performance.now(),
 ): 'waiting' | 'rotating' | null {
-  const flip = flips.get(center)
+  const flip = flips.find(
+    (candidate) =>
+      candidate.center === center && now < candidate.start + animationTiming().flipMs,
+  )
   if (!flip) return null
   if (now < flip.start) return 'waiting'
   if (now < flip.start + animationTiming().flipMs) return 'rotating'
   return null
+}
+
+/** 回归测试 / 诊断用：读取引擎事件已经排定的真实翻转层级，不暴露可变动画对象。 */
+export function getChemFlipSchedule(): readonly {
+  center: number
+  source: number | null
+  cause: ChemFlipEvent['cause']
+  wave: number
+  depth: number
+  start: number
+}[] {
+  return flips.map(({ center, source, cause, wave, depth, start }) => ({
+    center,
+    source,
+    cause,
+    wave,
+    depth,
+    start,
+  }))
 }
 
 export function getChemSuccessfulImpactPhase(
@@ -425,13 +463,19 @@ export function notifyChemImpact(dir: Dir): void {
   shake = { start: performance.now(), dir }
 }
 
+/** 壳层把引擎本次真实结算轨迹交给渲染时间线；下一次匹配的状态转移消费一次。 */
+export function setChemTransition(transition: ChemStepResult | null): void {
+  pendingTransition = transition
+}
+
 /** 换关 / 重开时清除渲染层跨关卡动画状态，避免把“上一关的 1 步胜利”误判成当前关的步进动画 */
 export function resetChemAnim(): void {
   lastKey = ''
   lastState = null
   lastDims = ''
   walk = new Tweens()
-  flips.clear()
+  flips.length = 0
+  pendingTransition = null
   shake = null
   handPulse = null
   ejectionAnim = null
@@ -496,7 +540,10 @@ function flipAnimationPose(
   return flipPose(flip.before, flip.after, progress)
 }
 
-/** 由 stateKey 变化驱动动画：行走补间、翻转时钟、手持脉冲；大跳（重开/换关）则全部重置 */
+/**
+ * 由 stateKey 变化驱动动画外壳；翻转的源头、传播边与层级只读取引擎 transition，
+ * 不再从前后状态差值猜测。大跳（撤销 / 重开 / 换关）没有匹配轨迹，直接重置。
+ */
 function sync(s: ChemState, now: number): void {
   const dims = `${s.width}x${s.height}`
   if (dims !== lastDims) {
@@ -504,7 +551,8 @@ function sync(s: ChemState, now: number): void {
     lastState = null
     lastKey = ''
     walk = new Tweens()
-    flips.clear()
+    flips.length = 0
+    pendingTransition = null
     shake = null
     handPulse = null
     ejectionAnim = null
@@ -518,129 +566,95 @@ function sync(s: ChemState, now: number): void {
     const timing = animationTiming()
     const dist =
       Math.abs(s.player[0] - prev.player[0]) + Math.abs(s.player[1] - prev.player[1])
-    if (Math.abs(s.moves - prev.moves) === 1 && dist <= 1) {
+    const transition = pendingTransition?.state === s ? pendingTransition : null
+    pendingTransition = null
+    if (s.moves === prev.moves + 1 && dist <= 1) {
+      flips.length = 0
       if (s.player[0] !== prev.player[0] || s.player[1] !== prev.player[1]) {
         walk.set('px', s.player[0], now, timing.walkMs, easeOutCubic, prev.player[0])
         walk.set('py', s.player[1], now, timing.walkMs, easeOutCubic, prev.player[1])
         animationEndsAt = Math.max(animationEndsAt, now + timing.walkMs)
       }
-      const changed = s.centers
-        .map((c, i) => i)
-        .filter((i) => {
-          const p = prev.centers[i]
-          const c = s.centers[i]
-          // 只给「臂面变化」的中心播翻转动画；仅开口变化（光照格转轴）不播（不是翻转）
-          return p !== undefined && p.arms !== c.arms
-        })
-      const root = changed.find((i) => {
-        const c = s.centers[i]
-        return Math.abs(c.pos[0] - s.player[0]) + Math.abs(c.pos[1] - s.player[1]) === 1
-      })
-      const ejectIndex = prev.centers.findIndex((c, i) => {
-        const plan = getEjectionPreview(prev, i)
-        return c.ejects && plan?.landing != null && prev.centers[i].arms !== s.centers[i]?.arms
-      })
-      const ejectPlan = ejectIndex >= 0 ? getEjectionPreview(prev, ejectIndex) : null
-      const flightMs = ejectPlan
-        ? Math.max(1, ejectPlan.path.length) * timing.ejectMsPerCell
+      const attack = transition?.events.find(
+        (event): event is ChemAttackEvent => event.type === 'attack',
+      )
+      const flipEvents = transition?.events.filter(
+        (event): event is ChemFlipEvent => event.type === 'flip',
+      ) ?? []
+      const ejection = transition?.events.find(
+        (event): event is ChemEjectionEvent => event.type === 'ejection',
+      )
+      const flightMs = ejection
+        ? Math.max(1, ejection.path.length) * timing.ejectMsPerCell
         : 0
       const hasExchange =
         animationMode === 'clear' &&
-        root !== undefined &&
-        prev.holding !== null &&
-        prev.centers[root].arms[prev.centers[root].leaving] !== undefined
+        attack !== undefined &&
+        attack.injected !== null &&
+        attack.extracted !== null
       const exchangeStart = now + timing.contactMs
       const rootFlipStart = exchangeStart + (hasExchange ? timing.exchangeMs : 0)
       let actionEndsAt = animationEndsAt
-      if (root !== undefined) {
+      if (attack !== undefined) {
         successfulImpact = {
           start: now,
           contactAt: exchangeStart,
           end: exchangeStart + timing.impactMs,
-          player: prev.player,
-          target: prev.centers[root].pos,
-          dir: prev.centers[root].leaving,
+          player: attack.player,
+          target: prev.centers[attack.center].pos,
+          dir: attack.dir,
         }
         actionEndsAt = Math.max(actionEndsAt, successfulImpact.end)
       }
-      if (changed.length > 0) {
-        // 共振连锁阶梯动画：从被进攻的中心（玩家相邻、臂有变化者）出发，
-        // 按相邻关系 BFS 出传播距离。清晰模式逐核落定，快速模式允许重叠。
-        const hop = new Map<number, number>()
-        if (root !== undefined) {
-          hop.set(root, 0)
-          const q = [root]
-          while (q.length > 0) {
-            const x = q.shift()!
-            for (const y of changed) {
-              if (hop.has(y)) continue
-              const a = s.centers[x]
-              const b = s.centers[y]
-              if (Math.abs(a.pos[0] - b.pos[0]) + Math.abs(a.pos[1] - b.pos[1]) === 1) {
-                hop.set(y, hop.get(x)! + 1)
-                q.push(y)
+      // 引擎已经给出每条真实传播边与 depth。直接波完整落定后才进入弹射飞行 / 撞核波；
+      // 同 depth 分支同拍，不同 depth 只由 hopMs 控制清晰或快速重叠程度。
+      const directEvents = flipEvents.filter((event) => event.wave === 0)
+      const directWaveEnd = directEvents.reduce(
+        (end, event) => Math.max(end, rootFlipStart + event.depth * timing.hopMs + timing.flipMs),
+        rootFlipStart,
+      )
+      const ejectionStart = directWaveEnd
+      const remoteWaveStart = ejectionStart + flightMs
+      for (const event of flipEvents) {
+        const waveStart = event.wave === 0 ? rootFlipStart : remoteWaveStart
+        const start = waveStart + event.depth * timing.hopMs
+        const exchange: SubstitutionAnim | undefined =
+          hasExchange &&
+          event.cause === 'attack' &&
+          attack?.injected !== null &&
+          attack?.extracted !== null
+            ? {
+                start: exchangeStart,
+                end: rootFlipStart,
+                dir: attack.dir,
+                player: attack.player,
+                injected: attack.injected,
+                extracted: attack.extracted,
               }
-            }
-          }
-        }
-        // 弹射撞核形成第二个传播源：等源中心翻完、飞珠抵达后，再从落点逐核展开。
-        const remoteHop = new Map<number, number>()
-        const remoteRoot = ejectPlan?.blockedCenter ?? null
-        if (remoteRoot !== null && changed.includes(remoteRoot) && !hop.has(remoteRoot)) {
-          remoteHop.set(remoteRoot, 0)
-          const q = [remoteRoot]
-          while (q.length > 0) {
-            const x = q.shift()!
-            for (const y of changed) {
-              if (hop.has(y) || remoteHop.has(y)) continue
-              const a = s.centers[x]
-              const b = s.centers[y]
-              if (Math.abs(a.pos[0] - b.pos[0]) + Math.abs(a.pos[1] - b.pos[1]) === 1) {
-                remoteHop.set(y, remoteHop.get(x)! + 1)
-                q.push(y)
-              }
-            }
-          }
-        }
-        for (const i of changed) {
-          let start = rootFlipStart + (hop.get(i) ?? 0) * timing.hopMs
-          if (remoteHop.has(i)) {
-            start = rootFlipStart + timing.flipMs + flightMs + remoteHop.get(i)! * timing.hopMs
-          } else if (!hop.has(i) && root !== undefined && animationMode === 'clear') {
-            start = rootFlipStart + timing.hopMs
-          }
-          const before = prev.centers[i]
-          const extracted = before.arms[before.leaving]
-          const exchange: SubstitutionAnim | undefined =
-            hasExchange && i === root && prev.holding !== null && extracted !== undefined
-              ? {
-                  start: exchangeStart,
-                  end: rootFlipStart,
-                  dir: before.leaving,
-                  player: prev.player,
-                  injected: prev.holding,
-                  extracted,
-                }
-              : undefined
-          flips.set(i, {
-            start,
-            before,
-            after: s.centers[i],
-            exchange,
-          })
-          actionEndsAt = Math.max(actionEndsAt, start + timing.flipMs)
-        }
+            : undefined
+        flips.push({
+          center: event.center,
+          start,
+          before: event.before,
+          after: event.after,
+          source: event.source,
+          cause: event.cause,
+          wave: event.wave,
+          depth: event.depth,
+          exchange,
+        })
+        actionEndsAt = Math.max(actionEndsAt, start + timing.flipMs)
       }
-      if (ejectPlan?.landing) {
-        const ejectStart = rootFlipStart + timing.flipMs
+      flips.sort((a, b) => a.start - b.start || a.depth - b.depth)
+      if (ejection?.landing) {
         ejectionAnim = {
-          start: ejectStart,
-          from: prev.player,
-          color: ejectPlan.color,
-          path: ejectPlan.path,
-          landing: ejectPlan.landing,
+          start: ejectionStart,
+          from: ejection.from,
+          color: ejection.color,
+          path: ejection.path,
+          landing: ejection.landing,
         }
-        actionEndsAt = Math.max(actionEndsAt, ejectStart + flightMs)
+        actionEndsAt = Math.max(actionEndsAt, ejectionStart + flightMs)
       }
       let visualEndsAt = actionEndsAt
       for (let i = 0; i < s.centers.length; i++) {
@@ -651,21 +665,27 @@ function sync(s: ChemState, now: number): void {
         const isNowShielded = isShielded(s, after)
         if (wasShielded === isNowShielded) continue
         const controllerFlip = after.reactiveTo
-          ? flips.get(after.reactiveTo.center)
+          ? [...flips].reverse().find(
+              (flip) =>
+                flip.center === after.reactiveTo!.center &&
+                flip.before.arms[after.reactiveTo!.arm] !== flip.after.arms[after.reactiveTo!.arm],
+            )
           : undefined
         // R 盾由控制臂落定的瞬间驱动；阶段盾仍等整条连锁结束。
         const transitionAt = controllerFlip
           ? controllerFlip.start + timing.flipMs
           : actionEndsAt
         if (wasShielded) {
-          const protectedFlip = controllerFlip ? flips.get(i) : undefined
+          const protectedFlip = controllerFlip
+            ? flips.find((flip) => flip.center === i && flip.start >= controllerFlip.start)
+            : undefined
           if (protectedFlip && timing.shieldPauseMs > 0) {
             const earliestStart = transitionAt + timing.shieldPauseMs
             const delay = earliestStart - protectedFlip.start
             if (delay > 0) {
               // 后续共振中心不能越过刚解锁的中心；把同拍及更晚的链条整体顺延。
               const downstreamStart = protectedFlip.start
-              for (const flip of flips.values()) {
+              for (const flip of flips) {
                 if (flip.start >= downstreamStart) flip.start += delay
               }
             }
@@ -682,13 +702,14 @@ function sync(s: ChemState, now: number): void {
         handPulse = { start: pulseStart, color: s.holding }
         actionEndsAt = Math.max(actionEndsAt, pulseStart + 220)
       }
-      for (const flip of flips.values()) {
+      for (const flip of flips) {
         actionEndsAt = Math.max(actionEndsAt, flip.start + timing.flipMs)
       }
       animationEndsAt = Math.max(animationEndsAt, actionEndsAt, visualEndsAt)
     } else {
       walk = new Tweens()
-      flips.clear()
+      flips.length = 0
+      pendingTransition = null
       handPulse = null
       ejectionAnim = null
       successfulImpact = null
@@ -709,10 +730,20 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   const cx = (x: number): number => ox + x * cell + cell / 2
   const cy = (y: number): number => oy + y * cell + cell / 2
   const visualPoses = new Map<number, CenterPose>()
-  for (const [i, flip] of flips) {
+  const visualFlips = new Map<number, FlipAnim>()
+  for (const center of new Set(flips.map((flip) => flip.center))) {
+    const flip = flips.find(
+      (candidate) => candidate.center === center && now < candidate.start + timing.flipMs,
+    )
+    if (!flip) continue
     const pose = flipAnimationPose(flip, now, timing)
-    if (pose) visualPoses.set(i, pose)
-    else flips.delete(i)
+    if (pose) {
+      visualPoses.set(center, pose)
+      visualFlips.set(center, flip)
+    }
+  }
+  for (let i = flips.length - 1; i >= 0; i--) {
+    if (now >= flips[i].start + timing.flipMs) flips.splice(i, 1)
   }
   const visuallyShielded = (i: number): boolean => {
     const center = s.centers[i]
@@ -872,6 +903,9 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   // 预演（design §11）：将变化的中心会在预演层整体切换为「动作后构型」ghost，
   // 常规管线里这些中心的落点预览 / 锁定圈跳过（避免画两遍、口径不一）。
   const previewChanged: number[] = []
+  const previewFlipEvents = previewTransition?.events.filter(
+    (event): event is ChemFlipEvent => event.type === 'flip',
+  ) ?? []
   const previewShieldReleased: number[] = []
   const previewShieldFormed: number[] = []
   if (preview && !s.won) {
@@ -882,8 +916,11 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       if (p && c && isShielded(s, c) && !isShielded(preview, p)) previewShieldReleased.push(i)
       if (p && c && !isShielded(s, c) && isShielded(preview, p)) previewShieldFormed.push(i)
     }
+    for (const event of previewFlipEvents) {
+      if (!previewChanged.includes(event.center)) previewChanged.push(event.center)
+    }
   }
-  const pendingExchange = [...flips.values()]
+  const pendingExchange = flips
     .map((flip) => flip.exchange)
     .find((exchange): exchange is SubstitutionAnim => exchange !== undefined && now < exchange.end)
   for (let i = 0; i < s.centers.length; i++) {
@@ -891,7 +928,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     const ghosted = previewChanged.includes(i)
     const px = cx(c.pos[0])
     const py = cy(c.pos[1])
-    const flip = flips.get(i)
+    const flip = visualFlips.get(i)
     const visualPose = visualPoses.get(i)
     const rot = visualPose?.rot ?? 0
     const arms = visualPose?.arms ?? c.arms
@@ -1104,31 +1141,31 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       for (const g of p.stages[p.stage].goals) drawGoal(g, 0.7, p, p.stage)
     }
 
-    // 变化的中心：切换为「动作后构型」ghost + 共振链 ①②③
+    // 变化的中心：切换为「动作后构型」ghost + 共振链 ①②③。
+    // 正式交互传入了引擎 transition 时，徽标与启动延迟只读真实 wave / depth；
+    // 外部仅注入结果态时可以显示最终 ghost，但不再凭几何关系猜传播顺序。
     if (previewChanged.length > 0) {
-      const hop = new Map<number, number>()
-      const root = previewChanged.find((i) => {
-        const c = s.centers[i]
-        return Math.abs(c.pos[0] - p.player[0]) + Math.abs(c.pos[1] - p.player[1]) === 1
-      })
-      if (root !== undefined) {
-        hop.set(root, 0)
-        const q = [root]
-        while (q.length > 0) {
-          const x = q.shift()!
-          for (const y of previewChanged) {
-            if (hop.has(y)) continue
-            const a = s.centers[x]
-            const b = s.centers[y]
-            if (Math.abs(a.pos[0] - b.pos[0]) + Math.abs(a.pos[1] - b.pos[1]) === 1) {
-              hop.set(y, hop.get(x)! + 1)
-              q.push(y)
-            }
-          }
-        }
+      const firstFlipByCenter = new Map<number, ChemFlipEvent>()
+      for (const event of previewFlipEvents) {
+        if (!firstFlipByCenter.has(event.center)) firstFlipByCenter.set(event.center, event)
+      }
+      const directMaxDepth = previewFlipEvents
+        .filter((event) => event.wave === 0)
+        .reduce((depth, event) => Math.max(depth, event.depth), 0)
+      const previewEjection = previewTransition?.events.find(
+        (event): event is ChemEjectionEvent => event.type === 'ejection',
+      )
+      const remoteDelay =
+        directMaxDepth * timing.hopMs +
+        timing.flipMs +
+        (previewEjection ? Math.max(1, previewEjection.path.length) * timing.ejectMsPerCell : 0)
+      const delayOf = (center: number): number => {
+        const event = firstFlipByCenter.get(center)
+        if (!event) return 0
+        return (event.wave === 0 ? 0 : remoteDelay) + event.depth * timing.hopMs
       }
       const ordered = [...previewChanged].sort(
-        (a, b) => (hop.get(a) ?? 99) - (hop.get(b) ?? 99) || a - b,
+        (a, b) => delayOf(a) - delayOf(b) || a - b,
       )
       ordered.forEach((i, n) => {
         const pc = p.centers[i]
@@ -1137,7 +1174,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         const gy = cy(pc.pos[1])
         const armChanged = c.arms !== pc.arms
         const progress =
-          (now - previewStartedAt - (hop.get(i) ?? 0) * timing.hopMs) / timing.flipMs
+          (now - previewStartedAt - delayOf(i)) / timing.flipMs
         const pose = armChanged
           ? flipPose(c, pc, progress)
           : { arms: pc.arms, leaving: pc.leaving, rot: 0 }
@@ -1616,7 +1653,7 @@ function drawLockRing(ctx: CanvasRenderingContext2D, px: number, py: number, cel
   ctx.stroke()
 }
 
-/** 共振链徽标：01/02/03…（按传播距离的渲染近似，与翻转阶梯动画同口径） */
+/** 共振链徽标：01/02/03…（正式预演按引擎事件的真实 wave / depth 排序） */
 function drawChainBadge(
   ctx: CanvasRenderingContext2D,
   px: number,

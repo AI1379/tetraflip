@@ -7,11 +7,13 @@ import {
   initialState,
   isShielded,
   peekFlip,
+  resolveChemStep,
   stateKey,
   step,
 } from './engine'
 import type { ChemLevel } from './level'
 import level01 from './levels/level-01.json'
+import level74 from './levels/level-74.json'
 
 /** ChemLevel 字面量的 v3 缺省字段（测试只关注各自机制） */
 const V3_DEFAULTS = {
@@ -54,6 +56,60 @@ describe('chem（Inversion）引擎', () => {
     const result = solve(chemGame, chemGame.parseLevel(level01), { maxDepth: 10 })
     expect(result.solved).toBe(true)
     expect(result.solution).toEqual(['S', 'E'])
+  })
+
+  it('详细结算与普通 step 共享同一结果，并记录直接进攻源', () => {
+    const start = initialState(chemGame.parseLevel(level01))
+    const positioned = step(start, 'S')
+    const transition = resolveChemStep(positioned, 'E')
+
+    expect(stateKey(transition.state)).toBe(stateKey(step(positioned, 'E')))
+    expect(transition.events).toMatchObject([
+      { type: 'attack', center: 0, dir: 'E' },
+      { type: 'flip', center: 0, source: null, cause: 'attack', wave: 0, depth: 0 },
+    ])
+  })
+
+  it('level-74 共享站位仍按真实亮键记录右→下→下一层分支', () => {
+    let state = initialState(chemGame.parseLevel(level74))
+    // 先空手触发第一波，再取紫珠走到截图中的共享站位 (2,1)。
+    for (const action of ['E', 'E', 'S', 'W', 'N', 'E', 'N', 'E'] as const) {
+      state = step(state, action)
+    }
+    expect(state.player).toEqual([2, 1])
+    expect(state.holding).toBe('purple')
+
+    const transition = resolveChemStep(state, 'E')
+    const flips = transition.events.filter((event) => event.type === 'flip')
+    expect(flips.map(({ center, source, wave, depth }) => ({ center, source, wave, depth }))).toEqual([
+      { center: 2, source: null, wave: 0, depth: 0 },
+      { center: 1, source: 2, wave: 0, depth: 1 },
+      { center: 3, source: 1, wave: 0, depth: 2 },
+      { center: 0, source: 1, wave: 0, depth: 2 },
+    ])
+    expect(transition.state.holding).toBe('blue')
+  })
+
+  it('level-74 终步把直接波、真实弹道与撞核波分开记录', () => {
+    let state = initialState(chemGame.parseLevel(level74))
+    for (const action of ['S', 'N', 'E', 'E', 'N', 'E', 'E', 'N', 'E', 'E', 'E', 'S', 'S'] as const) {
+      state = step(state, action)
+    }
+    const transition = resolveChemStep(state, 'E')
+    const attack = transition.events.find((event) => event.type === 'attack')
+    const ejection = transition.events.find((event) => event.type === 'ejection')
+    const flips = transition.events.filter((event) => event.type === 'flip')
+
+    expect(attack).toMatchObject({ center: 4, dir: 'E', injected: 'blue', extracted: 'red' })
+    expect(ejection).toMatchObject({ center: 4, blockedCenter: 1, landing: [4, 2], color: 'red' })
+    expect(flips[0]).toMatchObject({ center: 4, cause: 'attack', wave: 0, depth: 0 })
+    expect(flips.find((event) => event.cause === 'ejection')).toMatchObject({
+      center: 1,
+      source: null,
+      wave: 1,
+      depth: 0,
+    })
+    expect(transition.state.won).toBe(true)
   })
 })
 

@@ -87,6 +87,42 @@ export interface ChemState {
   won: boolean
 }
 
+export interface ChemAttackEvent {
+  type: 'attack'
+  center: number
+  dir: Dir
+  player: Vec
+  injected: string | null
+  extracted: string | null
+}
+
+export interface ChemFlipEvent {
+  type: 'flip'
+  center: number
+  /** null = 本波的直接源；非 null = 由该中心沿亮键传来。 */
+  source: number | null
+  cause: 'attack' | 'resonance' | 'ejection'
+  /** 0 = 直接进攻波；1 = 同一步中的弹射撞核波。 */
+  wave: number
+  /** 相对本波源头的共振层级；同层分支可同时播放。 */
+  depth: number
+  before: ChemCenterState
+  after: ChemCenterState
+}
+
+export interface ChemEjectionEvent extends ChemEjectionPreview {
+  type: 'ejection'
+}
+
+export type ChemTransitionEvent = ChemAttackEvent | ChemFlipEvent | ChemEjectionEvent
+
+/** 一次动作的规则结果与真实因果轨迹；events 不进入 ChemState / stateKey / solver。 */
+export interface ChemStepResult {
+  state: ChemState
+  action: Dir
+  events: readonly ChemTransitionEvent[]
+}
+
 const hasVec = (list: readonly Vec[], x: number, y: number): boolean =>
   list.some((v) => v[0] === x && v[1] === y)
 
@@ -130,11 +166,13 @@ function propagate(
   centers: ChemCenterState[],
   start: number,
   stage: number,
+  events?: ChemTransitionEvent[],
+  wave = 0,
 ): ChemCenterState[] {
   const flipped = new Set<number>([start])
-  const queue: number[] = [start]
+  const queue: { center: number; depth: number }[] = [{ center: start, depth: 0 }]
   while (queue.length > 0) {
-    const x = queue.shift()!
+    const { center: x, depth } = queue.shift()!
     const xc = centers[x]
     for (const d of presentArmDirs(xc)) {
       const [ex, ey] = DIR_VEC[d]
@@ -147,9 +185,20 @@ function propagate(
       const sourceColor = centers[x].arms[d]
       const targetColor = centers[yi].arms[opposite(d)]
       if (sourceColor !== undefined && targetColor !== undefined && sourceColor === targetColor) {
+        const before = centers[yi]
         centers = flipCenter(centers, yi)
+        events?.push({
+          type: 'flip',
+          center: yi,
+          source: x,
+          cause: 'resonance',
+          wave,
+          depth: depth + 1,
+          before,
+          after: centers[yi],
+        })
         flipped.add(yi)
-        queue.push(yi)
+        queue.push({ center: yi, depth: depth + 1 })
       }
     }
   }
@@ -277,7 +326,11 @@ export function initialState(level: ChemLevel): ChemState {
   return { ...advanced, won: isWin(advanced) }
 }
 
-export function step(s: ChemState, dir: Dir): ChemState {
+function resolveState(
+  s: ChemState,
+  dir: Dir,
+  events?: ChemTransitionEvent[],
+): ChemState {
   if (s.won) return s
   // v6 步数预算：用尽后一切动作无效（与撞墙同语义，状态不变）
   if (s.moveLimit !== undefined && s.moves >= s.moveLimit) return s
@@ -301,8 +354,27 @@ export function step(s: ChemState, dir: Dir): ChemState {
     if (center.ejects && s.holding !== null && ejectLanding === null) return s
 
     const { arms, leaving, extracted } = substitute(center, dir, s.holding)
-    let centers = s.centers.map((c, i) => (i === ci ? { ...c, arms, leaving } : c))
-    centers = propagate(centers, ci, s.stage)
+    const directAfter = { ...center, arms, leaving }
+    events?.push({
+      type: 'attack',
+      center: ci,
+      dir,
+      player: s.player,
+      injected: s.holding,
+      extracted: extracted ?? null,
+    })
+    events?.push({
+      type: 'flip',
+      center: ci,
+      source: null,
+      cause: 'attack',
+      wave: 0,
+      depth: 0,
+      before: center,
+      after: directAfter,
+    })
+    let centers = s.centers.map((c, i) => (i === ci ? directAfter : c))
+    centers = propagate(centers, ci, s.stage, events, 0)
 
     let holding = s.holding
     let groups = s.groups
@@ -318,6 +390,7 @@ export function step(s: ChemState, dir: Dir): ChemState {
 
     // v4 弹射打结构联动：先触发落地光照，再判定中心撞入（可选，仅对显式开启的弹射中心）
     if (center.ejects && ejectionPreview !== null && ejectLanding !== null) {
+      events?.push({ type: 'ejection', ...ejectionPreview })
       if (center.hitLights && hasVec(s.lights, ejectLanding[0], ejectLanding[1])) {
         centers = centers.map((c) => ({ ...c, leaving: nextPresentOpening(c) }))
       }
@@ -329,8 +402,19 @@ export function step(s: ChemState, dir: Dir): ChemState {
           ejectLanding[0] === hitCenter.pos[0] - adx &&
           ejectLanding[1] === hitCenter.pos[1] - ady
         if (onAttackFace && !isShielded({ stage: s.stage, centers }, hitCenter)) {
+          const before = centers[hi]
           centers = flipCenter(centers, hi)
-          centers = propagate(centers, hi, s.stage)
+          events?.push({
+            type: 'flip',
+            center: hi,
+            source: null,
+            cause: 'ejection',
+            wave: 1,
+            depth: 0,
+            before,
+            after: centers[hi],
+          })
+          centers = propagate(centers, hi, s.stage, events, 1)
         }
       }
     }
@@ -371,6 +455,15 @@ export function step(s: ChemState, dir: Dir): ChemState {
   }
   const advanced = advance(next)
   return { ...advanced, won: isWin(advanced) }
+}
+
+export function resolveChemStep(s: ChemState, dir: Dir): ChemStepResult {
+  const events: ChemTransitionEvent[] = []
+  return { state: resolveState(s, dir, events), action: dir, events }
+}
+
+export function step(s: ChemState, dir: Dir): ChemState {
+  return resolveState(s, dir)
 }
 
 /**

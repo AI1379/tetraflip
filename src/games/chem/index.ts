@@ -1,5 +1,14 @@
-export { chemGame, getEjectionPreview, peekFlip } from './engine'
-export type { ChemState, ChemCenterState, ChemEjectionPreview } from './engine'
+export { chemGame, getEjectionPreview, peekFlip, resolveChemStep } from './engine'
+export type {
+  ChemState,
+  ChemCenterState,
+  ChemEjectionPreview,
+  ChemStepResult,
+  ChemTransitionEvent,
+  ChemAttackEvent,
+  ChemFlipEvent,
+  ChemEjectionEvent,
+} from './engine'
 export type { ChemLevel } from './level'
 export {
   render,
@@ -11,8 +20,10 @@ export {
   setChemRenderTheme,
   getChemRenderTheme,
   setChemPreview,
+  setChemTransition,
   setChemInspect,
   setChemMarks,
   chemHitTest,
+  getChemFlipSchedule,
 } from './render'
 export type { ChemAnimationMode, ChemMark, ChemRenderTheme } from './render'

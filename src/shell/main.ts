@@ -9,6 +9,7 @@ import type { AnyGame, Dir } from '../core/protocol'
 import { t3Game, render as renderT3, setT3Preview } from '../games/t3'
 import {
   chemGame,
+  resolveChemStep,
   render as renderChem,
   notifyChemImpact,
   resetChemAnim,
@@ -16,6 +17,7 @@ import {
   setChemAnimationMode,
   setChemRenderTheme,
   setChemPreview,
+  setChemTransition,
   setChemInspect,
   setChemMarks,
   chemHitTest,
@@ -62,6 +64,10 @@ interface Bundle {
   id: string
   label: string
   def: AnyGame
+  /** 正式动作可额外返回不进游戏状态的因果轨迹；solver 仍只使用 def.step。 */
+  resolveStep?: (state: any, action: Dir) => { state: any; events: readonly unknown[] }
+  /** 把一次真实因果轨迹交给渲染时间线；null 用于撤销 / 状态跳变清理。 */
+  setTransition?: (transition: any | null) => void
   render: (state: any, ctx: CanvasRenderingContext2D, w: number, h: number) => void
   /** 无效输入反馈（step 无效果时调用）；未实现则缺省 */
   onBlocked?: (dir: Dir) => void
@@ -81,6 +87,8 @@ const bundles: Record<string, Bundle> = {
     id: 'chem',
     label: '109.5°',
     def: chemGame,
+    resolveStep: resolveChemStep,
+    setTransition: setChemTransition,
     render: renderChem,
     onBlocked: notifyChemImpact,
     resetAnim: resetChemAnim,
@@ -1094,8 +1102,10 @@ function loadGame(id: string): void {
 function applyDir(dir: Dir): void {
   const def = current.def
   if (def.isWin(hist.current)) return
-  const next = def.step(hist.current, dir)
+  const transition = current.resolveStep?.(hist.current, dir) ?? null
+  const next = transition?.state ?? def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
+    current.setTransition?.(null)
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
     tutorialEvent = { kind: 'blocked', dir }
     updateTutorial()
@@ -1112,6 +1122,7 @@ function applyDir(dir: Dir): void {
   }
   setChemInspect(null) // 局面已变：Inspect 面板收起（design §11）
   clearInspectTimer()
+  current.setTransition?.(transition)
   hist.push(next)
   draw()
   updateHud()
@@ -1122,6 +1133,8 @@ function applyDir(dir: Dir): void {
 function doUndo(): void {
   if (!hist.canUndo) return
   cancelWinReveal()
+  current.setTransition?.(null)
+  current.resetAnim?.()
   hist.undo()
   tutorialEvent = null
   setChemInspect(null)
@@ -1151,12 +1164,13 @@ function prevLevel(): void {
 function showPreview(dir: Dir): void {
   const def = current.def
   if (def.isWin(hist.current)) return
-  const next = def.step(hist.current, dir)
+  const transition = current.resolveStep?.(hist.current, dir) ?? null
+  const next = transition?.state ?? def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
     current.setPreview?.(null)
     tutorialEvent = null
   } else {
-    current.setPreview?.(next)
+    current.setPreview?.(transition ?? next)
     tutorialEvent = { kind: 'preview', dir }
   }
   updateTutorial()

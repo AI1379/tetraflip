@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { chemGame, initialState, isShielded, step } from './engine'
+import { chemGame, initialState, isShielded, resolveChemStep, step } from './engine'
 import {
   render,
   notifyChemImpact,
   resetChemAnim,
   getChemAnimationRemainingMs,
   getChemCenterFlipPhase,
+  getChemFlipSchedule,
   getChemSuccessfulImpactPhase,
   getChemShieldTransitionPhase,
   getChemAnimationMode,
@@ -13,6 +14,7 @@ import {
   setChemAnimationMode,
   setChemRenderTheme,
   setChemPreview,
+  setChemTransition,
   setChemInspect,
   setChemMarks,
   chemHitTest,
@@ -34,6 +36,7 @@ import level30 from './levels/level-30.json'
 import level39 from './levels/level-39.json'
 import level48 from './levels/level-48.json'
 import level56 from './levels/level-56.json'
+import level74 from './levels/level-74.json'
 import level75 from './levels/level-75.json'
 
 /**
@@ -220,9 +223,11 @@ describe('chem（109.5°）渲染冒烟', () => {
       resetChemAnim()
       const start = initialState(chemGame.parseLevel(level01))
       const positioned = step(start, 'S')
-      const attacked = step(positioned, 'E')
+      const transition = resolveChemStep(positioned, 'E')
+      const attacked = transition.state
       const ctx = stubCtx()
       render(positioned, ctx, 480, 480)
+      setChemTransition(transition)
       render(attacked, ctx, 480, 480)
 
       expect(getChemSuccessfulImpactPhase(0)).toBe('approach')
@@ -241,17 +246,20 @@ describe('chem（109.5°）渲染冒烟', () => {
     const ctx = stubCtx()
     const start = initialState(chemGame.parseLevel(level03))
     const carrying = step(start, 'E')
-    const attacked = step(carrying, 'S')
+    const transition = resolveChemStep(carrying, 'S')
+    const attacked = transition.state
 
     setChemAnimationMode('clear')
     resetChemAnim()
     render(carrying, ctx, 480, 480)
+    setChemTransition(transition)
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
     const clearRemaining = getChemAnimationRemainingMs()
     expect(getChemAnimationMode()).toBe('clear')
 
     setChemAnimationMode('fast')
     render(carrying, ctx, 480, 480)
+    setChemTransition(transition)
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
     const fastRemaining = getChemAnimationRemainingMs()
     expect(getChemAnimationMode()).toBe('fast')
@@ -275,6 +283,37 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
     // 连锁进行中（动画未结束）再渲染一帧
     expect(() => render(attacked, ctx, 480, 480)).not.toThrow()
+  })
+
+  it('level-74 使用引擎真实事件排成右→下→下一层，不再从共享站位猜错根节点', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
+    try {
+      setChemAnimationMode('clear')
+      resetChemAnim()
+      let before = initialState(chemGame.parseLevel(level74))
+      for (const action of ['E', 'E', 'S', 'W', 'N', 'E', 'N', 'E'] as const) {
+        before = step(before, action)
+      }
+      const transition = resolveChemStep(before, 'E')
+      const ctx = stubCtx()
+      render(before, ctx, 820, 480)
+      setChemTransition(transition)
+      render(transition.state, ctx, 820, 480)
+
+      const schedule = getChemFlipSchedule()
+      expect(schedule.map(({ center, source, depth }) => ({ center, source, depth }))).toEqual([
+        { center: 2, source: null, depth: 0 },
+        { center: 1, source: 2, depth: 1 },
+        { center: 3, source: 1, depth: 2 },
+        { center: 0, source: 1, depth: 2 },
+      ])
+      expect(schedule[0].start).toBeLessThan(schedule[1].start)
+      expect(schedule[1].start).toBeLessThan(schedule[2].start)
+      expect(schedule[2].start).toBe(schedule[3].start)
+    } finally {
+      now.mockRestore()
+      resetChemAnim()
+    }
   })
 
   it('v3.2 机制群（光照格 / 阶段护罩 / 弹射中心 / 三臂整体翻转动画 / 分步目标）渲染不抛错', () => {
@@ -376,8 +415,10 @@ describe('chem（109.5°）渲染冒烟', () => {
     resetChemAnim()
     const s = initialState(chemGame.parseLevel(level08))
     render(s, ctx, 480, 480)
-    const won = step(s, 'E')
+    const transition = resolveChemStep(s, 'E')
+    const won = transition.state
     expect(won.won).toBe(true)
+    setChemTransition(transition)
     render(won, ctx, 480, 480)
     expect(getChemAnimationRemainingMs()).toBeGreaterThan(200)
     resetChemAnim()
@@ -419,12 +460,14 @@ describe('chem（109.5°）渲染冒烟', () => {
         before = step(before, action)
       }
       expect(isShielded(before, before.centers[2])).toBe(true)
-      const after = step(before, 'E')
+      const transition = resolveChemStep(before, 'E')
+      const after = transition.state
       expect(isShielded(after, after.centers[2])).toBe(false)
       expect(after.centers[2].arms).not.toEqual(before.centers[2].arms)
 
       const ctx = stubCtx()
       render(before, ctx, 480, 480)
+      setChemTransition(transition)
       render(after, ctx, 480, 480)
       // 直接命中的控制中心在 120ms 停顿 + 420ms 翻转后落定；R 盾此时释放，
       // 受保护中心再等独立 180ms 因果拍，之后才带着后续共振链开始旋转。
