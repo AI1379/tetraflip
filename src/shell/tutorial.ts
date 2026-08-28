@@ -4,7 +4,7 @@ import { getEjectionPreview, isShielded } from '../games/chem/engine'
 import type { ChemState } from '../games/chem/engine'
 
 /**
- * 01–05 的壳层操作引导 + 06 的早期共振亮点预告。
+ * 01–04 的核心操作引导 + 后续新机制首次揭示。
  *
  * 只从当前 ChemState 推导眼前可见的操作与交换结果，不调用 solver、不写多步解法，
  * 因此它是 UI 解释层而不是另一套玩法规则。
@@ -15,7 +15,7 @@ export type TutorialEvent =
   | { kind: 'preview'; dir: Dir }
   | null
 
-export type TutorialControlTarget = 'hint' | 'animation' | 'tutorial' | 'theme'
+export type TutorialControlTarget = 'hint'
 
 export type TutorialInputMode = 'keyboard' | 'touch'
 
@@ -261,7 +261,7 @@ function actionKicker(guide: TutorialModel, label: string, total: number): Tutor
   return { ...guide, kicker: `${label} · ${n} / ${n}` }
 }
 
-/** 01–06 操作引导 / 亮点预告 + 后续机制首现揭示；通关态立即让位给真实棋盘动画。 */
+/** 01–04 核心操作引导 + 后续机制首现揭示；通关态立即让位给真实棋盘动画。 */
 export function getChemTutorial(
   levelIndex: number,
   state: ChemState,
@@ -271,110 +271,25 @@ export function getChemTutorial(
 ): TutorialModel | null {
   if (state.won) return null
 
-  if (levelIndex === 5) {
-    if (state.moves > 0) return null
-    const center = state.centers[0]
-    const pages: RevealPage[] = [
-      {
-        title: '空手撞只翻转，不换珠',
-        body: '手里没有珠时，撞进去只会让中心整体翻转，不发生交换。',
-        spotlight: { pos: center.pos, radiusCells: 0.86 },
-      },
-      {
-        title: '拾珠之后，手不会再空',
-        body: '拿珠、换珠、撞完换出来的珠，都只是替换手里的颜色——想空手撞，只有开局这一次机会。',
-        spotlight: { pos: state.groups[0]?.pos ?? state.player, radiusCells: 0.34 },
-      },
-    ]
-    if (introBeat < pages.length) {
-      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 3, 'EMPTY HAND')
-    }
-    const attack = immediateAttack(state)
-    return actionKicker(model(levelIndex, state, event, {
-      title: '先空手撞一次左侧中心',
-      body: '左侧的目标只能靠空手撞达成；现在不出手，之后就没有空手的机会了。',
-      tip: '出手前想想，翻转后两条臂会怎么对调',
-      focusDirs: attack ? [attack.dir] : [],
-      forecast: null,
-      spotlight: { pos: state.player, radiusCells: 0.58 },
-      gesture: attack ? { from: state.player, dir: attack.dir, distanceCells: 0.88 } : undefined,
-    }), 'EMPTY HAND', 3)
-  }
-
-  // 共振首现即教学（v5）：旧 06 承担正式逐拍教学，第 10 关的延迟教学删除。
+  // 共振首现只解释规则，不预告本关颜色路线或第一步（v5.1）。
   if (levelIndex === 6) {
     if (state.moves > 0) return null
     const pages: RevealPage[] = [
       {
         title: '相邻中心之间有共振键',
-        body: '中间与右侧两座中心之间有暗键；面对面的臂颜色不同时，翻转不会从这里传过去。',
+        body: '相邻中心面对面的两颗珠同色时，中间的暗键会亮起；颜色不同时，翻转不会从这里传过去。',
         spotlight: { pos: [4.5, 1], radiusCells: 0.44 },
       },
       {
-        title: '中间中心的绿珠现在朝左',
-        body: '这颗绿珠现在在左边的臂上。中间中心翻转后，它会转到右边的臂上，正对右邻。',
-        spotlight: { pos: pointOnArm(state, 1, 'W'), radiusCells: 0.32 },
-      },
-      {
-        title: '右邻的西臂也是绿珠',
-        body: '面对面的两颗珠同色时，暗键会变亮。共振只沿着这一步真正亮起来的键传。',
-        spotlight: { pos: pointOnArm(state, 2, 'W', 0.34), radiusCells: 0.3 },
-      },
-      {
-        title: '亮键会把翻转传给下一座',
-        body: '中间中心翻转并接通亮键后，右侧中心也跟着翻转。这一关要亲眼看到它发生。',
-        spotlight: { pos: state.centers[2].pos, radiusCells: 0.84 },
+        title: '翻转会沿亮键传下去',
+        body: '撞动一座中心后，只沿这一步真正亮起的键传播；相邻中心也会跟着翻转。',
+        spotlight: { pos: [4.5, 1], radiusCells: 0.72 },
       },
     ]
     if (introBeat < pages.length) {
-      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'RESONANCE')
+      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 2, 'RESONANCE')
     }
-    const group = state.groups[0]
-    const dir = group ? nextDirToward(state, group.pos) : undefined
-    return actionKicker(model(levelIndex, state, event, {
-      title: '先拿紫珠，换出蓝珠再送货',
-      body: '前半段仍是刚学会的交换；把蓝珠送进中间中心，看绿键接通时最右中心自动跟着转。',
-      tip: '按住预演可以先看完整结果；松开执行',
-      focusDirs: dir ? [dir] : [],
-      forecast: null,
-      gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
-    }), 'RESONANCE', 5)
-  }
-
-  // v5 新关「碰不到的中心」：进攻位被墙封死的中心只能靠共振翻转。
-  if (levelIndex === 8) {
-    if (state.moves > 0) return null
-    const pages: RevealPage[] = [
-      {
-        title: '这座中心永远撞不到',
-        body: '白箭头朝左，进攻位在箭头背面——那一格被墙封死了。任何走法都到不了。',
-        spotlight: { pos: [4, 1], radiusCells: 0.46 },
-      },
-      {
-        title: '这座也一样',
-        body: '右下中心的进攻位同样被墙挡住。珠进不去，共振却传得进去。',
-        spotlight: { pos: [2, 2], radiusCells: 0.46 },
-      },
-      {
-        title: '亮键是唯一的门',
-        body: '只要面对面的臂同色接通，一撞就能让整条链一起翻转，包括那些碰不到的中心。',
-        spotlight: { pos: [3, 1.5], radiusCells: 0.9 },
-      },
-    ]
-    if (introBeat < pages.length) {
-      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 4, 'RESONANCE DOOR')
-    }
-    const group = state.groups[0]
-    const dir = group ? nextDirToward(state, group.pos) : undefined
-    return actionKicker(model(levelIndex, state, event, {
-      title: '先拿起紫珠，想想这一击从哪开始',
-      body: '出手前想想：这一撞要让三座中心同时达标，每一座需要什么颜色。',
-      tip: '最左中心是唯一能直接撞入的起点',
-      focusDirs: dir ? [dir] : [],
-      forecast: null,
-      spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
-      gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
-    }), 'RESONANCE DOOR', 4)
+    return null
   }
 
   // 后续机制先逐物解释，最后一拍才开放真实输入；玩家开始行动后自动让位。
@@ -771,40 +686,12 @@ export function getChemTutorial(
     return null
   }
 
+  // 05 起不再用状态驱动教练代替玩家解题；未命中新机制揭示时直接退出。
+  if (levelIndex === 4) return null
+
   const attack = immediateAttack(state)
   const pickupDirs = adjacentGroupDirs(state)
   const holdingText = state.holding === null ? null : `${tutorialColorText(state.holding)}珠`
-
-  if (levelIndex === 4 && state.moves === 0 && event === null && introBeat < 3) {
-    const beats = [
-      {
-        title: '动画可以切到 2 倍速',
-        body: '状态栏右侧的「动画」开关控制翻转与行走的动画速度；熟悉操作后切到 2×，整体节奏会快很多。',
-        controlTarget: 'animation',
-      },
-      {
-        title: '教程开关控制引导卡',
-        body: '「教程」开关控制这类引导卡的显示；熟练之后关掉它，底部「提示一步」（H）仍然可用。',
-        controlTarget: 'tutorial',
-      },
-      {
-        title: '暗色开关切换整页配色',
-        body: '「暗色」开关在浅色与深色之间切换；两种主题下，色珠、白箭头与目标圈都保持完整可读。',
-        controlTarget: 'theme',
-      },
-    ] as const
-    const beat = beats[introBeat]
-    const intro = model(levelIndex, state, event, {
-      title: beat.title,
-      body: beat.body,
-      tip: '试用开关或轻触棋盘任意位置继续',
-      focusDirs: [],
-      forecast: null,
-      advanceOnTap: true,
-      controlTarget: beat.controlTarget,
-    })
-    return { ...intro, kicker: `SETTINGS · 0${introBeat + 1} / 03` }
-  }
 
   if (levelIndex === 0) {
     const center = state.centers[0]
@@ -813,27 +700,37 @@ export function getChemTutorial(
     const travelDir = nextDirToward(state, attackPos)
     const keyboard = inputMode === 'keyboard'
 
-    if (state.moves === 0 && !attack && introBeat < 1) {
+    if (state.moves === 0 && !attack && introBeat < 4) {
       const goal = state.stages[state.stage]?.goals[0]
-      const goalCenter = goal ? state.centers[goal.center] : center
+      const goalCenterIndex = goal?.center ?? 0
+      const goalCenter = state.centers[goalCenterIndex] ?? center
       const goalDir = goal?.arm ?? 'N'
       const sourceDir = goal
         ? DIRS.find((dir) => dir !== goalDir && goalCenter.arms[dir] === goal.color) ?? 'S'
         : 'S'
-      const intro = model(levelIndex, state, event, {
-        title: '先看一次正确碰撞会发生什么',
-        body: '撞中白箭头的开口后，整个中心翻转半圈：下面的绿色珠会跟着转到上方同色虚线圈。',
-        tip: '看清绿色珠的半圈轨迹后，点击棋盘开始操作',
-        focusDirs: [],
-        forecast: null,
-        advanceOnTap: true,
-        orbitDemo: {
-          center: goalCenter.pos,
-          from: sourceDir,
-          color: goal?.color ?? 'green',
+      const pages: RevealPage[] = [
+        {
+          title: '这是你',
+          body: '白色光环是你控制的玩家。之后用方向键、WASD 或滑动让它每次移动一格。',
+          spotlight: { pos: state.player, radiusCells: 0.58 },
         },
-      })
-      return { ...intro, kicker: 'FIRST CONTACT · 01 / 02' }
+        {
+          title: '虚线圈是目标',
+          body: '让每个虚线圈里的珠和圈变成同一种颜色；所有目标都对上，就能过关。',
+          spotlight: { pos: pointOnArm(state, goalCenterIndex, goalDir), radiusCells: 0.34 },
+        },
+        {
+          title: '把同色珠送进目标圈',
+          body: '下面这颗绿色珠现在不在目标里。撞动中心后，要让它转进上方的绿色虚线圈。',
+          spotlight: { pos: pointOnArm(state, goalCenterIndex, sourceDir), radiusCells: 0.32 },
+        },
+        {
+          title: '白箭头是中心的开口',
+          body: '站到白箭头的反面，再沿箭头方向撞进去，整个中心和四条色臂会翻转半圈。',
+          spotlight: { pos: center.pos, radiusCells: 0.34 },
+        },
+      ]
+      return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'FIRST CONTACT')
     }
 
     const guide = model(levelIndex, state, event, {
@@ -865,7 +762,7 @@ export function getChemTutorial(
           ? { from: state.player, dir: travelDir, distanceCells: 0.88 }
           : undefined,
     })
-    return { ...guide, kicker: 'FIRST CONTACT · 02 / 02' }
+    return { ...guide, kicker: 'FIRST CONTACT · 05 / 05' }
   }
 
   if (levelIndex === 1) {

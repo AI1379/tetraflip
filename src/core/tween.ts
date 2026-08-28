@@ -1,4 +1,4 @@
-/** 极简补间工具：供后续移动 / 翻转动画使用（v0 渲染暂未接入） */
+/** 极简补间工具：供移动 / 翻转等纯渲染动画使用。 */
 
 export type Ease = (t: number) => number
 
@@ -18,14 +18,23 @@ export class Tweens {
     { from: number; to: number; start: number; durationMs: number; ease: Ease }
   >()
 
-  set(name: string, to: number, now: number, durationMs = 120, ease: Ease = easeOutCubic): void {
+  set(
+    name: string,
+    to: number,
+    now: number,
+    durationMs = 120,
+    ease: Ease = easeOutCubic,
+    from?: number,
+  ): void {
     const current = this.active.get(name)
-    const from = current ? this.valueAt(current, now) : to
-    if (from === to) {
+    // 第一次设置若没有显式起点，只能视为“初始化到目标”；状态差值驱动的动画
+    // 必须传入上一状态的值，否则首次移动会把起点和终点都设成 to，视觉上退化为瞬移。
+    const start = current ? this.valueAt(current, now) : (from ?? to)
+    if (start === to) {
       this.active.delete(name)
       return
     }
-    this.active.set(name, { from, to, start: now, durationMs, ease })
+    this.active.set(name, { from: start, to, start: now, durationMs, ease })
   }
 
   value(name: string, now: number): number {

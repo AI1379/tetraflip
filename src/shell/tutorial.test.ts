@@ -26,27 +26,41 @@ import {
 const initial = (json: unknown): ChemState => chemGame.initialState(chemGame.parseLevel(json))
 
 describe('状态驱动操作引导与机制首现教学', () => {
-  it('第一关先用半圈动画展示绿色珠进入目标，然后立即开放移动', () => {
+  it('第一关先用五拍建立玩家、目标、色珠、箭头与操作的完整认知', () => {
     const state = initial(level01Json)
-    const demo = getChemTutorial(0, state, null, 'touch', 0)
-    expect(demo?.title).toContain('正确碰撞')
-    expect(demo?.body).toContain('绿色珠')
-    expect(demo?.orbitDemo).toEqual({ center: [1, 1], from: 'S', color: 'green' })
-    expect(demo?.spotlight).toBeUndefined()
-    expect(demo?.advanceOnTap).toBe(true)
-    expect(demo?.focusDirs).toEqual([])
-    expect(demo?.kicker).toContain('01 / 02')
+    const player = getChemTutorial(0, state, null, 'touch', 0)
+    expect(player?.title).toBe('这是你')
+    expect(player?.spotlight?.pos).toEqual(state.player)
+    expect(player?.advanceOnTap).toBe(true)
+    expect(player?.kicker).toContain('01 / 05')
 
-    const guide = getChemTutorial(0, state, null, 'touch', 1)
+    const goal = getChemTutorial(0, state, null, 'touch', 1)
+    expect(goal?.title).toContain('目标')
+    expect(goal?.body).toContain('所有目标都对上')
+    expect(goal?.spotlight?.pos).toEqual([1, 0.54])
+    expect(goal?.kicker).toContain('02 / 05')
+
+    const bead = getChemTutorial(0, state, null, 'touch', 2)
+    expect(bead?.title).toContain('同色珠')
+    expect(bead?.spotlight?.pos).toEqual([1, 1.46])
+    expect(bead?.kicker).toContain('03 / 05')
+
+    const opening = getChemTutorial(0, state, null, 'touch', 3)
+    expect(opening?.title).toContain('白箭头')
+    expect(opening?.body).toContain('反面')
+    expect(opening?.spotlight?.pos).toEqual([1, 1])
+    expect(opening?.kicker).toContain('04 / 05')
+
+    const guide = getChemTutorial(0, state, null, 'touch', 4)
     expect(guide?.focusDirs).toEqual(['S'])
     expect(guide?.gesture?.dir).toBe('S')
     expect(guide?.title).toContain('滑动')
     expect(guide?.spotlight?.pos).toEqual(state.player)
     expect(guide?.advanceOnTap).toBeUndefined()
-    expect(guide?.kicker).toContain('02 / 02')
+    expect(guide?.kicker).toContain('05 / 05')
 
     const positioned = chemGame.step(state, 'S')
-    const centerReveal = getChemTutorial(0, positioned, null)
+    const centerReveal = getChemTutorial(0, positioned, null, 'touch', 4)
     expect(centerReveal?.title).toContain('箭头反面')
     expect(centerReveal?.body).toContain('翻转半圈')
     expect(centerReveal?.focusDirs).toEqual(['E'])
@@ -57,7 +71,7 @@ describe('状态驱动操作引导与机制首现教学', () => {
 
   it('第一关桌面版用 S / D 动态按键文案，但与触屏版共享同一语义手势', () => {
     const state = initial(level01Json)
-    const guide = getChemTutorial(0, state, null, 'keyboard', 1)
+    const guide = getChemTutorial(0, state, null, 'keyboard', 4)
     expect(guide?.title).toContain('WASD')
     expect(guide?.body).toContain('按 S')
     expect(guide?.gesture?.dir).toBe('S')
@@ -211,82 +225,36 @@ describe('状态驱动操作引导与机制首现教学', () => {
     })
   })
 
-  it('第五关开场三拍依次介绍动画、教程与暗色开关，之后恢复物流引导', () => {
+  it('第五关起撤掉状态驱动解题引导，让跨中心物流由玩家独立完成', () => {
     const state = initial(level05Json)
-    const animation = getChemTutorial(4, state, null, 'touch', 0)
-    expect(animation?.title).toContain('动画')
-    expect(animation?.body).toContain('动画')
-    expect(animation?.controlTarget).toBe('animation')
-    expect(animation?.advanceOnTap).toBe(true)
-    expect(animation?.focusDirs).toEqual([])
-    expect(animation?.kicker).toContain('SETTINGS · 01 / 03')
+    expect(getChemTutorial(4, state, null, 'touch', 0)).toBeNull()
 
-    const tutorial = getChemTutorial(4, state, null, 'touch', 1)
-    expect(tutorial?.title).toContain('教程')
-    expect(tutorial?.controlTarget).toBe('tutorial')
-    expect(tutorial?.kicker).toContain('02 / 03')
-
-    const theme = getChemTutorial(4, state, null, 'touch', 2)
-    expect(theme?.title).toContain('暗色')
-    expect(theme?.controlTarget).toBe('theme')
-    expect(theme?.kicker).toContain('03 / 03')
-
-    const guide = getChemTutorial(4, state, null, 'touch', 3)
-    expect(guide?.controlTarget).toBeUndefined()
-    expect(guide?.advanceOnTap).toBeUndefined()
-    expect(guide?.title).toContain('紫珠')
+    let progressed = state
+    progressed = chemGame.step(progressed, 'E')
+    progressed = chemGame.step(progressed, 'S')
+    expect(getChemTutorial(4, progressed, null)).toBeNull()
   })
 
-  it('第五关随物流状态从紫珠取货切换到蓝珠送货', () => {
-    let state = initial(level05Json)
-    state = chemGame.step(state, 'E')
-    state = chemGame.step(state, 'S')
-    const carryingBlue = getChemTutorial(4, state, null)
-    expect(carryingBlue?.title).toContain('蓝珠到手')
-
-    state = chemGame.step(state, 'E')
-    state = chemGame.step(state, 'E')
-    const atDelivery = getChemTutorial(4, state, null)
-    expect(atDelivery?.forecast).toMatchObject({
-      center: 1,
-      dir: 'S',
-      injected: 'blue',
-      extracted: 'green',
-      landingArm: 'N',
-    })
-  })
-
-  it('第六关教空手不变式，第七关正式教共振（首现即教学），第八关起不再常驻新手引导', () => {
+  it('第六关不宣布空手不变式；第七关只教共振规则；第九关不预解唯一通路', () => {
     const state = initial(level06Json)
-    const emptyHand = getChemTutorial(5, state, null, 'touch', 0)
-    expect(emptyHand?.title).toContain('空手撞')
-    expect(emptyHand?.spotlight?.pos).toEqual([1, 1])
-    expect(emptyHand?.advanceOnTap).toBe(true)
-    const noEmpty = getChemTutorial(5, state, null, 'touch', 1)
-    expect(noEmpty?.title).toContain('不会再空')
-    expect(noEmpty?.spotlight?.pos).toEqual([0, 0])
-    const emptyAction = getChemTutorial(5, state, null, 'touch', 2)
-    expect(emptyAction?.title).toContain('先空手撞')
-    expect(emptyAction?.gesture?.dir).toBe('E')
-    expect(getChemTutorial(5, { ...state, moves: 1 }, null)).toBeNull()
+    expect(getChemTutorial(5, state, null, 'touch', 0)).toBeNull()
+    expect(level06Json.name).toBe('先碰哪一座')
+    expect(level06Json.hint).not.toMatch(/空手只有一次|不会再空|只能趁空手/)
 
     const resonance = initial(level07Json)
     const bond = getChemTutorial(6, resonance, null, 'touch', 0)
     expect(bond?.title).toContain('共振键')
     expect(bond?.spotlight?.pos).toEqual([4.5, 1])
-    expect(getChemTutorial(6, resonance, null, 'touch', 1)?.title).toContain('绿珠')
-    expect(getChemTutorial(6, resonance, null, 'touch', 2)?.title).toContain('右邻')
-    expect(getChemTutorial(6, resonance, null, 'touch', 3)?.title).toContain('亮键')
-    const resonanceAction = getChemTutorial(6, resonance, null, 'touch', 4)
-    expect(resonanceAction?.title).toContain('先拿紫珠')
-    expect(resonanceAction?.gesture?.dir).toBe('E')
+    expect(getChemTutorial(6, resonance, null, 'touch', 1)?.title).toContain('亮键')
+    expect(getChemTutorial(6, resonance, null, 'touch', 2)).toBeNull()
     expect(getChemTutorial(6, { ...resonance, moves: 1 }, null)).toBeNull()
+
+    const unreachable = initial(level09Json)
+    expect(getChemTutorial(8, unreachable, null, 'touch', 0)).toBeNull()
+    expect(level09Json.hint).not.toContain('共振却传得进去')
   })
 
   it.each([
-    [5, level06Json, ['空手撞', '不会再空'], [[1, 1], [0, 0]], '先空手撞', 'E'],
-    [6, level07Json, ['共振键', '绿珠', '右邻', '亮键'], [[4.5, 1], [3.54, 1], [4.66, 1], [5, 1]], '先拿紫珠', 'E'],
-    [8, level09Json, ['永远撞不到', '也一样', '唯一的门'], [[4, 1], [2, 2], [3, 1.5]], '先拿起紫珠', 'E'],
     [12, level13Json, ['光格', '白箭头', '臂上的珠'], [[1, 0], [2, 1], [2, 0.54]], '走向光格', 'N'],
     [13, level14Json, ['当前阶段', '下一阶段', '按顺序推进'], [[2, 1.54], [2.46, 2], [2, 2]], '完成当前的亮圈', 'E'],
     [17, level18Json, ['三臂中心', '空穴', '空穴方向', '蓝臂'], [[2, 2], [1.54, 2], [1.54, 2], [2.46, 2]], '撞动三臂中心', 'S'],

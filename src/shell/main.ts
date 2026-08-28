@@ -494,7 +494,7 @@ let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
 /** 1× 因果动画期间只缓存下一步，避免快速连按被静默丢弃。 */
 const inputBuffer = new SingleSlotInputBuffer<Dir>()
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
-/** 01–05 引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
+/** 核心操作 / 新机制引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
 let tutorialEvent: TutorialEvent = null
 /** 01 / 03 指物教学的局部拍数；达到各段阈值后才开放真实方向输入。 */
 let tutorialIntroBeat = 0
@@ -699,8 +699,8 @@ function positionBoardGuide(
 }
 
 /**
- * 01–06 状态驱动操作引导：只把纯模型投影到 DOM，并高亮眼前已相邻的可执行方向。
- * 多步路线不在这里求解，06 起整个模块退出界面。
+ * 01–04 核心操作引导与后续机制首现揭示：只把纯模型投影到 DOM。
+ * 05 起不再提供状态驱动解题路线；未命中新机制揭示时模块退出界面。
  */
 function updateTutorialToggle(): void {
   tutorialToggle.classList.toggle('hidden', current.id !== 'chem')
@@ -821,16 +821,6 @@ function requestStepHint(): void {
   }
 }
 
-/** 实际试用对应开关也完成这一拍；玩家仍可轻触棋盘直接跳过。 */
-function withControlBeat(target: TutorialControlTarget, action: () => void): void {
-  const completesTutorial = isTutorialControlAwaiting(target)
-  action()
-  if (completesTutorial) {
-    tutorialIntroBeat++
-    updateTutorial()
-  }
-}
-
 function updateTutorial(): void {
   const state = hist.current as Parameters<typeof getChemTutorial>[1]
   const guide = current.id === 'chem' && tutorialEnabled
@@ -841,9 +831,6 @@ function updateTutorial(): void {
     button.classList.remove('tutorial-focus')
   }
   hintBtn.classList.toggle('tutorial-focus', guide?.controlTarget === 'hint')
-  animationToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'animation')
-  tutorialToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'tutorial')
-  themeToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'theme')
 
   const hasBoardCue = guide !== null && (
     guide.spotlight !== undefined ||
@@ -1513,17 +1500,17 @@ undoBtn.addEventListener('click', () => {
 hintBtn.addEventListener('click', requestStepHint)
 rulesBtn.addEventListener('click', toggleRules)
 animationToggle.addEventListener('click', () => {
-  withControlBeat('animation', () => setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear'))
+  setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear')
 })
 tutorialToggle.addEventListener('click', () => {
-  withControlBeat('tutorial', () => setTutorialEnabled(!tutorialEnabled))
+  setTutorialEnabled(!tutorialEnabled)
 })
 themeToggle.addEventListener('click', () => {
   if (isLv999Level()) {
     toast('LV.999 已锁定满级主题；离开本关后会恢复你的明暗偏好。')
     return
   }
-  withControlBeat('theme', () => setDarkMode(effectiveTheme() !== 'dark'))
+  setDarkMode(effectiveTheme() !== 'dark')
 })
 systemDarkQuery.addEventListener('change', () => {
   if (themePreference === null) updateThemeToggle()

@@ -520,8 +520,8 @@ function sync(s: ChemState, now: number): void {
       Math.abs(s.player[0] - prev.player[0]) + Math.abs(s.player[1] - prev.player[1])
     if (Math.abs(s.moves - prev.moves) === 1 && dist <= 1) {
       if (s.player[0] !== prev.player[0] || s.player[1] !== prev.player[1]) {
-        walk.set('px', s.player[0], now, timing.walkMs)
-        walk.set('py', s.player[1], now, timing.walkMs)
+        walk.set('px', s.player[0], now, timing.walkMs, easeOutCubic, prev.player[0])
+        walk.set('py', s.player[1], now, timing.walkMs, easeOutCubic, prev.player[1])
         animationEndsAt = Math.max(animationEndsAt, now + timing.walkMs)
       }
       const changed = s.centers

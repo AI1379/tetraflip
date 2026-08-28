@@ -28,7 +28,7 @@ const baseline: Record<string, number> = {
   './levels/level-03.json': 2, // 拾珠并第一次持珠取代
   './levels/level-04.json': 2, // 两步观察输入落臂与开口珠换手
   './levels/level-05.json': 5, // 从 A 取出蓝珠送到 B
-  './levels/level-06.json': 6, // 空手只有开局一次，先纯翻转再拾珠（旧 07）
+  './levels/level-06.json': 6, // 先后顺序发现题：保留结构，不在关名 / 教程宣布手持不变式（旧 07）
   './levels/level-07.json': 6, // 共振首现即教学：换出蓝珠后一击接通双中心（旧 06）
   './levels/level-08.json': 1, // 多米诺：三级链逐级接通（旧 11）
   './levels/level-09.json': 3, // 碰不到的中心：共振是唯一的门（v5 新关）
