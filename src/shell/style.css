@@ -758,6 +758,25 @@ canvas {
   user-select: none;
 }
 
+/* 步数红线警示（design §5 v6）：预算剩余 ≤3 时棋盘四周亮红色警示框，每动一次跳一下 */
+.budget-alarm {
+  position: absolute;
+  inset: 5px;
+  z-index: 3;
+  border: 3px solid var(--tone-red);
+  border-radius: 8px;
+  box-shadow: 0 0 18px rgba(255, 99, 105, 0.32), inset 0 0 22px rgba(255, 99, 105, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.budget-alarm.active { opacity: 0.55; }
+.budget-alarm.pulse { animation: budget-jump 0.45s ease-out; }
+@keyframes budget-jump {
+  0% { opacity: 0.95; transform: scale(1.012); }
+  100% { opacity: 0.55; transform: scale(1); }
+}
+
 .toast {
   position: absolute;
   top: 16px;
@@ -1156,6 +1175,10 @@ canvas {
   box-shadow: inset 0 0 18px rgba(240, 198, 90, 0.12), 0 0 0 3px rgba(240, 198, 90, 0.08);
   animation: tutorial-key 1.35s ease-in-out infinite;
 }
+.tutorial-toggle.tutorial-focus {
+  border-color: var(--accent);
+  animation: tutorial-key 1.35s ease-in-out infinite;
+}
 .dpad-key.input-buffered {
   border-color: var(--signal);
   color: var(--signal);
@@ -1203,7 +1226,7 @@ canvas {
 }
 
 /* 首次按系统主题，手动切换后由根节点属性覆盖；同一属性也驱动 Canvas 语义调色板。 */
-:root[data-theme="light"] {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) {
   color-scheme: light;
   --bg: #edf3f7;
   --bg-glow: #dbeaf3;
@@ -1253,142 +1276,358 @@ canvas {
   --spot-dim: rgba(181, 124, 0, 0.75);
   --spot-bright: #e8a92c;
 }
-:root[data-theme="light"] body {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) body {
   background:
     radial-gradient(circle at 50% -12%, rgba(85, 154, 194, 0.2) 0, transparent 38rem),
     radial-gradient(circle at 15% 42%, rgba(85, 154, 194, 0.08) 0, transparent 28rem),
     var(--bg);
 }
-:root[data-theme="light"] body::before {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) body::before {
   background-image:
     linear-gradient(rgba(8, 119, 184, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(8, 119, 184, 0.05) 1px, transparent 1px);
 }
-:root[data-theme="light"] :is(.brand-kicker, .stat-label, .tutorial-toggle-copy small) { color: #597d96; }
-:root[data-theme="light"] .tabs { background: rgba(255, 255, 255, 0.72); }
-:root[data-theme="light"] .level-identity {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.brand-kicker, .stat-label, .tutorial-toggle-copy small) { color: #597d96; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .tabs { background: rgba(255, 255, 255, 0.72); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-identity {
   border-color: #aac0cf;
   background:
     linear-gradient(90deg, rgba(8, 119, 184, 0.06), transparent 28%),
     linear-gradient(135deg, #f9fcfe, #e9f1f6);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-:root[data-theme="light"] :is(.status-bar, .controls) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.status-bar, .controls) {
   border-color: #b4c6d3;
   background:
     linear-gradient(180deg, rgba(8, 119, 184, 0.035), transparent 45%),
     rgba(248, 251, 253, 0.92);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-:root[data-theme="light"] .tutorial-toggle[data-enabled="true"] {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .tutorial-toggle[data-enabled="true"] {
   background: var(--signal-soft);
   box-shadow: inset 0 0 14px rgba(8, 119, 184, 0.08), 0 0 12px rgba(8, 119, 184, 0.1);
 }
-:root[data-theme="light"] .tutorial-toggle[data-enabled="false"] {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .tutorial-toggle[data-enabled="false"] {
   background: transparent;
   box-shadow: none;
 }
-:root[data-theme="light"] .tutorial-toggle[data-enabled="true"] .tutorial-toggle-copy small { color: #266f98; }
-:root[data-theme="light"] .level-brief {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .tutorial-toggle[data-enabled="true"] .tutorial-toggle-copy small { color: #266f98; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-brief {
   border-color: #b8c8d4;
   background: linear-gradient(90deg, rgba(8, 119, 184, 0.04), transparent 22%), var(--panel);
 }
-:root[data-theme="light"] .level-brief p { color: #42596b; }
-:root[data-theme="light"] .control-button { background: linear-gradient(145deg, #fff, #edf3f7); }
-:root[data-theme="light"] :is(.control-button.active, .hint-button) { background: var(--accent-soft); }
-:root[data-theme="light"] .rules-button { background: var(--signal-soft); }
-:root[data-theme="light"] .picker-panel {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-brief p { color: #42596b; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .control-button { background: linear-gradient(145deg, #fff, #edf3f7); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.control-button.active, .hint-button) { background: var(--accent-soft); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .rules-button { background: var(--signal-soft); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .picker-panel {
   background:
     linear-gradient(135deg, rgba(8, 119, 184, 0.045), transparent 24%),
     var(--floating-panel);
 }
-:root[data-theme="light"] :is(.picker-header, .level-chapter) { border-color: #c4d1da; }
-:root[data-theme="light"] :is(.rules-intro, .rules-list li, .rules-controls, .feedback-row) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.picker-header, .level-chapter) { border-color: #c4d1da; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.rules-intro, .rules-list li, .rules-controls, .feedback-row) {
   border-color: #c5d2db;
   background: rgba(8, 119, 184, 0.035);
 }
-:root[data-theme="light"] :is(.rules-intro > p, .rules-list p) { color: #4d6476; }
-:root[data-theme="light"] .rules-controls kbd { border-color: #aebfcb; background: #e5eef4; color: #284255; }
-:root[data-theme="light"] .guide-spotlight {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.rules-intro > p, .rules-list p) { color: #4d6476; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .rules-controls kbd { border-color: #aebfcb; background: #e5eef4; color: #284255; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .guide-spotlight {
   box-shadow:
     0 0 0 999px rgba(219, 231, 238, 0.46),
     0 0 24px rgba(166, 118, 0, 0.3),
     inset 0 0 18px rgba(166, 118, 0, 0.1);
 }
-:root[data-theme="light"] .gesture-track { border-color: rgba(35, 91, 123, 0.58); }
-:root[data-theme="light"] .gesture-track::after { border-color: rgba(35, 91, 123, 0.78); }
-:root[data-theme="light"] .gesture-finger {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .gesture-track { border-color: rgba(35, 91, 123, 0.58); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .gesture-track::after { border-color: rgba(35, 91, 123, 0.78); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .gesture-finger {
   border-color: #2879a7;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 0 0 6px rgba(8, 119, 184, 0.1), 0 0 16px rgba(8, 119, 184, 0.28);
 }
-:root[data-theme="light"] .gesture-finger i {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .gesture-finger i {
   border-color: #2879a7;
   background: #f8fbfd;
 }
-:root[data-theme="light"] :is(.gesture-finger::after, .guide-key span) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.gesture-finger::after, .guide-key span) {
   color: #245d7d;
   text-shadow: 0 1px 4px rgba(255, 255, 255, 0.96);
 }
-:root[data-theme="light"] .guide-key kbd {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .guide-key kbd {
   border-color: rgba(255, 255, 255, 0.96);
   background: linear-gradient(145deg, #fdfefe, #d8e6ef);
   box-shadow: 0 0 0 5px rgba(8, 119, 184, 0.08), 0 0 18px rgba(8, 119, 184, 0.22);
   color: #245d7d;
 }
-:root[data-theme="light"] :is(.board-guide-card, .tutorial-reopen) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.board-guide-card, .tutorial-reopen) {
   border-color: rgba(8, 119, 184, 0.35);
 }
-:root[data-theme="light"] .tutorial-close {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .tutorial-close {
   border-color: rgba(8, 119, 184, 0.2);
   background: var(--floating-control-surface);
 }
-:root[data-theme="light"] .forecast-label { color: #286b91; }
-:root[data-theme="light"] .forecast-label.extract { color: #75590f; }
-:root[data-theme="light"] :is(.feedback-panel, .tutorial-forecast, .winbar-text) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .forecast-label { color: #286b91; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .forecast-label.extract { color: #75590f; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.feedback-panel, .tutorial-forecast, .winbar-text) {
   border-color: #c2d1db;
   background: rgba(8, 119, 184, 0.04);
 }
-:root[data-theme="light"] .feedback-star { color: #64798a; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-star { color: #64798a; }
 /* 星星反馈：8% 金 wash 是为深底调的，白底上不可见——浅色改用可见水洗 + 光环 */
-:root[data-theme="light"] .feedback-star:hover { color: #a97400; border-color: rgba(181, 124, 0, 0.5); }
-:root[data-theme="light"] .feedback-star[aria-checked="true"] {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-star:hover { color: #a97400; border-color: rgba(181, 124, 0, 0.5); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-star[aria-checked="true"] {
   color: #a97400;
   border-color: rgba(181, 124, 0, 0.65);
   background: rgba(240, 198, 90, 0.26);
   box-shadow: 0 0 0 3px rgba(240, 198, 90, 0.16);
 }
 /* 主行动按钮（下一关 / 提交）：与深色同语义的亮金面 + 深字，替代整块压暗金 */
-:root[data-theme="light"] :is(.primary-button, .feedback-submit) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.primary-button, .feedback-submit) {
   border-color: #a97400;
   background: linear-gradient(160deg, #ffd977, #ecb643);
   color: #201503;
 }
-:root[data-theme="light"] :is(.primary-button, .feedback-submit):hover:not(:disabled) {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.primary-button, .feedback-submit):hover:not(:disabled) {
   border-color: #a97400;
   background: linear-gradient(160deg, #ffe291, #f3c25c);
 }
 /* 其余为深底调的淡金边框：浅色下加深到可见 */
-:root[data-theme="light"] :is(.winbar, .brief-toggle) { border-color: rgba(181, 124, 0, 0.42); }
-:root[data-theme="light"] .brief-mark { border-color: rgba(181, 124, 0, 0.5); }
-:root[data-theme="light"] .board-guide[data-tone="warning"] .board-guide-card { border-color: rgba(181, 124, 0, 0.55); }
-:root[data-theme="light"] .forecast-label.extract { border-color: rgba(181, 124, 0, 0.42); }
-:root[data-theme="light"] .copyright a { color: #56789a; }
-:root[data-theme="light"] .feedback-tag[aria-pressed="true"] { color: #205f83; }
-:root[data-theme="light"] .feedback-status[data-tone="ok"] { color: #0f9553; }
-:root[data-theme="light"] .feedback-status[data-tone="error"] { color: #b44336; }
-:root[data-theme="light"] .rules-button { color: #286f98; }
-:root[data-theme="light"] .level-item { background: rgba(255, 255, 255, 0.72); }
-:root[data-theme="light"] .level-item.complete {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) :is(.winbar, .brief-toggle) { border-color: rgba(181, 124, 0, 0.42); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .brief-mark { border-color: rgba(181, 124, 0, 0.5); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .board-guide[data-tone="warning"] .board-guide-card { border-color: rgba(181, 124, 0, 0.55); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .forecast-label.extract { border-color: rgba(181, 124, 0, 0.42); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .copyright a { color: #56789a; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-tag[aria-pressed="true"] { color: #205f83; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-status[data-tone="ok"] { color: #0f9553; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .feedback-status[data-tone="error"] { color: #b44336; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .rules-button { color: #286f98; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item { background: rgba(255, 255, 255, 0.72); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.complete {
   border-color: var(--complete-border);
   background: var(--complete-surface);
 }
-:root[data-theme="light"] .level-item.complete :is(.level-item-number, .level-item-mark) { color: var(--complete-ink); }
-:root[data-theme="light"] .level-item.active {
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.complete :is(.level-item-number, .level-item-mark) { color: var(--complete-ink); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.active {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-:root[data-theme="light"] .level-item.active :is(.level-item-number, .level-item-mark) { color: var(--accent); }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.active :is(.level-item-number, .level-item-mark) { color: var(--accent); }
+
+/* LV.999 赛后彩蛋：仅在特殊关临时覆盖，不改写玩家保存的深 / 浅主题偏好。 */
+:root[data-level-theme="lv999"] {
+  color-scheme: dark;
+  --bg: #07030f;
+  --bg-glow: #26123e;
+  --panel: #10071f;
+  --panel-raised: #1d0e32;
+  --ink: #f7f0ff;
+  --muted: #b8a6cf;
+  --faint: #705d8d;
+  --accent: #bd7cff;
+  --accent-soft: rgba(189, 124, 255, 0.16);
+  --signal: #58d9ff;
+  --signal-soft: rgba(88, 217, 255, 0.13);
+  --border: #4d3270;
+  --focus: #ff5edb;
+  --button-bg: linear-gradient(145deg, rgba(34, 16, 57, 0.98), rgba(12, 5, 24, 0.98));
+  --button-hover-bg: #27113e;
+  --button-hover-shadow: inset 0 0 0 1px rgba(88, 217, 255, 0.16), 0 0 18px rgba(189, 124, 255, 0.12);
+  --scrim: rgba(5, 1, 12, 0.82);
+  --floating-surface: rgba(16, 6, 31, 0.97);
+  --floating-control-surface: rgba(25, 10, 44, 0.82);
+  --floating-panel: #0d0519;
+  --floating-panel-raised: #211038;
+  --floating-border: #8057ad;
+  --floating-shadow: rgba(3, 0, 9, 0.7);
+  --modal-shadow: rgba(3, 0, 9, 0.82);
+  --floating-copy: #d6c8e8;
+  --info-copy: #c9f5ff;
+  --warning-copy: #ffe6fb;
+  --control-border: #543679;
+  --complete-surface: rgba(88, 217, 255, 0.1);
+  --complete-border: rgba(88, 217, 255, 0.5);
+  --complete-ink: #58d9ff;
+  --canvas-bg: #080413;
+  --canvas-border: #9c6cff;
+  --canvas-scan: #58d9ff;
+  --canvas-scan-glow: rgba(255, 94, 219, 0.58);
+  --canvas-shadow: 0 0 0 1px rgba(88, 217, 255, 0.12), 0 24px 88px rgba(81, 26, 139, 0.46), inset 0 0 38px rgba(189, 124, 255, 0.05);
+  --tone-red: #ff5e7a;
+  --tone-blue: #58d9ff;
+  --tone-green: #52f7b6;
+  --tone-yellow: #ffd866;
+  --tone-purple: #bd7cff;
+  --spot-dim: rgba(88, 217, 255, 0.86);
+  --spot-bright: #ff5edb;
+  --radius: 3px;
+}
+
+:root[data-level-theme="lv999"] body {
+  background:
+    radial-gradient(circle at 15% 8%, rgba(255, 94, 219, 0.2), transparent 30rem),
+    radial-gradient(circle at 84% 18%, rgba(88, 217, 255, 0.16), transparent 32rem),
+    radial-gradient(circle at 50% 110%, rgba(128, 65, 210, 0.22), transparent 35rem),
+    var(--bg);
+}
+
+:root[data-level-theme="lv999"] body::before {
+  background-image:
+    linear-gradient(rgba(189, 124, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(88, 217, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, transparent 0 72%, rgba(255, 94, 219, 0.05) 72% 76%, transparent 76%);
+  background-size: 24px 24px, 24px 24px, 180px 100%;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+:root[data-level-theme="lv999"] :is(.level-identity, .status-bar, .level-brief, .controls, .picker-panel, .overlay-card) {
+  border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+:root[data-level-theme="lv999"] .stage { border-radius: 2px; }
+
+:root[data-level-theme="lv999"] .app-header {
+  position: relative;
+  border-bottom: 1px solid rgba(88, 217, 255, 0.18);
+}
+:root[data-level-theme="lv999"] .app-header::after {
+  content: "[ PLAYER_999 // ACCESS_GRANTED ]";
+  color: var(--signal);
+  font-family: var(--font-data);
+  font-size: 8px;
+  letter-spacing: 0.11em;
+  text-shadow: 0 0 10px rgba(88, 217, 255, 0.7);
+}
+:root[data-level-theme="lv999"] .brand-kicker { color: #ff83e5; }
+:root[data-level-theme="lv999"] .brand strong {
+  color: #f7f0ff;
+  text-shadow: -2px 0 rgba(255, 94, 219, 0.55), 2px 0 rgba(88, 217, 255, 0.5), 0 0 18px rgba(189, 124, 255, 0.45);
+  animation: lv999-glitch 3.8s steps(1, end) infinite;
+}
+
+:root[data-level-theme="lv999"] .level-identity {
+  border-color: rgba(189, 124, 255, 0.72);
+  background:
+    linear-gradient(90deg, rgba(255, 94, 219, 0.13), transparent 27%),
+    linear-gradient(135deg, #211039, #0e061c 66%);
+  box-shadow: inset 0 1px rgba(88, 217, 255, 0.22), 0 0 22px rgba(189, 124, 255, 0.13);
+}
+:root[data-level-theme="lv999"] .level-identity::before {
+  background: linear-gradient(to bottom, transparent, #58d9ff 20%, #ff5edb 72%, transparent);
+  box-shadow: 0 0 12px rgba(88, 217, 255, 0.65);
+}
+:root[data-level-theme="lv999"] .level-identity::after {
+  content: "GODMODE // ON";
+  position: absolute;
+  right: 12px;
+  bottom: 5px;
+  color: rgba(88, 217, 255, 0.58);
+  font-family: var(--font-data);
+  font-size: 7px;
+  letter-spacing: 0.12em;
+}
+:root[data-level-theme="lv999"] .level-number { color: #58d9ff; text-shadow: 0 0 10px rgba(88, 217, 255, 0.45); }
+:root[data-level-theme="lv999"] .level-name { letter-spacing: 0.08em; text-transform: uppercase; }
+
+:root[data-level-theme="lv999"] :is(.status-bar, .controls) {
+  border-color: rgba(128, 87, 173, 0.72);
+  background:
+    linear-gradient(180deg, rgba(88, 217, 255, 0.055), transparent 42%),
+    rgba(16, 7, 31, 0.92);
+  box-shadow: inset 0 1px rgba(255, 94, 219, 0.1);
+}
+:root[data-level-theme="lv999"] .stat-label { color: #9edff0; }
+:root[data-level-theme="lv999"] .tutorial-toggle[data-enabled="true"] {
+  border-color: rgba(255, 94, 219, 0.68);
+  background: linear-gradient(135deg, rgba(189, 124, 255, 0.16), rgba(88, 217, 255, 0.08));
+  box-shadow: inset 0 0 14px rgba(189, 124, 255, 0.12), 0 0 12px rgba(255, 94, 219, 0.12);
+}
+:root[data-level-theme="lv999"] .theme-toggle[data-enabled="true"] .tutorial-toggle-copy :is(small, strong) { color: #ff83e5; }
+
+:root[data-level-theme="lv999"] .level-brief {
+  border-color: rgba(189, 124, 255, 0.54);
+  background: linear-gradient(90deg, rgba(255, 94, 219, 0.08), transparent 28%), var(--panel);
+}
+:root[data-level-theme="lv999"] .level-brief p { color: #d6c8e8; }
+:root[data-level-theme="lv999"] .brief-mark {
+  border-color: rgba(88, 217, 255, 0.66);
+  color: #58d9ff;
+  box-shadow: inset 0 0 10px rgba(88, 217, 255, 0.12), 0 0 10px rgba(255, 94, 219, 0.12);
+}
+
+:root[data-level-theme="lv999"] .stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.16;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 3px, rgba(189, 124, 255, 0.18) 3px 4px),
+    linear-gradient(to bottom, transparent 0 46%, rgba(88, 217, 255, 0.32) 49%, transparent 52%);
+  background-size: 100% 100%, 100% 240%;
+  animation: lv999-scan 6s linear infinite;
+}
+:root[data-level-theme="lv999"] .stage::before {
+  background: linear-gradient(90deg, transparent, #ff5edb 24%, #58d9ff 68%, transparent);
+  box-shadow: 0 0 18px rgba(88, 217, 255, 0.58);
+}
+
+:root[data-level-theme="lv999"] .primary-button {
+  border-color: #58d9ff;
+  background: linear-gradient(135deg, #bd7cff, #ff5edb);
+  color: #0c0418;
+  box-shadow: 0 0 18px rgba(255, 94, 219, 0.24);
+}
+:root[data-level-theme="lv999"] .primary-button:hover:not(:disabled) {
+  border-color: #aaf0ff;
+  background: linear-gradient(135deg, #c994ff, #ff82e2);
+}
+:root[data-level-theme="lv999"] .win-mark {
+  color: #58d9ff;
+  text-shadow: 0 0 12px rgba(88, 217, 255, 0.5);
+}
+:root[data-level-theme="lv999"] .overlay-card::before {
+  background: linear-gradient(90deg, transparent, #ff5edb, #58d9ff, transparent);
+  box-shadow: 0 0 20px rgba(189, 124, 255, 0.55);
+}
+
+/* 选关面板里始终让彩蛋入口可辨认，即使当前还没进入特殊主题。 */
+.level-item.lv999 {
+  grid-template-columns: 58px minmax(0, 1fr) 20px;
+  border-color: rgba(189, 124, 255, 0.62);
+  background:
+    linear-gradient(110deg, rgba(189, 124, 255, 0.14), transparent 52%),
+    var(--button-bg);
+  box-shadow: inset 3px 0 0 rgba(88, 217, 255, 0.6), 0 0 16px rgba(189, 124, 255, 0.08);
+}
+.level-item.lv999 .level-item-number {
+  color: #58d9ff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 9px rgba(88, 217, 255, 0.42);
+}
+.level-item.lv999 .level-item-name { color: #d9c1f5; letter-spacing: 0.05em; }
+.level-item.lv999.active { border-color: #ff5edb; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.lv999 {
+  border-color: rgba(126, 76, 174, 0.58);
+  background: linear-gradient(110deg, rgba(151, 104, 212, 0.15), transparent 54%), #f8f3ff;
+  box-shadow: inset 3px 0 0 rgba(8, 119, 184, 0.58), 0 5px 18px rgba(91, 54, 130, 0.08);
+}
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.lv999 .level-item-number { color: #0877b8; }
+:root[data-theme="light"]:not([data-level-theme="lv999"]) .level-item.lv999 .level-item-name { color: #603486; }
+
+@keyframes lv999-scan {
+  from { background-position: 0 0, 0 -120%; }
+  to { background-position: 0 0, 0 120%; }
+}
+
+@keyframes lv999-glitch {
+  0%, 94%, 100% { transform: translateX(0); filter: none; }
+  95% { transform: translateX(-1px); filter: saturate(1.35); }
+  96% { transform: translateX(2px); }
+  97% { transform: translateX(0); filter: none; }
+}
 
 /* 真人视觉盲测入口（?game=chem&level=XX&blind=1）：只保留棋盘，避免标题 / hint 泄露机制。 */
 #app.visual-blind .app-header,
@@ -1673,6 +1912,9 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
   .overlay, .overlay-card { animation: none !important; }
+  :root[data-level-theme="lv999"] .brand strong,
+  :root[data-level-theme="lv999"] .stage::after { animation: none !important; }
+  .budget-alarm.pulse { animation: none !important; }
   .guide-spotlight, .gesture-finger, .guide-key kbd, .dpad-key.tutorial-focus { animation: none !important; }
   .guide-orbit i {
     animation: none !important;

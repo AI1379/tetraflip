@@ -34,7 +34,7 @@ import type { CenterKind } from './level'
  * 以上三者均为渲染层只读状态，绝不修改游戏状态。
  */
 
-export type ChemRenderTheme = 'dark' | 'light'
+export type ChemRenderTheme = 'dark' | 'light' | 'lv999'
 
 interface ChemRenderPalette {
   colors: Readonly<Record<string, string>>
@@ -140,6 +140,40 @@ export const CHEM_PALETTES: Record<ChemRenderTheme, ChemRenderPalette> = {
     // 纹样是色弱双编码的实际承担者：保持深中性色，但透明度从 0.78 回落到 0.55，避免珠面挂霜
     atomPattern: 'rgba(43, 38, 30, 0.55)',
     lightCell: '#dfa723',
+  },
+  lv999: {
+    colors: {
+      red: '#ff5e7a',
+      blue: '#58d9ff',
+      green: '#52f7b6',
+      yellow: '#ffd866',
+      purple: '#bd7cff',
+    },
+    stageTones: ['#bd7cff', '#58d9ff', '#ff5edb', '#ffd866', '#52f7b6'],
+    canvas: '#080413',
+    board: 'rgba(24, 9, 43, 0.84)',
+    grid: '#332054',
+    wall: '#41295f',
+    wallHatch: 'rgba(142, 90, 255, 0.2)',
+    ink: '#f4efff',
+    bond: '#765da1',
+    faint: '#432e64',
+    tetra: '#9c6cff',
+    flash: '#ff4fb8',
+    impact: '#65e9ff',
+    playerCore: '#10071d',
+    panel: 'rgba(15, 6, 29, 0.96)',
+    panelMuted: '#b6a5d4',
+    anchorFill: '#120821',
+    previewVeil: 'rgba(8, 2, 18, 0.5)',
+    previewPanel: 'rgba(17, 7, 32, 0.95)',
+    previewBorder: 'rgba(88, 217, 255, 0.72)',
+    markFill: '#120821',
+    lockCheck: '#080413',
+    centerOutline: '#bca8dd',
+    atomOutline: 'rgba(4, 0, 12, 0.54)',
+    atomPattern: 'rgba(8, 2, 18, 0.68)',
+    lightCell: '#ff5edb',
   },
 }
 
@@ -1711,7 +1745,7 @@ function drawInspectPanel(
   )
   ctx.font = `400 10px ${CANVAS_UI_FONT}`
   ctx.fillStyle = palette.panelMuted
-  ctx.fillText('构型周期 · 进攻翻转', x + padX, y + 34)
+  ctx.fillText('翻转前后 · 撞一次翻一次', x + padX, y + 34)
 
   cycle.forEach((cfg, i) => {
     const mx = x + padX + i * miniW + miniW / 2

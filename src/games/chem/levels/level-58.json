@@ -1,0 +1,108 @@
+{
+  "id": "109.5°-58",
+  "name": "空穴准星",
+  "hint": "空穴朝北时，北边的键永远接不上。让弹出的珠从东侧撞进，把空穴翻到南边——断键就在同一瞬间接通。本关步数有红线。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [
+    4,
+    3
+  ],
+  "centers": [
+    {
+      "pos": [
+        5,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "purple",
+        "W": "green"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "blue",
+        "S": "red",
+        "W": "green"
+      },
+      "leaving": "W",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "yellow",
+        "S": "red",
+        "W": "purple"
+      },
+      "leaving": "E",
+      "shieldUntilStage": 1
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        4,
+        4
+      ],
+      "color": "blue"
+    }
+  ],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "purple"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 1,
+          "arm": "E",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "W",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "E",
+          "color": "purple"
+        }
+      ]
+    }
+  ],
+  "par": 11,
+  "moveLimit": 14
+}

@@ -1,0 +1,119 @@
+{
+  "id": "109.5°-61",
+  "name": "喷口对射",
+  "hint": "把珠从中间塞进西边喷口，喷出的珠正好撞上东边喷口的进攻位，替你把它转过身。转身后的第二发要落在光格上，转出最后一扇门。本关步数有红线。",
+  "width": 7,
+  "height": 4,
+  "walls": [],
+  "player": [
+    2,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "W",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        4,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "purple",
+        "S": "red",
+        "W": "green"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitLights": true
+    },
+    {
+      "pos": [
+        6,
+        0
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "green",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [
+    [
+      6,
+      2
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "purple"
+        },
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "E",
+          "color": "blue"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "yellow"
+        },
+        {
+          "center": 2,
+          "arm": "W",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "S",
+          "color": "blue"
+        }
+      ]
+    }
+  ],
+  "par": 14,
+  "moveLimit": 17
+}

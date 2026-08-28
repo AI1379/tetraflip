@@ -928,3 +928,80 @@ describe('chem peekFlip（Inspect 检视用纯函数，design §11）', () => {
     expect(peekFlip(once)).toEqual(center)
   })
 })
+
+describe('chem v6 步数预算（moveLimit）引擎', () => {
+  // 中心 (2,1) 开口 W ⇒ 进攻位 = 东侧 (3,1) 向西撞；最短解 = N + 进攻 = 2 步
+  const level: ChemLevel = {
+    id: 'test-budget',
+    width: 5,
+    height: 4,
+    walls: [],
+    player: [3, 2],
+    centers: [
+      { pos: [2, 1], arms: { N: 'red', E: 'green', S: 'yellow', W: 'purple' }, leaving: 'W' },
+    ],
+    groups: [],
+    stages: [{ goals: [{ center: 0, arm: 'N', color: 'yellow' }] }],
+    moveLimit: 2,
+    ...V3_DEFAULTS,
+  }
+  const walk = (s: ReturnType<typeof initialState>, dirs: readonly string[]) => {
+    let cur = s
+    for (const d of dirs) cur = step(cur, d as Dir)
+    return cur
+  }
+
+  it('预算内动作正常；达到 moveLimit 后一切动作无效（与撞墙同语义）', () => {
+    let s = walk(initialState(level), ['S']) // (3,3)，1 步，与获胜路线无关
+    expect(s.moves).toBe(1)
+    s = step(s, 'N') // 回 (3,2)，第 2 步 = 预算用尽
+    expect(s.moves).toBe(2)
+    expect(s.won).toBe(false)
+    const frozen = step(s, 'N')
+    expect(frozen).toBe(s) // moves 2 ≥ limit 2：任何动作原样返回
+    expect(step(frozen, 'W')).toBe(frozen)
+    expect(step(frozen, 'E')).toBe(frozen)
+  })
+
+  it('恰好第 moveLimit 步获胜是允许的（守卫用 moves >= limit 且先判 won）；用尽未胜 = 卡死但非失败态', () => {
+    const s = walk(initialState(level), ['N', 'W']) // N 到进攻位，W 纯翻转获胜
+    expect(s.won).toBe(true)
+    expect(s.moves).toBe(2)
+    expect(step(s, 'E')).toBe(s) // 已胜利：动作无效
+
+    const stuck = walk(initialState(level), ['S', 'N'])
+    expect(stuck.won).toBe(false)
+    expect(step(stuck, 'N')).toBe(stuck)
+  })
+
+  it('stateKey：预算关含剩余步数，不同剩余不得合并；无预算关格式不变', () => {
+    const base = initialState(level)
+    const moved = step(base, 'S')
+    expect(stateKey(base)).not.toBe(stateKey(moved))
+    expect(stateKey(base)).toMatch(/\|L2$/)
+    expect(stateKey(moved)).toMatch(/\|L1$/)
+
+    const unlimited: ChemLevel = { ...level, moveLimit: undefined }
+    const u = initialState(unlimited)
+    const uMoved = step(u, 'S')
+    expect(stateKey(u)).not.toMatch(/\|L\d+$/)
+    expect(stateKey(uMoved)).not.toMatch(/\|L\d+$/)
+  })
+
+  it('无效动作（撞墙）不消耗预算', () => {
+    const s = initialState(level)
+    expect(step(s, 'S').moves).toBe(1)
+    const walked = walk(s, ['S', 'N', 'N']) // (3,3)→(3,2)→(3,1)：第 3 步越预算，应被冻结
+    expect(walked.moves).toBe(2)
+    expect(walked.player).toEqual([3, 2])
+  })
+
+  it('solver 正确处理预算：moveLimit 小于最短解 ⇒ 无解；等于最短解 ⇒ 可解', () => {
+    const impossible: ChemLevel = { ...level, moveLimit: 1 }
+    expect(solve(chemGame, impossible, { maxDepth: 10 }).solved).toBe(false)
+    const exact: ChemLevel = { ...level, moveLimit: 2 }
+    const result = solve(chemGame, exact, { maxDepth: 10 })
+    expect(result.solved).toBe(true)
+    expect(result.solution.length).toBe(2)
+  })
+})

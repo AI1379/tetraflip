@@ -34,6 +34,7 @@ import level30 from './levels/level-30.json'
 import level39 from './levels/level-39.json'
 import level48 from './levels/level-48.json'
 import level56 from './levels/level-56.json'
+import level75 from './levels/level-75.json'
 
 /**
  * 渲染冒烟测试：用 Proxy 桩画布验证 render 可无异常执行。
@@ -82,10 +83,11 @@ function styleRecordingCtx(styles: string[]): CanvasRenderingContext2D {
 }
 
 describe('chem（109.5°）渲染冒烟', () => {
-  it('深浅语义调色板均覆盖代表机制关，并实际切换画布与玩法色', () => {
+  it('深浅与 LV.999 语义调色板均覆盖代表机制关，并实际切换画布与玩法色', () => {
     const representatives = [level01, level07, level15, level26, level30, level39, level48, level56]
     const darkStyles: string[] = []
     const lightStyles: string[] = []
+    const lv999Styles: string[] = []
     try {
       setChemRenderTheme('dark')
       for (const json of representatives) {
@@ -105,6 +107,14 @@ describe('chem（109.5°）渲染冒烟', () => {
       expect(lightStyles).toContain('#f3f8fb')
       expect(lightStyles).toContain('#ec4f5f')
       expect(lightStyles).not.toContain('#0b1018')
+
+      setChemRenderTheme('lv999')
+      resetChemAnim()
+      render(initialState(chemGame.parseLevel(level75)), styleRecordingCtx(lv999Styles), 480, 480)
+      expect(getChemRenderTheme()).toBe('lv999')
+      expect(lv999Styles).toContain('#080413')
+      expect(lv999Styles).toContain('#ff5e7a')
+      expect(lv999Styles).not.toContain('#0b1018')
     } finally {
       setChemRenderTheme('dark')
       resetChemAnim()

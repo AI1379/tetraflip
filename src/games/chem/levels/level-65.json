@@ -1,0 +1,185 @@
+{
+  "id": "109.5°-65",
+  "name": "合流",
+  "hint": "第一波共振烧穿敞开的护罩；一束光同时瞄准喷口与关闸钥匙；弹出的珠撞进空穴把闸合上之后，最后那记注入再也烧不到闸内。本关步数有红线。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [
+    0,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "purple",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
+      },
+      "leaving": "N",
+      "reactiveTo": {
+        "center": 4,
+        "arm": "N",
+        "color": "yellow"
+      }
+    },
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "purple",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "green",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        5,
+        3
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "purple",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "ejects": true,
+      "hitCenters": true
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "green"
+    }
+  ],
+  "lights": [
+    [
+      3,
+      4
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 5,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 5,
+          "arm": "N",
+          "color": "purple"
+        },
+        {
+          "center": 4,
+          "arm": "S",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 3,
+          "arm": "W",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 19,
+  "moveLimit": 22
+}

@@ -1,0 +1,153 @@
+{
+  "id": "109.5°-59",
+  "name": "撞核关闸",
+  "hint": "监视槽被空穴占住时护罩会重新合上。让弹出的珠替你把空穴撞进槽位，后面那记必需的共振就烧不到已达标的两座中心。本关步数有红线。",
+  "width": 6,
+  "height": 4,
+  "walls": [],
+  "player": [
+    0,
+    2
+  ],
+  "centers": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
+      },
+      "leaving": "N",
+      "reactiveTo": {
+        "center": 3,
+        "arm": "N",
+        "color": "yellow"
+      }
+    },
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "purple",
+        "W": "blue"
+      },
+      "leaving": "W",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        5,
+        1
+      ],
+      "arms": {
+        "N": "purple",
+        "E": "red",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        3
+      ],
+      "color": "blue"
+    }
+  ],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "S",
+          "color": "blue"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "purple"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 4,
+          "arm": "W",
+          "color": "red"
+        },
+        {
+          "center": 4,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 9,
+  "moveLimit": 12
+}

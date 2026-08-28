@@ -15,6 +15,8 @@ export type TutorialEvent =
   | { kind: 'preview'; dir: Dir }
   | null
 
+export type TutorialControlTarget = 'hint' | 'animation' | 'tutorial' | 'theme'
+
 export type TutorialInputMode = 'keyboard' | 'touch'
 
 export interface TutorialInputCapabilities {
@@ -64,7 +66,7 @@ export interface TutorialModel {
   /** 这一拍只做对象辨认；轻触棋盘或方向输入推进讲解，不执行游戏动作。 */
   advanceOnTap?: boolean
   /** 棋盘外的具体操作按钮；壳层负责高亮，模型不读取 DOM。 */
-  controlTarget?: 'hint'
+  controlTarget?: TutorialControlTarget
   spotlight?: TutorialSpotlight
   gesture?: TutorialGesture
   /** 绕中心半圈的循环演示；用于展示整体翻转的因果，不改变游戏状态。 */
@@ -189,7 +191,7 @@ function feedbackFor(state: ChemState, event: TutorialEvent): Pick<TutorialModel
   } else {
     const center = state.centers.find((candidate) => candidate.pos[0] === x && candidate.pos[1] === y)
     if (center && center.leaving !== event.dir) {
-      reason = '刚才撞到了封闭面：白箭头指向可进攻方向，先绕到它的反面再沿箭头撞入。'
+      reason = '刚才撞的这面进不去：白箭头指的方向才能撞，先绕到它的反面。'
     } else if (center) {
       reason = '这个中心当前不能被进攻：留意护罩或喷口是否受阻。'
     }
@@ -205,8 +207,8 @@ function model(
 ): TutorialModel {
   return {
     kicker: levelIndex <= 4
-      ? `CORE INPUT · ${String(levelIndex + 1).padStart(2, '0')} / 05`
-      : `MECHANIC REVEAL · LEVEL ${String(levelIndex + 1).padStart(2, '0')}`,
+      ? `BASICS · ${String(levelIndex + 1).padStart(2, '0')} / 05`
+      : `NEW RULE · LEVEL ${String(levelIndex + 1).padStart(2, '0')}`,
     ...content,
     ...feedbackFor(state, event),
   }
@@ -274,13 +276,13 @@ export function getChemTutorial(
     const center = state.centers[0]
     const pages: RevealPage[] = [
       {
-        title: '空手撞是纯翻转',
-        body: '手里没有珠时，撞入只会让中心整体翻转 180°，不发生任何交换。',
+        title: '空手撞只翻转，不换珠',
+        body: '手里没有珠时，撞进去只会让中心整体翻转，不发生交换。',
         spotlight: { pos: center.pos, radiusCells: 0.86 },
       },
       {
         title: '拾珠之后，手不会再空',
-        body: '拾取、换珠、进攻换出都只是替换手中的颜色——想用纯翻转，只有开局这一次机会。',
+        body: '拿珠、换珠、撞完换出来的珠，都只是替换手里的颜色——想空手撞，只有开局这一次机会。',
         spotlight: { pos: state.groups[0]?.pos ?? state.player, radiusCells: 0.34 },
       },
     ]
@@ -290,8 +292,8 @@ export function getChemTutorial(
     const attack = immediateAttack(state)
     return actionKicker(model(levelIndex, state, event, {
       title: '先空手撞一次左侧中心',
-      body: '左侧的目标只能靠纯翻转达成；现在不出手，之后就没有空手的机会了。',
-      tip: '出手前先想：翻转后两条臂会怎么对调',
+      body: '左侧的目标只能靠空手撞达成；现在不出手，之后就没有空手的机会了。',
+      tip: '出手前想想，翻转后两条臂会怎么对调',
       focusDirs: attack ? [attack.dir] : [],
       forecast: null,
       spotlight: { pos: state.player, radiusCells: 0.58 },
@@ -305,17 +307,17 @@ export function getChemTutorial(
     const pages: RevealPage[] = [
       {
         title: '相邻中心之间有共振键',
-        body: '中间与右侧两座中心之间有暗键；面对臂颜色不同时，翻转不会从这里传过去。',
+        body: '中间与右侧两座中心之间有暗键；面对面的臂颜色不同时，翻转不会从这里传过去。',
         spotlight: { pos: [4.5, 1], radiusCells: 0.44 },
       },
       {
         title: '中间中心的绿珠现在朝左',
-        body: '它位于西臂。中间中心翻转后，这颗绿珠会来到东臂，正对右邻。',
+        body: '这颗绿珠现在在左边的臂上。中间中心翻转后，它会转到右边的臂上，正对右邻。',
         spotlight: { pos: pointOnArm(state, 1, 'W'), radiusCells: 0.32 },
       },
       {
         title: '右邻的西臂也是绿珠',
-        body: '两颗面对珠同色时，暗键会变亮。共振只沿动作结算时真正亮起的键传播。',
+        body: '面对面的两颗珠同色时，暗键会变亮。共振只沿着这一步真正亮起来的键传。',
         spotlight: { pos: pointOnArm(state, 2, 'W', 0.34), radiusCells: 0.3 },
       },
       {
@@ -332,7 +334,7 @@ export function getChemTutorial(
     return actionKicker(model(levelIndex, state, event, {
       title: '先拿紫珠，换出蓝珠再送货',
       body: '前半段仍是刚学会的交换；把蓝珠送进中间中心，看绿键接通时最右中心自动跟着转。',
-      tip: '按住预演可以先看完整连锁；松开执行',
+      tip: '按住预演可以先看完整结果；松开执行',
       focusDirs: dir ? [dir] : [],
       forecast: null,
       gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
@@ -350,12 +352,12 @@ export function getChemTutorial(
       },
       {
         title: '这座也一样',
-        body: '右下中心的进攻位同样被墙挡住。珠子进不去——但震动传得进去。',
+        body: '右下中心的进攻位同样被墙挡住。珠进不去，共振却传得进去。',
         spotlight: { pos: [2, 2], radiusCells: 0.46 },
       },
       {
         title: '亮键是唯一的门',
-        body: '只要面对臂同色接通，一次撞击就能让整条链一起翻转——包括那些碰不到的中心。',
+        body: '只要面对面的臂同色接通，一撞就能让整条链一起翻转，包括那些碰不到的中心。',
         spotlight: { pos: [3, 1.5], radiusCells: 0.9 },
       },
     ]
@@ -366,7 +368,7 @@ export function getChemTutorial(
     const dir = group ? nextDirToward(state, group.pos) : undefined
     return actionKicker(model(levelIndex, state, event, {
       title: '先拿起紫珠，想想这一击从哪开始',
-      body: '出手前先预测：一次撞击要让三座中心同时到达目标，每一跳需要什么颜色。',
+      body: '出手前想想：这一撞要让三座中心同时达标，每一座需要什么颜色。',
       tip: '最左中心是唯一能直接撞入的起点',
       focusDirs: dir ? [dir] : [],
       forecast: null,
@@ -383,18 +385,18 @@ export function getChemTutorial(
       const center = state.centers[0]
       const pages: RevealPage[] = [
         {
-          title: '金色放射格是光照格',
-          body: '玩家走上光照格时，它会立刻触发一次全局转向。',
+          title: '金色格是光格',
+          body: '走上光格时，所有开口会立刻转一次。',
           spotlight: { pos: light, radiusCells: 0.62 },
         },
         {
-          title: '光照只移动白箭头',
-          body: '触发后，所有中心的白箭头顺时针移到下一条真实色臂，合法进攻方向随之改变。',
+          title: '光格只移动白箭头',
+          body: '踩上去后，所有中心的白箭头顺时针移到下一条有珠的臂，能撞的方向也跟着变。',
           spotlight: { pos: center.pos, radiusCells: 0.3 },
         },
         {
-          title: '彩色臂本身不会旋转',
-          body: '光照只是在重新选择开口，不会搬动任何色珠；中心构型保持原样。',
+          title: '臂上的珠不会跟着转',
+          body: '光格只是重新选开口，不会搬动任何珠；中心的样子保持原样。',
           spotlight: { pos: pointOnArm(state, 0, 'N'), radiusCells: 0.32 },
         },
       ]
@@ -403,9 +405,9 @@ export function getChemTutorial(
       }
       const dir = nextDirToward(state, light)
       return actionKicker(model(levelIndex, state, event, {
-        title: '现在走向光照格',
+        title: '现在走向光格',
         body: '先走上金色格，再观察白箭头怎样改变方向。',
-        tip: '每次踏入都会再次触发光照',
+        tip: '每次走进去都会再转一次',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: state.player, radiusCells: 0.58 },
@@ -426,7 +428,7 @@ export function getChemTutorial(
         },
         {
           title: '淡圈是下一阶段目标',
-          body: '这枚较淡的目标还不用立即满足；当前阶段完成后，它才会变亮并接管目标。',
+          body: '这枚较淡的目标还不用立即满足；当前阶段完成后，它才会变亮，轮到你来做。',
           spotlight: {
             pos: futureGoal ? pointOnArm(state, futureGoal.center, futureGoal.arm) : state.centers[0].pos,
             radiusCells: 0.34,
@@ -434,7 +436,7 @@ export function getChemTutorial(
         },
         {
           title: '阶段会按顺序推进',
-          body: '完成亮圈后不会立刻通关，而是进入下一组目标。同一座中心可能需要在后面再翻回来。',
+          body: '做完亮圈还不过关：下一组目标接着来。同一座中心之后可能还要再翻回来。',
           spotlight: { pos: state.centers[0].pos, radiusCells: 0.86 },
         },
       ]
@@ -465,22 +467,22 @@ export function getChemTutorial(
       const pages: RevealPage[] = [
         {
           title: '三角核表示三臂中心',
-          body: '它只有三条真实色臂，但进攻方式仍和普通中心相同。',
+          body: '它只有三条臂，但进攻方式和普通中心一样。',
           spotlight: { pos: center.pos, radiusCells: 0.3 },
         },
         {
           title: '虚线空槽是空穴',
-          body: '空穴没有颜色，不能拾取、注入或填补；空穴所在方向也不能形成共振键。',
+          body: '空穴没有颜色，不能拿、不能填；空穴那个方向也形成不了共振键。',
           spotlight: { pos: pointOnArm(state, 0, missing), radiusCells: 0.3 },
         },
         {
           title: '目标仍可以指向空穴方向',
-          body: '这不是要把空穴填满，而是要靠整体翻转，让一条真实色臂移动到这个方向。',
+          body: '目标不是填满空穴：要靠翻转，把一条真的臂转到这个方向来。',
           spotlight: { pos: pointOnArm(state, 0, missing), radiusCells: 0.36 },
         },
         {
-          title: '这条蓝臂会随空穴一起换边',
-          body: '中心翻转 180° 时，三颗珠、白箭头和空穴全部移动到对侧；撞两次会回到原样。',
+          title: '这条蓝臂会和空穴一起换到对面',
+          body: '中心翻转时，三颗珠、白箭头和空穴一起翻到对面；撞两次会回到原样。',
           spotlight: { pos: pointOnArm(state, 0, source), radiusCells: 0.32 },
         },
       ]
@@ -492,8 +494,8 @@ export function getChemTutorial(
       const dir = nextDirToward(state, attackPos)
       return actionKicker(model(levelIndex, state, event, {
         title: '现在撞动三臂中心',
-        body: '出手前先预测蓝臂与空穴各会移动到哪一侧。',
-        tip: '三臂中心仍然是整体翻转 180°',
+        body: '出手前想想，蓝臂和空穴会各翻到哪一边。',
+        tip: '三臂中心同样是整体翻转',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: state.player, radiusCells: 0.58 },
@@ -506,12 +508,12 @@ export function getChemTutorial(
       const pages: RevealPage[] = [
         {
           title: '菱形核是弹射中心',
-          body: '它仍然接受持珠进攻，但离去珠不再换到手中。',
+          body: '拿着珠照样能进攻，但开口上的珠不会换到你手里，会直接飞出去。',
           spotlight: { pos: center.pos, radiusCells: 0.3 },
         },
         {
           title: '双箭头标出背后的喷口',
-          body: '持珠撞入后，开口原珠会从玩家身后沿直线飞出，手会重新变空。',
+          body: '拿着珠撞进去后，开口上原来的珠会从你身后沿直线飞出去，手会重新变空。',
           spotlight: { pos: outlet, radiusCells: 0.3 },
         },
       ]
@@ -523,7 +525,7 @@ export function getChemTutorial(
       return { ...model(levelIndex, state, event, {
         title: '先拾取紫珠，再靠近弹射中心',
         body: '弹射只在持珠进攻时发生；先拿起场上的紫珠。',
-        tip: '靠近合法进攻位后会继续解释离去珠与落点',
+        tip: '站到进攻位后，会继续讲弹出的珠落在哪',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
@@ -538,7 +540,7 @@ export function getChemTutorial(
       const pages: RevealPage[] = [
         {
           title: '六边形轮廓是阶段护罩',
-          body: '罩内中心暂时挡住直接进攻与共振，但白箭头仍可被光照移动。',
+          body: '罩里的中心暂时撞不进、共振也传不进，但光格仍能转动它的开口。',
           spotlight: { pos: shield.pos, radiusCells: 0.95 },
         },
         {
@@ -559,7 +561,7 @@ export function getChemTutorial(
         },
         {
           title: '护罩在整次动作结算后才解除',
-          body: '刚完成阶段的那次连锁仍会被挡住，不会追溯穿过刚打开的护罩；下一次动作才开放。',
+          body: '刚做完阶段的那一撞还是会被挡住，穿不过刚打开的护罩；下一撞才放行。',
           spotlight: { pos: shield.pos, radiusCells: 0.95 },
         },
       ]
@@ -589,23 +591,23 @@ export function getChemTutorial(
       const landing: readonly [number, number] = [target.pos[0] - tdx, target.pos[1] - tdy]
       const pages: RevealPage[] = [
         {
-          title: '这座弹射中心能撞动结构',
-          body: '它的飞珠不只会落地；若弹道终点对准另一座中心的进攻面，还会触发一次结构翻转。',
+          title: '这座弹射中心能撞动另一座中心',
+          body: '它弹出的珠不只是落地：如果落点正对另一座中心的开口，还会替你把那座中心翻一次。',
           spotlight: { pos: source.pos, radiusCells: 0.92 },
         },
         {
-          title: '这是飞珠要撞动的中心',
-          body: '远端中心仍遵守普通进攻方向：只有飞珠落在白箭头反面的进攻位，撞核才会生效。',
+          title: '这是弹出的珠要撞动的中心',
+          body: '远处的中心照样认开口：珠落在白箭头反面的进攻位，这一撞才有效。',
           spotlight: { pos: target.pos, radiusCells: 0.84 },
         },
         {
           title: '这个格子正是远端进攻位',
-          body: '飞珠沿直线停在这里时，会替你完成一次空手翻转，并继续检查共振传播。',
+          body: '弹出的珠沿直线停在这里时，会替你空手翻一次，并继续看共振能不能传下去。',
           spotlight: { pos: landing, radiusCells: 0.46 },
         },
         {
-          title: '撞核后的珠仍留在落点',
-          body: '结构翻转不会消耗飞珠；之后仍可走到落点把它捡起，继续完成后续运输。',
+          title: '撞完之后，珠仍留在落点',
+          body: '这一撞不会消耗掉珠；之后走到落点把它捡起来，接着送。',
           spotlight: { pos: landing, radiusCells: 0.34 },
         },
       ]
@@ -616,8 +618,8 @@ export function getChemTutorial(
       const dir = group ? nextDirToward(state, group.pos) : undefined
       return actionKicker(model(levelIndex, state, event, {
         title: '先拿起紫珠，准备弹射',
-        body: '先完成取货；到达弹射中心进攻位后，用预演核对完整弹道。',
-        tip: '先看落点，再看落点是否正对远端白箭头',
+        body: '先把珠拿起来；站到弹射中心的进攻位后，用预演核对珠会飞到哪。',
+        tip: '先看落点，再看落点是否正对远处的白箭头',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
@@ -630,23 +632,23 @@ export function getChemTutorial(
       const target = state.centers[targetIndex >= 0 ? targetIndex : 1]
       const pages: RevealPage[] = [
         {
-          title: '飞珠也能触发光照格',
-          body: '这座弹射中心的飞珠落在金色格时，会像玩家踏入一样，让所有白箭头先转一次。',
+          title: '弹出的珠也能触发光格',
+          body: '这座弹射中心弹出的珠落在金色格上时，会像你踩上去一样，让所有白箭头先转一次。',
           spotlight: { pos: light, radiusCells: 0.62 },
         },
         {
-          title: '远端中心的白箭头会先转向',
-          body: '它现在朝下；飞珠触光后，白箭头顺时针转到左侧，合法进攻位随之改变。',
+          title: '远处中心的白箭头会先转向',
+          body: '它现在朝下；珠落到光格后，白箭头顺时针转到左边，能进攻的位置也跟着变。',
           spotlight: { pos: target.pos, radiusCells: 0.3 },
         },
         {
-          title: '同一颗飞珠随后继续撞核',
-          body: '结算顺序是先触光、再检查撞核。箭头转到左侧后，金色格恰好成为远端中心的新进攻位。',
+          title: '同一颗珠随后继续撞中心',
+          body: '顺序是先触发光格，再检查撞中心。箭头转到左边后，金色格正好变成远处中心的新进攻位。',
           spotlight: { pos: light, radiusCells: 0.46 },
         },
         {
-          title: '捡起落点珠会再次触光',
-          body: '飞珠仍停在金色格；玩家之后走上去拾取时，光照格会再触发一次，白箭头继续顺时针移动。',
+          title: '捡起那颗珠，光格会再转一次',
+          body: '珠还停在金色格上；你之后走上去捡它时，光格会再转一次，白箭头继续顺时针移动。',
           spotlight: { pos: light, radiusCells: 0.62 },
         },
       ]
@@ -656,9 +658,9 @@ export function getChemTutorial(
       const group = state.groups[0]
       const dir = group ? nextDirToward(state, group.pos) : undefined
       return actionKicker(model(levelIndex, state, event, {
-        title: '先拿起紫珠，准备复合弹射',
-        body: '到达弹射进攻位后，按住预演并按顺序检查：落光、转箭头、再撞核。',
-        tip: '同一落点会被飞珠与玩家各触发一次',
+        title: '先拿起紫珠，准备弹射',
+        body: '站到弹射的进攻位后，按住预演，按顺序看三件事：珠落光格、箭头转向、再撞上中心。',
+        tip: '同一个光格会被珠和你各触发一次',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
@@ -684,7 +686,7 @@ export function getChemTutorial(
       const pages: RevealPage[] = [
         {
           title: '带 R 的是再生护罩',
-          body: '它不是一次性打开的门，而会根据另一条控制臂的状态反复关闭与开放。',
+          body: '它会反复开合：打开之后也可能再关上，全看另一条控制臂的状态。',
           spotlight: { pos: reactive.pos, radiusCells: 0.95 },
         },
         {
@@ -694,12 +696,12 @@ export function getChemTutorial(
         },
         {
           title: '虚线把护罩与控制臂连在一起',
-          body: '顺着这条控制线就能判断是哪条臂在开关护罩；修复红色后，护罩会再次开放。',
+          body: '顺着这条虚线就能看出是哪条臂在开关护罩；把红色修回来后，护罩会再次打开。',
           spotlight: { pos: linkMid, radiusCells: 0.5 },
         },
         {
-          title: '临时关盾可以切断危险共振',
-          body: '护罩关闭时会挡住这条相邻链路。关门有时不是障碍，而是在保护已经对齐的中心。',
+          title: '关上的护罩能挡住危险共振',
+          body: '护罩一关，这条相邻的键就传不过去了。有时候故意关上它，是为了保住已经对齐的中心。',
           spotlight: { pos: bondMid, radiusCells: 0.5 },
         },
       ]
@@ -709,7 +711,7 @@ export function getChemTutorial(
       const attack = immediateAttack(state)
       return actionKicker(model(levelIndex, state, event, {
         title: '现在先改变控制臂',
-        body: '出手前预测：红臂翻走后，R 护罩会从开放变为关闭。',
+        body: '出手前想想：红臂的颜色翻走以后，R 护罩会从打开变成关上。',
         tip: '按住预演可以先看护罩生成',
         focusDirs: attack ? [attack.dir] : [],
         forecast: null,
@@ -729,12 +731,12 @@ export function getChemTutorial(
         const pages: RevealPage[] = [
           {
             title: '开口原珠会被弹出',
-            body: '普通中心会把开口原珠换到手中；弹射中心改为把这颗离去珠从背后喷口推出。',
+            body: '普通中心会把开口上的珠换到你手里；弹射中心改为把它从背后的喷口推出去。',
             spotlight: { pos: pointOnArm(state, ejectAttack.center, center.leaving), radiusCells: 0.32 },
           },
           {
-            title: '虚线弹道终点就是落点',
-            body: '离去珠沿喷口直线飞到最后一个空格；执行后珠留在这里，而你的手会变空。',
+            title: '虚线尽头就是落点',
+            body: '弹出的珠沿喷口直线飞到最后一个空格；撞完之后珠留在那里，你的手会变空。',
             spotlight: { pos: preview?.landing ?? state.player, radiusCells: 0.42 },
           },
         ]
@@ -743,8 +745,8 @@ export function getChemTutorial(
           return revealModel(levelIndex, state, event, pages[step], step + 4, 6, 'EJECTION')
         }
         return actionKicker(model(levelIndex, state, event, {
-          title: '喷口已对齐，长按先看飞珠落点',
-          body: '这次撞击后你的手会变空；开口原珠沿进攻反方向飞到射线最后一个空格。',
+          title: '喷口已对齐，长按先看珠落在哪',
+          body: '这一撞之后你的手会变空；开口上的珠朝你身后的方向，飞到直线上最后一个空格。',
           tip: '松开执行；身后第一格被堵时整次进攻无效',
           focusDirs: [ejectAttack.dir],
           forecast: exchangeForecast(state, false),
@@ -757,7 +759,7 @@ export function getChemTutorial(
       const attackPos: readonly [number, number] = [center.pos[0] - dx, center.pos[1] - dy]
       const dir = nextDirToward(state, attackPos)
       return { ...model(levelIndex, state, event, {
-        title: '把手持珠带到弹射中心的进攻位',
+        title: '把手里的珠带到弹射中心的进攻位',
         body: '站到白箭头反面后，引导会继续指出哪颗珠被弹出、最终落在哪里。',
         tip: '弹射中心仍然只能从白箭头反面进攻',
         focusDirs: dir ? [dir] : [],
@@ -772,6 +774,37 @@ export function getChemTutorial(
   const attack = immediateAttack(state)
   const pickupDirs = adjacentGroupDirs(state)
   const holdingText = state.holding === null ? null : `${tutorialColorText(state.holding)}珠`
+
+  if (levelIndex === 4 && state.moves === 0 && event === null && introBeat < 3) {
+    const beats = [
+      {
+        title: '动画可以切到 2 倍速',
+        body: '状态栏右侧的「动画」开关控制翻转与行走的动画速度；熟悉操作后切到 2×，整体节奏会快很多。',
+        controlTarget: 'animation',
+      },
+      {
+        title: '教程开关控制引导卡',
+        body: '「教程」开关控制这类引导卡的显示；熟练之后关掉它，底部「提示一步」（H）仍然可用。',
+        controlTarget: 'tutorial',
+      },
+      {
+        title: '暗色开关切换整页配色',
+        body: '「暗色」开关在浅色与深色之间切换；两种主题下，色珠、白箭头与目标圈都保持完整可读。',
+        controlTarget: 'theme',
+      },
+    ] as const
+    const beat = beats[introBeat]
+    const intro = model(levelIndex, state, event, {
+      title: beat.title,
+      body: beat.body,
+      tip: '试用开关或轻触棋盘任意位置继续',
+      focusDirs: [],
+      forecast: null,
+      advanceOnTap: true,
+      controlTarget: beat.controlTarget,
+    })
+    return { ...intro, kicker: `SETTINGS · 0${introBeat + 1} / 03` }
+  }
 
   if (levelIndex === 0) {
     const center = state.centers[0]
@@ -810,7 +843,7 @@ export function getChemTutorial(
           ? '现在用 WASD 或方向键移动'
           : '现在在棋盘上滑动',
       body: attack
-        ? '白箭头指向开口，也指明撞入方向。有效撞击后，中心、四条色臂和箭头会整体翻转 180°；上下、左右各自交换位置。'
+        ? '白箭头指向开口，也指明撞的方向。撞进去后，中心、四条臂和箭头会整体翻转半圈：上下互换，左右互换。'
         : keyboard
           ? `每次移动一格。先按 ${travelDir ? tutorialKeyForDir(travelDir) : 'S'}，走到中心左侧的进攻位。`
           : `手指向一个方向滑动，就会移动一格。先向${travelDir ? tutorialDirText(travelDir) : '下'}滑到中心左侧。`,
@@ -848,13 +881,27 @@ export function getChemTutorial(
       })
       return { ...intro, kicker: 'ASSIST · STEP HINT' }
     }
+    if (state.moves === 0 && event === null && introBeat === 1) {
+      const intro = model(levelIndex, state, event, {
+        title: '绕到白箭头的反面',
+        body: '白箭头指向开口，也标出撞入方向；从开口正面直接撞，中心不会动。先绕到白箭头反面的空格——那里才是进攻位。',
+        tip: '点击或轻触棋盘任意位置继续',
+        focusDirs: [],
+        forecast: null,
+        advanceOnTap: true,
+        spotlight: { pos: state.centers[0].pos, radiusCells: 0.85 },
+      })
+      return { ...intro, kicker: 'ASSIST · ATTACK SIDE' }
+    }
     return model(levelIndex, state, event, {
       title: attack ? `位置对了，向${tutorialDirText(attack.dir)}撞入` : '绕到白箭头的反面',
-      body: '从错误的一面撞，中心不会动；普通空格仍可行走。找到箭头反面的进攻位，再沿箭头方向出手。',
+      body: attack
+        ? '这里就是白箭头反面的进攻位。沿箭头方向撞进去，中心会整体翻转半圈。'
+        : '从错误的一面撞，中心不会动；普通空格仍可行走。找到箭头反面的进攻位，再沿箭头方向出手。',
       tip: '不确定时按住方向约 0.3 秒预演；松开执行，回到原位或按 Esc 取消',
       focusDirs: attack ? [attack.dir] : [],
       forecast: null,
-      spotlight: { pos: state.centers[0].pos, radiusCells: 0.85 },
+      spotlight: attack ? { pos: state.centers[0].pos, radiusCells: 0.85 } : undefined,
       gesture: attack ? { from: state.player, dir: attack.dir, distanceCells: 0.88 } : undefined,
     })
   }
@@ -877,7 +924,7 @@ export function getChemTutorial(
     if (state.holding === null && state.moves === 0 && introBeat < 2) {
       const beats = [
         {
-          title: '这是游离的紫珠',
+          title: '这是场上的紫珠',
           body: '场上的彩色小球可以被拾取。等会儿走到这颗紫珠上，它就会跟着你移动。',
           spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.32 },
         },
@@ -917,7 +964,7 @@ export function getChemTutorial(
         },
         {
           title: '翻转后，紫珠会落在这里',
-          body: '紫珠进入开口后，整个中心翻转 180°，于是紫珠来到对侧，正好进入紫色目标圈。这就是染色。',
+          body: '紫珠进入开口后，整个中心翻转半圈，紫珠跟着转到对面，正好落进紫色目标圈。放珠、翻转，这一套合起来就叫染色。',
           spotlight: { pos: goalPos, radiusCells: 0.34 },
         },
       ] as const
@@ -938,19 +985,19 @@ export function getChemTutorial(
       title: holdingText
         ? attack
           ? previewing
-            ? '这就是预演：虚线是染色后的构型'
+            ? '先别松手：虚线是这一撞之后的样子'
             : keyboard
               ? `按住 ${tutorialKeyForDir(attack.dir)}，先别松开`
               : `向${tutorialDirText(attack.dir)}拖住，先别松手`
           : `把${holdingText}带到中心的进攻位`
-        : '先走到游离的紫珠上',
+        : '先走到那颗紫珠上',
       body: previewing && forecast
-        ? `棋盘上的虚线是松手后的结果：手中${tutorialColorText(forecast.injected)}珠先进入开口，再随整个中心翻到${tutorialDirText(forecast.landingArm)}侧。这就是染色。`
+        ? `棋盘上的虚线是松手后的结果：手里${tutorialColorText(forecast.injected)}珠先进入开口，再随整个中心翻到${tutorialDirText(forecast.landingArm)}侧，落进目标圈。`
         : holdingText
           ? attack
             ? '保持按住会先显示动作结果，但不会立刻改变局面；这次先用预演看清色珠怎样进入中心。'
             : '把手中的色珠带到中心箭头反面的进攻位，靠近后再学习预演。'
-        : '经过游离色珠会自动拿起；上方状态栏的「手持」会从“空”变成对应颜色。',
+        : '经过色珠会自动拿起；上方状态栏的「手持」会从“空”变成对应颜色。',
       tip: previewing && forecast
         ? `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来，再松手执行；回到原位或按 Esc 取消`
         : holdingText
@@ -995,12 +1042,12 @@ export function getChemTutorial(
       const pages: RevealPage[] = [
         {
           title: '先看开口上原来的蓝珠',
-          body: '持珠撞入时，这颗开口原珠会离开中心，不会消失；它将换到你的手中。',
+          body: '拿着珠撞进去时，开口上这颗珠会离开中心，不会消失；它会换到你手里。',
           spotlight: { pos: pointOnArm(state, 0, center.leaving), radiusCells: 0.32 },
         },
         {
           title: '再看手里准备放入的紫珠',
-          body: '紫珠进入刚才的开口，同时蓝珠换到手中；随后整个中心才翻转 180°。',
+          body: '紫珠进入刚才的开口，同时蓝珠换到你手里；随后整个中心才翻转。',
           spotlight: {
             pos: [state.player[0] + 0.3, state.player[1] - 0.3],
             radiusCells: 0.24,
@@ -1010,10 +1057,10 @@ export function getChemTutorial(
       return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 2, 4, 'EXCHANGE')
     }
     const guide = model(levelIndex, state, event, {
-      title: holdingText ? (attack ? '出手前，先读懂这次交换' : `把${holdingText}带到进攻位`) : '先拿起游离的紫珠',
+      title: holdingText ? (attack ? '出手前，先读懂这次交换' : `把${holdingText}带到进攻位`) : '先拿起那颗紫珠',
       body: holdingText
-        ? '持珠进攻会同时发生两件事：手中珠进入中心，开口臂原来的珠换到手中；随后整个结构翻转。'
-        : '先经过游离色珠。拿起以后，引导会把这次进攻的“放入 / 换出”分开显示。',
+        ? '拿着珠进攻会同时发生两件事：手里的珠进入中心，开口上原来的珠换到手里；随后整个中心翻转。'
+        : '先经过那颗色珠。拿起以后，引导会把这次进攻的“放入 / 换出”分开显示。',
       tip: forecast ? '试着先说出两条结果，再长按方向核对预演' : '靠近正确进攻位后会出现交换预报',
       focusDirs: attack ? [attack.dir] : pickupDirs,
       forecast,
@@ -1045,7 +1092,7 @@ export function getChemTutorial(
   if (holdingText) {
     if (state.holding === 'purple') {
       title = attack ? '用紫珠从左侧中心换货' : '把紫珠带到左侧中心的进攻位'
-      body = '观察“换出”一行：左侧中心开口上的颜色，会成为下一段运输的货物。'
+      body = '看看“换出”那一行：左侧中心开口上的颜色，就是接下来要送的珠。'
     } else if (state.holding === 'blue') {
       title = attack ? '把蓝珠送进右侧中心' : '蓝珠到手，把它送到右侧中心'
       body = '现在把刚换出的蓝珠带去缺蓝珠的中心；每次出手前都可以用同一张预报核对。'

@@ -1,0 +1,55 @@
+{
+  "id": "109.5°-68",
+  "name": "转辙·唤醒",
+  "hint": "北边的入口一开始是死的：波传不进去。先用西边那一撞叫醒岔心，出口转过来之后，北边才轮得到开火。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [0, 4],
+  "centers": [
+    {
+      "pos": [1, 2],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "E"
+    },
+    {
+      "pos": [2, 1],
+      "arms": { "N": "green", "E": "yellow", "S": "red", "W": "blue" },
+      "leaving": "W"
+    },
+    {
+      "pos": [2, 2],
+      "arms": { "N": "red", "S": "green", "W": "blue" },
+      "leaving": "N",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "blue" },
+      "leaving": "N"
+    },
+    {
+      "pos": [2, 3],
+      "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" },
+      "leaving": "N"
+    }
+  ],
+  "groups": [{ "pos": [0, 3], "color": "purple" }],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        { "center": 0, "arm": "E", "color": "blue" },
+        { "center": 3, "arm": "N", "color": "green" }
+      ]
+    },
+    {
+      "goals": [
+        { "center": 4, "arm": "N", "color": "red" },
+        { "center": 1, "arm": "E", "color": "yellow" },
+        { "center": 3, "arm": "N", "color": "green" }
+      ]
+    }
+  ],
+  "par": 10
+}

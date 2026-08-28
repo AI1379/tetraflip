@@ -1,0 +1,137 @@
+{
+  "id": "109.5°-71",
+  "name": "红线·接力",
+  "hint": "第一级喷出的珠是第二级的弹药，第二级喷出的珠落在光格上，替第三级把开口转到能开火的方向。一颗珠要烧穿全部三级。步数红线：一步都不能多。",
+  "width": 7,
+  "height": 5,
+  "walls": [],
+  "player": [
+    3,
+    0
+  ],
+  "centers": [
+    {
+      "pos": [
+        5,
+        1
+      ],
+      "arms": {
+        "S": "red",
+        "W": "yellow",
+        "N": "purple",
+        "E": "blue"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "S": "red",
+        "W": "purple",
+        "N": "green",
+        "E": "yellow"
+      },
+      "leaving": "W",
+      "ejects": true,
+      "hitLights": true
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "W": "yellow",
+        "N": "red",
+        "E": "green"
+      },
+      "leaving": "W",
+      "kind": "trigonal",
+      "ejects": true
+    },
+    {
+      "pos": [
+        2,
+        4
+      ],
+      "arms": {
+        "S": "blue",
+        "W": "yellow",
+        "N": "red",
+        "E": "purple"
+      },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        4,
+        0
+      ],
+      "color": "green"
+    }
+  ],
+  "lights": [
+    [
+      0,
+      1
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 1,
+          "arm": "S",
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "W",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "S",
+          "color": "red"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "red"
+        }
+      ]
+    }
+  ],
+  "par": 14,
+  "moveLimit": 14
+}

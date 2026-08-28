@@ -29,7 +29,7 @@ import {
   tutorialInputModeFromPointerType,
   tutorialKeyForDir,
 } from './tutorial'
-import type { TutorialEvent, TutorialInputMode } from './tutorial'
+import type { TutorialControlTarget, TutorialEvent, TutorialInputMode } from './tutorial'
 import { mountFeedback } from './feedback'
 import { logicalCanvasSize } from './viewport'
 import { SingleSlotInputBuffer } from './input-buffer'
@@ -133,8 +133,8 @@ const showPrototypeSwitcher = searchParams.get('devGames') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
-      <span class="brand-kicker">CHEM GAMES · STRUCTURAL PUZZLE</span>
-      <strong>109.5°</strong>
+      <span id="brand-kicker" class="brand-kicker">CHEM GAMES · STRUCTURAL PUZZLE</span>
+      <strong id="brand-title">109.5°</strong>
     </div>
     <div class="header-tools">
       <div class="tabs ${showPrototypeSwitcher ? '' : 'hidden'}" id="tabs" role="tablist" aria-label="研发原型切换"></div>
@@ -165,7 +165,7 @@ app.innerHTML = `
         <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
       </button>
       <button id="theme-toggle" class="tutorial-toggle theme-toggle" role="switch" aria-checked="true" aria-label="暗色模式已开启">
-        <span class="tutorial-toggle-copy"><small>暗色</small><strong id="theme-toggle-state">开</strong></span>
+        <span class="tutorial-toggle-copy"><small id="theme-toggle-label">暗色</small><strong id="theme-toggle-state">开</strong></span>
       </button>
     </div>
   </section>
@@ -181,6 +181,7 @@ app.innerHTML = `
 
   <main class="stage">
     <canvas id="board" aria-label="游戏棋盘，支持方向滑动"></canvas>
+    <div id="budget-alarm" class="budget-alarm" aria-hidden="true"></div>
     <div id="board-guide" class="board-guide hidden" aria-live="polite">
       <div id="guide-spotlight" class="guide-spotlight hidden" aria-hidden="true"></div>
       <div id="guide-orbit" class="guide-orbit hidden" aria-hidden="true"><i></i></div>
@@ -194,7 +195,7 @@ app.innerHTML = `
       </div>
       <section id="tutorial-card" class="board-guide-card" aria-label="操作引导">
         <button id="tutorial-close" class="tutorial-close" title="收起操作引导" aria-label="收起操作引导" aria-controls="tutorial-card" aria-expanded="true"><span aria-hidden="true"></span></button>
-        <small id="tutorial-kicker">CORE INPUT · 01 / 05</small>
+        <small id="tutorial-kicker">BASICS · 01 / 05</small>
         <strong id="tutorial-title"></strong>
         <p id="tutorial-body"></p>
         <div id="tutorial-forecast" class="tutorial-forecast hidden" aria-label="本次进攻的交换预报">
@@ -219,7 +220,7 @@ app.innerHTML = `
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <div id="overlay" class="overlay hidden" aria-hidden="true">
       <div class="overlay-card">
-        <div class="win-mark"><span>✓</span> 关卡完成</div>
+        <div id="win-mark" class="win-mark"><span>✓</span> 关卡完成</div>
         <strong id="win-title" class="win-title"></strong>
         <div id="win-stats" class="win-stats"></div>
         <div id="feedback-panel" class="feedback-panel hidden"></div>
@@ -292,42 +293,42 @@ app.innerHTML = `
         <div class="rules-game" data-rules-game="chem">
           <section class="rules-intro">
             <span>一句话目标</span>
-            <strong>让每个虚线目标圈的颜色，与圈内色珠的颜色一致。</strong>
-            <p>当前阶段的目标全部对齐后会进入下一阶段；完成最后阶段即可过关。出现 ✓ 表示该目标目前已经对齐，但之后仍可能被再次改变。</p>
+            <strong>让每个虚线目标圈，和圈里的珠变成同一种颜色。</strong>
+            <p>当前阶段的目标全部对上后进入下一阶段；做完最后一个阶段就过关。✓ 表示这个目标目前对上了，但之后还可能被改变。</p>
           </section>
           <ol class="rules-list">
             <li>
-              <span class="rule-number">01</span><div><strong>移动与背面进攻</strong><p>上下左右移动一格。白箭头指向中心的开口，也指明撞入方向：先站到箭头所指方向的反面，再沿箭头方向撞入。撞封闭面不会生效。</p></div>
+              <span class="rule-number">01</span><div><strong>移动与背面进攻</strong><p>上下左右移动，一次一格。白箭头指出开口在哪、该从哪个方向撞：先站到箭头对面，再顺着箭头撞进去。撞别的面没有效果。</p></div>
             </li>
             <li>
-              <span class="rule-number">02</span><div><strong>整体翻转 180°</strong><p>每次有效进攻都会让中心、全部色臂、白箭头与空穴整体翻到对侧：上 ↔ 下、左 ↔ 右。</p></div>
+              <span class="rule-number">02</span><div><strong>整体翻转</strong><p>每撞一次，中心、所有臂、白箭头和空穴都会整体翻到对面：上换下，左换右。</p></div>
             </li>
             <li>
-              <span class="rule-number">03</span><div><strong>拾珠与交换</strong><p>走过游离色珠会拿起它；手中已有珠时会与地面色珠交换。持珠进攻时，手中珠进入开口，开口原珠换到手中；随后中心整体翻转。手不会自然变空。</p></div>
+              <span class="rule-number">03</span><div><strong>拾珠与交换</strong><p>走过场上的珠会拿起它；手里已经有珠时，会和地上的珠交换。拿着珠撞进开口时，手里的珠进去，开口上原来的珠换到你手里，然后中心整体翻转。手不会自己变空。</p></div>
             </li>
             <li>
               <span class="rule-number">04</span><div><strong>长按预演</strong><p>按住方向键或拖住不松手，可先看松开后的完整结果；虚线轮廓表示尚未发生。回到原位或按 Esc 取消。</p></div>
             </li>
             <li>
-              <span class="rule-number">05</span><div><strong>共振键</strong><p>相邻中心彼此面对的两条臂都有珠且颜色相同，会形成亮键。中心被命中后先翻转，再按翻转后的构型检查亮键；通过的邻居也先翻转，再检查下一跳。</p></div>
+              <span class="rule-number">05</span><div><strong>共振键</strong><p>相邻两座中心面对面的臂都有珠、而且同色，中间会形成亮键。一座中心被撞后先翻转，再按翻转后的样子看亮键；传到的邻居也是先翻转，再看下一座。</p></div>
             </li>
             <li>
-              <span class="rule-number">06</span><div><strong>光照与分步目标</strong><p>走上金色光照格，会让所有中心的白箭头顺时针移到下一条真实色臂，色臂本身不转。亮圈是当前阶段目标，淡圈是未来阶段目标。</p></div>
+              <span class="rule-number">06</span><div><strong>光格与阶段目标</strong><p>走上金色的光格，所有中心的开口会顺时针移到下一条有珠的臂；臂上的珠不会跟着转。亮圈是当前阶段的目标，淡圈是以后阶段的。</p></div>
             </li>
             <li>
-              <span class="rule-number">07</span><div><strong>三臂中心与空穴</strong><p>三臂中心始终只有三颗珠；虚线空槽是不可填补的空穴。翻转时空穴也移到对侧，空穴所在方向不能形成共振键；光照会跳过空穴。</p></div>
+              <span class="rule-number">07</span><div><strong>三臂中心与空穴</strong><p>三臂中心只有三颗珠；虚线空槽是空穴，填不上。翻转时空穴也移到对面，空穴那个方向形成不了共振键；光格转开口时会跳过空穴。</p></div>
             </li>
             <li>
-              <span class="rule-number">08</span><div><strong>弹射中心</strong><p>菱形核是弹射中心。持珠撞入后手会变空，开口原珠从背后喷口沿直线飞到最后一个空格；身后第一格被堵时，整次进攻无效。</p></div>
+              <span class="rule-number">08</span><div><strong>弹射中心</strong><p>菱形核是弹射中心。拿着珠撞进去，手会变空，开口上原来的珠从背后的喷口沿直线飞出去，落在最后一个空格；如果你身后第一格被堵，这一撞无效。</p></div>
             </li>
             <li>
-              <span class="rule-number">09</span><div><strong>阶段护罩</strong><p>带数字的六边形护罩会阻挡直接进攻与共振，但不挡光。编号表示它从哪一阶段起开放；护罩只在当前动作全部结算后解除，不会让刚结束的连锁追溯穿过。</p></div>
+              <span class="rule-number">09</span><div><strong>阶段护罩</strong><p>带数字的六边形护罩挡住直接进攻和共振，但不挡光格。编号表示它从第几阶段起打开；护罩要等当前这一步全部结束才打开，刚结束的这一撞不能追进去。</p></div>
             </li>
             <li>
-              <span class="rule-number">10</span><div><strong>飞珠撞结构</strong><p>后期关卡中，弹射珠落到光照格会触发光照；落到另一座中心当前的进攻位，会替你完成一次空手翻转并继续检查共振。珠仍留在最终落点。</p></div>
+              <span class="rule-number">10</span><div><strong>弹出的珠撞结构</strong><p>后面的关卡里，弹出的珠落到光格上，会像你踩上去一样转一次所有开口；落到另一座中心的进攻位，会替你空手翻一次，并继续检查共振。珠留在落点，之后可以捡起。</p></div>
             </li>
             <li>
-              <span class="rule-number">11</span><div><strong>再生护罩</strong><p>带 R 的护罩用虚线连着一条控制臂。控制臂颜色被破坏时护罩关闭，修复后重新开放；临时关盾有时能保护已经对齐的结构。</p></div>
+              <span class="rule-number">11</span><div><strong>再生护罩</strong><p>带 R 的护罩用虚线连着一条控制臂。控制臂的颜色没了，护罩关上；修回来，护罩重新打开。有时故意关上它，能保护已经对齐的中心。</p></div>
             </li>
           </ol>
         </div>
@@ -356,7 +357,35 @@ app.classList.toggle('visual-blind', visualBlindMode)
 
 const canvas = app.querySelector('#board') as HTMLCanvasElement
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+const budgetAlarmEl = app.querySelector('#budget-alarm') as HTMLDivElement
+
+/** 步数红线警示（design §5 v6）：剩余步数 ≤ 阈值时棋盘四周亮红色警示框 */
+const BUDGET_ALARM_THRESHOLD = 3
+
+function updateBudgetAlarm(): void {
+  if (current.id !== 'chem') {
+    budgetAlarmEl.classList.remove('active')
+    return
+  }
+  const s = hist.current as { moves?: number; moveLimit?: number; won?: boolean }
+  if (s.moveLimit === undefined || s.won) {
+    budgetAlarmEl.classList.remove('active')
+    return
+  }
+  const remaining = s.moveLimit - (s.moves ?? hist.depth)
+  budgetAlarmEl.classList.toggle('active', remaining <= BUDGET_ALARM_THRESHOLD)
+}
+
+/** 每动一次跳一下：重启 pulse 动画（仅在警示已激活时） */
+function pulseBudgetAlarm(): void {
+  if (!budgetAlarmEl.classList.contains('active')) return
+  budgetAlarmEl.classList.remove('pulse')
+  void budgetAlarmEl.offsetWidth // 强制回流以重启动画
+  budgetAlarmEl.classList.add('pulse')
+}
 const tabsEl = app.querySelector('#tabs') as HTMLElement
+const brandKicker = app.querySelector('#brand-kicker') as HTMLElement
+const brandTitle = app.querySelector('#brand-title') as HTMLElement
 const levelNumber = app.querySelector('#level-number') as HTMLElement
 const levelLabel = app.querySelector('#level-label') as HTMLElement
 const moveLabel = app.querySelector('#move-label') as HTMLElement
@@ -366,9 +395,11 @@ const animationToggleState = app.querySelector('#animation-toggle-state') as HTM
 const tutorialToggle = app.querySelector('#tutorial-toggle') as HTMLButtonElement
 const tutorialToggleState = app.querySelector('#tutorial-toggle-state') as HTMLElement
 const themeToggle = app.querySelector('#theme-toggle') as HTMLButtonElement
+const themeToggleLabel = app.querySelector('#theme-toggle-label') as HTMLElement
 const themeToggleState = app.querySelector('#theme-toggle-state') as HTMLElement
 const hintBtn = app.querySelector('#hint') as HTMLButtonElement
 const overlay = app.querySelector('#overlay') as HTMLElement
+const winMark = app.querySelector('#win-mark') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
 const feedbackPanel = app.querySelector('#feedback-panel') as HTMLElement
@@ -545,6 +576,14 @@ function levelMeta(): { id?: string; name?: string; hint?: string } {
   return (levels[index]?.level ?? {}) as { id?: string; name?: string; hint?: string }
 }
 
+const LV999_LEVEL_ID = '109.5°-999'
+
+function isLv999Level(levelIndex = index): boolean {
+  if (current.id !== 'chem') return false
+  const meta = (levels[levelIndex]?.level ?? {}) as { id?: string }
+  return meta.id === LV999_LEVEL_ID
+}
+
 function levelProgressKey(game: string, levelIndex: number): string {
   const meta = (levels[levelIndex]?.level ?? {}) as { id?: string }
   return `${game}:${meta.id ?? levelIndex}`
@@ -684,7 +723,28 @@ function updateAnimationToggle(): void {
 function updateThemeToggle(): void {
   const dark = effectiveTheme() === 'dark'
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+  const lv999 = isLv999Level()
+  if (lv999) {
+    document.documentElement.dataset.levelTheme = 'lv999'
+    app.dataset.levelTheme = 'lv999'
+    setChemRenderTheme('lv999')
+    brandKicker.textContent = 'PUNKLORDE // GODMODE PLAYER'
+    brandTitle.textContent = '109.5° // LV.999'
+    themeToggleLabel.textContent = '主题'
+    themeToggleState.textContent = '999'
+    themeToggle.dataset.enabled = 'true'
+    themeToggle.setAttribute('aria-checked', 'true')
+    themeToggle.setAttribute('aria-label', 'LV.999 彩蛋主题已锁定')
+    themeToggle.title = 'LV.999 彩蛋主题已锁定；离开本关后恢复明暗偏好'
+    return
+  }
+
+  delete document.documentElement.dataset.levelTheme
+  delete app.dataset.levelTheme
   setChemRenderTheme(dark ? 'dark' : 'light')
+  brandKicker.textContent = 'CHEM GAMES · STRUCTURAL PUZZLE'
+  brandTitle.textContent = '109.5°'
+  themeToggleLabel.textContent = '暗色'
   themeToggle.dataset.enabled = String(dark)
   themeToggle.setAttribute('aria-checked', String(dark))
   themeToggle.setAttribute('aria-label', `暗色模式已${dark ? '开启' : '关闭'}`)
@@ -743,7 +803,7 @@ function advanceTutorialIntro(): boolean {
   return true
 }
 
-function isTutorialControlAwaiting(target: 'hint'): boolean {
+function isTutorialControlAwaiting(target: TutorialControlTarget): boolean {
   if (!tutorialEnabled || current.id !== 'chem') return false
   const state = hist.current as Parameters<typeof getChemTutorial>[1] | undefined
   if (!state) return false
@@ -761,6 +821,16 @@ function requestStepHint(): void {
   }
 }
 
+/** 实际试用对应开关也完成这一拍；玩家仍可轻触棋盘直接跳过。 */
+function withControlBeat(target: TutorialControlTarget, action: () => void): void {
+  const completesTutorial = isTutorialControlAwaiting(target)
+  action()
+  if (completesTutorial) {
+    tutorialIntroBeat++
+    updateTutorial()
+  }
+}
+
 function updateTutorial(): void {
   const state = hist.current as Parameters<typeof getChemTutorial>[1]
   const guide = current.id === 'chem' && tutorialEnabled
@@ -771,6 +841,9 @@ function updateTutorial(): void {
     button.classList.remove('tutorial-focus')
   }
   hintBtn.classList.toggle('tutorial-focus', guide?.controlTarget === 'hint')
+  animationToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'animation')
+  tutorialToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'tutorial')
+  themeToggle.classList.toggle('tutorial-focus', guide?.controlTarget === 'theme')
 
   const hasBoardCue = guide !== null && (
     guide.spotlight !== undefined ||
@@ -837,9 +910,11 @@ new ResizeObserver(() => {
 
 function updateHud(): void {
   const meta = levelMeta()
-  levelNumber.textContent = levels.length > 0
-    ? `LEVEL ${String(index + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`
-    : 'LEVEL —'
+  levelNumber.textContent = isLv999Level()
+    ? 'LV.999 // HIDDEN RAID'
+    : levels.length > 0
+      ? `LEVEL ${String(index + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`
+      : 'LEVEL —'
   levelLabel.textContent = meta.name ?? meta.id ?? '未命名关卡'
   moveLabel.textContent = String(hist.depth).padStart(2, '0')
   gameStats.innerHTML = ''
@@ -851,8 +926,19 @@ function updateHud(): void {
       stage: number
       stages: readonly { goals: readonly { center: number; arm: Dir; color: string }[] }[]
       centers: readonly { arms: Partial<Record<Dir, string>> }[]
+      moves?: number
+      moveLimit?: number
+      won?: boolean
     }
     if (s.par !== undefined) appendStat('标准', String(s.par).padStart(2, '0'))
+    if (s.moveLimit !== undefined) {
+      const remaining = Math.max(0, s.moveLimit - (s.moves ?? hist.depth))
+      appendStat(
+        '剩余',
+        String(remaining).padStart(2, '0'),
+        remaining <= BUDGET_ALARM_THRESHOLD && !s.won ? 'red' : undefined,
+      )
+    }
     if (s.stages.length > 1) {
       appendStat('阶段', `${Math.min(s.stage + 1, s.stages.length)} / ${s.stages.length}`)
     }
@@ -869,6 +955,7 @@ function updateHud(): void {
   prevBtn.disabled = index <= 0
   nextBtn.disabled = index >= levels.length - 1
   undoBtn.disabled = !hist.canUndo
+  updateBudgetAlarm()
   // 关卡 hint（教学/点拨文案）：纯展示，有则显示，无则隐藏
   if (meta.hint) {
     hintEl.textContent = meta.hint
@@ -893,13 +980,15 @@ function winResult(): string {
 
 function showOverlay(): void {
   const isLast = index >= levels.length - 1
+  const lv999 = isLv999Level()
   const meta = levelMeta()
   const result = winResult()
+  winMark.textContent = lv999 ? '◆ GODMODE CLEAR · GAME NOT OVER' : '✓ 关卡完成'
   winTitle.textContent = meta.name ?? meta.id ?? `第 ${index + 1} 关`
   winStats.textContent = result
-  winbarOpen.textContent = `✓ 已通关 · ${result}`
-  nextAfterWin.textContent = isLast ? '回到本关' : '下一关 →'
-  winbarNext.textContent = isLast ? '回到本关' : '下一关 →'
+  winbarOpen.textContent = lv999 ? `LV.999 CLEAR · ${result}` : `✓ 已通关 · ${result}`
+  nextAfterWin.textContent = lv999 ? '再次挑战' : isLast ? '回到本关' : '下一关 →'
+  winbarNext.textContent = lv999 ? '再次挑战' : isLast ? '回到本关' : '下一关 →'
   // 可选通关反馈（构建期开关，design §8）：未启用时面板保持隐藏、零请求
   const s = hist.current as { moves?: number; par?: number }
   mountFeedback(feedbackPanel, {
@@ -981,6 +1070,7 @@ function openLevel(i: number): void {
   hideWinbar()
   hideToast()
   closePicker()
+  updateThemeToggle()
   draw()
   updateHud()
 }
@@ -1038,6 +1128,7 @@ function applyDir(dir: Dir): void {
   hist.push(next)
   draw()
   updateHud()
+  pulseBudgetAlarm()
   if (def.isWin(next)) scheduleWinOverlay()
 }
 
@@ -1254,14 +1345,17 @@ function handleCanvasTap(clientX: number, clientY: number): void {
 
 const CHEM_CHAPTERS = [
   { start: 0, end: 5, label: '核心搬运' },
-  { start: 6, end: 11, label: '共振传导' },
-  { start: 12, end: 16, label: '光照与分步' },
+  { start: 6, end: 11, label: '共振' },
+  { start: 12, end: 16, label: '光格与阶段' },
   { start: 17, end: 22, label: '三臂空穴' },
   { start: 23, end: 28, label: '弹射中心' },
   { start: 29, end: 35, label: '阶段护罩' },
-  { start: 36, end: 42, label: '结构碰撞与回授闸门' },
-  { start: 43, end: 49, label: '综合 mastery' },
+  { start: 36, end: 42, label: '撞结构与再生护罩' },
+  { start: 43, end: 49, label: '综合' },
   { start: 50, end: 55, label: '综合候选池' },
+  { start: 56, end: 65, label: '高难候选池' },
+  { start: 66, end: 73, label: '转辙与红线' },
+  { start: 74, end: 74, label: '隐藏挑战' },
 ] as const
 
 function buildPicker(): void {
@@ -1271,19 +1365,22 @@ function buildPicker(): void {
     if (chapter) {
       const heading = document.createElement('div')
       heading.className = 'level-chapter'
-      const range = `${String(chapter.start + 1).padStart(2, '0')}–${String(chapter.end + 1).padStart(2, '0')}`
+      const range = chapter.start === 74
+        ? 'LV.999'
+        : `${String(chapter.start + 1).padStart(2, '0')}–${String(chapter.end + 1).padStart(2, '0')}`
       heading.innerHTML = `<span>${range}</span><strong>${chapter.label}</strong>`
       pickerEl.appendChild(heading)
     }
     const meta = l.level as { id?: string; name?: string }
     const btn = document.createElement('button')
     const isComplete = completed.has(levelProgressKey(current.id, i))
-    btn.className = ['level-item', i === index ? 'active' : '', isComplete ? 'complete' : '']
+    const lv999 = current.id === 'chem' && meta.id === LV999_LEVEL_ID
+    btn.className = ['level-item', i === index ? 'active' : '', isComplete ? 'complete' : '', lv999 ? 'lv999' : '']
       .filter(Boolean)
       .join(' ')
     const number = document.createElement('span')
     number.className = 'level-item-number'
-    number.textContent = String(i + 1).padStart(2, '0')
+    number.textContent = lv999 ? 'LV.999' : String(i + 1).padStart(2, '0')
     const name = document.createElement('span')
     name.className = 'level-item-name'
     name.textContent = meta.name ?? meta.id ?? ''
@@ -1416,10 +1513,18 @@ undoBtn.addEventListener('click', () => {
 hintBtn.addEventListener('click', requestStepHint)
 rulesBtn.addEventListener('click', toggleRules)
 animationToggle.addEventListener('click', () => {
-  setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear')
+  withControlBeat('animation', () => setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear'))
 })
-tutorialToggle.addEventListener('click', () => setTutorialEnabled(!tutorialEnabled))
-themeToggle.addEventListener('click', () => setDarkMode(effectiveTheme() !== 'dark'))
+tutorialToggle.addEventListener('click', () => {
+  withControlBeat('tutorial', () => setTutorialEnabled(!tutorialEnabled))
+})
+themeToggle.addEventListener('click', () => {
+  if (isLv999Level()) {
+    toast('LV.999 已锁定满级主题；离开本关后会恢复你的明暗偏好。')
+    return
+  }
+  withControlBeat('theme', () => setDarkMode(effectiveTheme() !== 'dark'))
+})
 systemDarkQuery.addEventListener('change', () => {
   if (themePreference === null) updateThemeToggle()
 })

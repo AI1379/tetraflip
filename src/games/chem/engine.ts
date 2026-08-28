@@ -78,6 +78,8 @@ export interface ChemState {
   stage: number
   /** 关卡静态光照格（不进 stateKey） */
   lights: readonly Vec[]
+  /** 总步数预算（v6）：moves 达到后一切动作无效；未定义 = 无限制 */
+  moveLimit?: number
   /** 标准杆（纯展示，不进 stateKey） */
   par?: number
   /** 纯计数器，不参与 stateKey */
@@ -266,6 +268,7 @@ export function initialState(level: ChemLevel): ChemState {
     stages: level.stages,
     stage: 0,
     lights: level.lights,
+    moveLimit: level.moveLimit,
     par: level.par,
     moves: 0,
     won: false,
@@ -276,6 +279,8 @@ export function initialState(level: ChemLevel): ChemState {
 
 export function step(s: ChemState, dir: Dir): ChemState {
   if (s.won) return s
+  // v6 步数预算：用尽后一切动作无效（与撞墙同语义，状态不变）
+  if (s.moveLimit !== undefined && s.moves >= s.moveLimit) return s
   const [dx, dy] = DIR_VEC[dir]
   const nx = s.player[0] + dx
   const ny = s.player[1] + dy
@@ -393,7 +398,9 @@ export function stateKey(s: ChemState): string {
     .map((g) => `${cellKey(g.pos[0], g.pos[1])}:${g.color}`)
     .sort()
     .join(',')
-  return `P${cellKey(s.player[0], s.player[1])}|H${s.holding ?? '-'}|T${s.stage}|G${groups}|${centers}`
+  // v6：预算关把剩余步数纳入 stateKey（solver/hint 正确性）；无预算关保持原格式
+  const budget = s.moveLimit !== undefined ? `|L${s.moveLimit - s.moves}` : ''
+  return `P${cellKey(s.player[0], s.player[1])}|H${s.holding ?? '-'}|T${s.stage}|G${groups}|${centers}${budget}`
 }
 
 export const chemGame: GameDefinition<ChemLevel, ChemState, Dir> = {

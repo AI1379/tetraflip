@@ -1,0 +1,235 @@
+{
+  "id": "109.5°-66",
+  "name": "四段全谱",
+  "hint": "开局一串共振，一束光同时定好三件事：喷口、撞核面与关闸钥匙。撞核关闸之后，第二次发射把喷出的珠抛上远端光格，最后一座三臂中心才会转出可进攻的开口。本关步数有红线。",
+  "width": 8,
+  "height": 5,
+  "walls": [],
+  "player": [
+    0,
+    1
+  ],
+  "centers": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "purple",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
+      },
+      "leaving": "N",
+      "reactiveTo": {
+        "center": 4,
+        "arm": "N",
+        "color": "yellow"
+      }
+    },
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "purple",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S",
+      "ejects": true
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "green",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        5,
+        3
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "purple",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        7,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "blue"
+      },
+      "leaving": "N",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        6,
+        0
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "green",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "N"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        0
+      ],
+      "color": "green"
+    }
+  ],
+  "lights": [
+    [
+      3,
+      4
+    ],
+    [
+      7,
+      1
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 5,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 5,
+          "arm": "N",
+          "color": "purple"
+        },
+        {
+          "center": 4,
+          "arm": "S",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 3,
+          "arm": "E",
+          "color": "red"
+        },
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 6,
+          "arm": "N",
+          "color": "blue"
+        },
+        {
+          "center": 6,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 7,
+          "arm": "E",
+          "color": "yellow"
+        }
+      ]
+    }
+  ],
+  "par": 23,
+  "moveLimit": 26
+}

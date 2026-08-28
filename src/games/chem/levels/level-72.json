@@ -1,0 +1,137 @@
+{
+  "id": "109.5°-72",
+  "name": "红线·预瞄",
+  "hint": "护罩挡得住进攻，挡不住光格。趁喷口还被罩着，先用一束光把它和邻居一起转向；等锁一开，弹药立刻出膛，撞翻远处那对被保护到现在的中心。步数红线之内留了三步余地。",
+  "width": 6,
+  "height": 5,
+  "walls": [],
+  "player": [
+    5,
+    3
+  ],
+  "centers": [
+    {
+      "pos": [
+        3,
+        4
+      ],
+      "arms": {
+        "S": "green",
+        "W": "yellow",
+        "N": "purple",
+        "E": "red"
+      },
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "arms": {
+        "S": "yellow",
+        "W": "green",
+        "N": "purple",
+        "E": "blue"
+      },
+      "leaving": "S",
+      "ejects": true,
+      "hitCenters": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "S": "green",
+        "W": "blue",
+        "N": "red",
+        "E": "yellow"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "S": "green",
+        "W": "yellow",
+        "N": "red",
+        "E": "blue"
+      },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        5,
+        4
+      ],
+      "color": "green"
+    }
+  ],
+  "lights": [
+    [
+      4,
+      3
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "yellow"
+        },
+        {
+          "center": 0,
+          "arm": "S",
+          "color": "purple"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "E",
+          "color": "red"
+        },
+        {
+          "center": 1,
+          "arm": "S",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "E",
+          "color": "blue"
+        },
+        {
+          "center": 2,
+          "arm": "W",
+          "color": "yellow"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "red"
+        }
+      ]
+    }
+  ],
+  "par": 11,
+  "moveLimit": 14
+}

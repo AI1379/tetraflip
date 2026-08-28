@@ -58,6 +58,8 @@ export interface ChemLevel {
   stages: ChemStage[]
   /** 光照格（可行走） */
   lights: Vec[]
+  /** 总步数预算（v6）：moves 达到该值后一切动作无效；缺省 = 无限制。见 design §5 v6 */
+  moveLimit?: number
   /** 标准杆（设计最短解，纯展示） */
   par?: number
 }
@@ -99,6 +101,7 @@ const schema = z
     goals: z.array(goalSchema).min(1).optional(),
     stages: z.array(z.object({ goals: z.array(goalSchema).min(1) })).min(1).optional(),
     lights: z.array(vec).default([]),
+    moveLimit: z.number().int().min(1).optional(),
     par: z.number().int().min(1).optional(),
   })
   .strict()
@@ -240,6 +243,7 @@ export function parseChemLevel(json: unknown): ChemLevel {
     groups: raw.groups,
     stages,
     lights: raw.lights,
+    moveLimit: raw.moveLimit,
     par: raw.par,
   }
 }

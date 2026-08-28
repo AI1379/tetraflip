@@ -1,0 +1,134 @@
+{
+  "id": "109.5°-60",
+  "name": "双光时序",
+  "hint": "三臂开口转一圈只要三步，还会跳过空穴。两块光格各自只该踩一次：先照亮北方，再照亮南方，两道锁才会按顺序开。本关步数有红线。",
+  "width": 5,
+  "height": 5,
+  "walls": [
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      4
+    ]
+  ],
+  "player": [
+    0,
+    3
+  ],
+  "centers": [
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow"
+      },
+      "leaving": "S",
+      "kind": "trigonal",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        4
+      ],
+      "arms": {
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal",
+      "shieldUntilStage": 2
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "color": "blue"
+    }
+  ],
+  "lights": [
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      3
+    ]
+  ],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "blue"
+        },
+        {
+          "center": 0,
+          "arm": "W",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "S",
+          "color": "purple"
+        },
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "green"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "E",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "W",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 11,
+  "moveLimit": 14
+}

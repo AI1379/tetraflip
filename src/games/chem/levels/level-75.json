@@ -1,0 +1,98 @@
+{
+  "id": "109.5°-999",
+  "name": "GAME NOT OVER",
+  "hint": "满级挑战只有一条路线。看清四个阶段，算准两次弹射与两块光格，再走第一步。",
+  "width": 8,
+  "height": 5,
+  "walls": [],
+  "player": [7, 3],
+  "centers": [
+    {
+      "pos": [6, 4],
+      "arms": { "S": "purple", "W": "yellow", "N": "green", "E": "red" },
+      "leaving": "W"
+    },
+    {
+      "pos": [6, 3],
+      "arms": { "S": "purple", "W": "yellow", "N": "blue", "E": "green" },
+      "leaving": "S",
+      "reactiveTo": { "center": 4, "arm": "S", "color": "red" }
+    },
+    {
+      "pos": [6, 2],
+      "arms": { "S": "purple", "W": "yellow", "N": "blue", "E": "red" },
+      "leaving": "E"
+    },
+    {
+      "pos": [5, 3],
+      "arms": { "S": "yellow", "W": "green", "N": "blue", "E": "red" },
+      "leaving": "N",
+      "ejects": true
+    },
+    {
+      "pos": [5, 1],
+      "arms": { "S": "red", "W": "blue", "E": "yellow" },
+      "leaving": "W",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [2, 1],
+      "arms": { "S": "blue", "W": "purple", "N": "green", "E": "yellow" },
+      "leaving": "S",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [0, 4],
+      "arms": { "S": "purple", "W": "blue", "N": "yellow" },
+      "leaving": "S",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [1, 4],
+      "arms": { "S": "yellow", "W": "blue", "N": "purple", "E": "red" },
+      "leaving": "S"
+    }
+  ],
+  "groups": [
+    { "pos": [7, 4], "color": "blue" }
+  ],
+  "lights": [
+    [4, 0],
+    [0, 3]
+  ],
+  "stages": [
+    {
+      "goals": [
+        { "center": 0, "arm": "E", "color": "blue" },
+        { "center": 0, "arm": "W", "color": "red" },
+        { "center": 1, "arm": "S", "color": "blue" },
+        { "center": 2, "arm": "S", "color": "blue" }
+      ]
+    },
+    {
+      "goals": [
+        { "center": 5, "arm": "E", "color": "yellow" },
+        { "center": 5, "arm": "S", "color": "green" },
+        { "center": 4, "arm": "N", "color": "red" }
+      ]
+    },
+    {
+      "goals": [
+        { "center": 3, "arm": "W", "color": "purple" },
+        { "center": 3, "arm": "S", "color": "blue" },
+        { "center": 1, "arm": "S", "color": "blue" },
+        { "center": 2, "arm": "S", "color": "blue" }
+      ]
+    },
+    {
+      "goals": [
+        { "center": 6, "arm": "S", "color": "yellow" },
+        { "center": 6, "arm": "E", "color": "blue" },
+        { "center": 7, "arm": "W", "color": "red" }
+      ]
+    }
+  ],
+  "par": 23,
+  "moveLimit": 23
+}

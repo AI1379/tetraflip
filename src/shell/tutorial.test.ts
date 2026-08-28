@@ -48,7 +48,7 @@ describe('状态驱动操作引导与机制首现教学', () => {
     const positioned = chemGame.step(state, 'S')
     const centerReveal = getChemTutorial(0, positioned, null)
     expect(centerReveal?.title).toContain('箭头反面')
-    expect(centerReveal?.body).toContain('翻转 180°')
+    expect(centerReveal?.body).toContain('翻转半圈')
     expect(centerReveal?.focusDirs).toEqual(['E'])
     expect(centerReveal?.gesture?.dir).toBe('E')
 
@@ -86,11 +86,11 @@ describe('状态驱动操作引导与机制首现教学', () => {
     const state = initial(level02Json)
     const guide = getChemTutorial(1, state, { kind: 'blocked', dir: 'W' })
     expect(guide?.feedbackTone).toBe('warning')
-    expect(guide?.feedback).toContain('封闭面')
+    expect(guide?.feedback).toContain('进不去')
     expect(guide?.feedback).toContain('白箭头')
   })
 
-  it('第二关开场直接指向提示一步按钮，跳过后恢复原有关卡引导', () => {
+  it('第二关开场指向提示一步按钮，再聚焦中心教走到背面，就位后才提示位置正确', () => {
     const state = initial(level02Json)
     const hint = getChemTutorial(1, state, null, 'touch', 0)
     expect(hint?.title).toContain('提示一步')
@@ -99,15 +99,37 @@ describe('状态驱动操作引导与机制首现教学', () => {
     expect(hint?.advanceOnTap).toBe(true)
     expect(hint?.focusDirs).toEqual([])
 
-    const guide = getChemTutorial(1, state, null, 'touch', 1)
-    expect(guide?.controlTarget).toBeUndefined()
-    expect(guide?.title).toContain('白箭头')
+    const spotlight = getChemTutorial(1, state, null, 'touch', 1)
+    expect(spotlight?.title).toContain('白箭头')
+    expect(spotlight?.body).toContain('反面')
+    expect(spotlight?.advanceOnTap).toBe(true)
+    expect(spotlight?.spotlight?.pos).toEqual([1, 1])
+    expect(spotlight?.focusDirs).toEqual([])
+
+    const walking = getChemTutorial(1, state, null, 'touch', 2)
+    expect(walking?.controlTarget).toBeUndefined()
+    expect(walking?.advanceOnTap).toBeUndefined()
+    expect(walking?.spotlight).toBeUndefined()
+    expect(walking?.gesture).toBeUndefined()
+    expect(walking?.title).toContain('白箭头')
+
+    let positioned = chemGame.step(state, 'S')
+    positioned = chemGame.step(positioned, 'W')
+    positioned = chemGame.step(positioned, 'W')
+    positioned = chemGame.step(positioned, 'N')
+    expect(positioned.player).toEqual([0, 1])
+    const ready = getChemTutorial(1, positioned, null, 'touch', 2)
+    expect(ready?.title).toContain('位置对了')
+    expect(ready?.body).toContain('进攻位')
+    expect(ready?.spotlight?.pos).toEqual([1, 1])
+    expect(ready?.gesture).toMatchObject({ dir: 'E' })
+    expect(ready?.advanceOnTap).toBeUndefined()
   })
 
   it('第三关依次建立游离珠、目标、手持、开口与落点，最后才教按住预演', () => {
     const beforePickup = initial(level03Json)
     const group = getChemTutorial(2, beforePickup, null, 'touch', 0)
-    expect(group?.title).toContain('游离的紫珠')
+    expect(group?.title).toContain('场上的紫珠')
     expect(group?.spotlight?.pos).toEqual([1, 0])
     expect(group?.advanceOnTap).toBe(true)
 
@@ -133,7 +155,7 @@ describe('状态驱动操作引导与机制首现教学', () => {
     expect(opening?.spotlight?.pos).toEqual([1, 1])
 
     const landing = getChemTutorial(2, carrying, null, 'keyboard', 4)
-    expect(landing?.body).toContain('这就是染色')
+    expect(landing?.body).toContain('就叫染色')
     expect(landing?.spotlight?.pos).toEqual([1, 0.54])
 
     const guide = getChemTutorial(2, carrying, null, 'keyboard', 5)
@@ -145,8 +167,8 @@ describe('状态驱动操作引导与机制首现教学', () => {
     expect(guide?.spotlight?.pos).toEqual(carrying.player)
 
     const preview = getChemTutorial(2, carrying, { kind: 'preview', dir: 'S' }, 'keyboard', 5)
-    expect(preview?.title).toContain('这就是预演')
-    expect(preview?.body).toContain('这就是染色')
+    expect(preview?.title).toContain('虚线')
+    expect(preview?.body).toContain('落进目标圈')
     expect(preview?.feedback).toContain('预演中')
     expect(preview?.feedback).toContain('回到原位或按 Esc')
     expect(preview?.forecast).toMatchObject({
@@ -187,6 +209,32 @@ describe('状态驱动操作引导与机制首现教学', () => {
       landingArm: 'N',
       showExtraction: true,
     })
+  })
+
+  it('第五关开场三拍依次介绍动画、教程与暗色开关，之后恢复物流引导', () => {
+    const state = initial(level05Json)
+    const animation = getChemTutorial(4, state, null, 'touch', 0)
+    expect(animation?.title).toContain('动画')
+    expect(animation?.body).toContain('动画')
+    expect(animation?.controlTarget).toBe('animation')
+    expect(animation?.advanceOnTap).toBe(true)
+    expect(animation?.focusDirs).toEqual([])
+    expect(animation?.kicker).toContain('SETTINGS · 01 / 03')
+
+    const tutorial = getChemTutorial(4, state, null, 'touch', 1)
+    expect(tutorial?.title).toContain('教程')
+    expect(tutorial?.controlTarget).toBe('tutorial')
+    expect(tutorial?.kicker).toContain('02 / 03')
+
+    const theme = getChemTutorial(4, state, null, 'touch', 2)
+    expect(theme?.title).toContain('暗色')
+    expect(theme?.controlTarget).toBe('theme')
+    expect(theme?.kicker).toContain('03 / 03')
+
+    const guide = getChemTutorial(4, state, null, 'touch', 3)
+    expect(guide?.controlTarget).toBeUndefined()
+    expect(guide?.advanceOnTap).toBeUndefined()
+    expect(guide?.title).toContain('紫珠')
   })
 
   it('第五关随物流状态从紫珠取货切换到蓝珠送货', () => {
@@ -239,12 +287,12 @@ describe('状态驱动操作引导与机制首现教学', () => {
     [5, level06Json, ['空手撞', '不会再空'], [[1, 1], [0, 0]], '先空手撞', 'E'],
     [6, level07Json, ['共振键', '绿珠', '右邻', '亮键'], [[4.5, 1], [3.54, 1], [4.66, 1], [5, 1]], '先拿紫珠', 'E'],
     [8, level09Json, ['永远撞不到', '也一样', '唯一的门'], [[4, 1], [2, 2], [3, 1.5]], '先拿起紫珠', 'E'],
-    [12, level13Json, ['光照格', '白箭头', '彩色臂'], [[1, 0], [2, 1], [2, 0.54]], '走向光照格', 'N'],
+    [12, level13Json, ['光格', '白箭头', '臂上的珠'], [[1, 0], [2, 1], [2, 0.54]], '走向光格', 'N'],
     [13, level14Json, ['当前阶段', '下一阶段', '按顺序推进'], [[2, 1.54], [2.46, 2], [2, 2]], '完成当前的亮圈', 'E'],
     [17, level18Json, ['三臂中心', '空穴', '空穴方向', '蓝臂'], [[2, 2], [1.54, 2], [1.54, 2], [2.46, 2]], '撞动三臂中心', 'S'],
     [29, level30Json, ['阶段护罩', '第二阶段', '下一阶段', '结算后'], [[2, 1], [2, 2.54], [1.54, 1], [2, 1]], '完成第 1 阶段', 'W'],
-    [36, level37Json, ['撞动结构', '要撞动的中心', '远端进攻位', '仍留在落点'], [[3, 1], [0, 1], [1, 1], [1, 1]], '拿起紫珠', 'E'],
-    [37, level38Json, ['触发光照格', '白箭头', '继续撞核', '再次触光'], [[1, 1], [0, 1], [1, 1], [1, 1]], '拿起紫珠', 'E'],
+    [36, level37Json, ['撞动另一座中心', '要撞动的中心', '远端进攻位', '仍留在落点'], [[3, 1], [0, 1], [1, 1], [1, 1]], '拿起紫珠', 'E'],
+    [37, level38Json, ['触发光格', '白箭头', '继续撞中心', '再转一次'], [[1, 1], [0, 1], [1, 1], [1, 1]], '拿起紫珠', 'E'],
     [38, level39Json, ['再生护罩', '红臂', '虚线', '危险共振'], [[3, 1], [1, 0.54], [2, 0.77], [3, 1.5]], '改变控制臂', 'S'],
   ] as const)(
     '第 %i 关按对象、条件、结果逐拍揭示，最后才开放操作',
