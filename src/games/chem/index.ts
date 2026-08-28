@@ -8,9 +8,11 @@ export {
   getChemAnimationRemainingMs,
   setChemAnimationMode,
   getChemAnimationMode,
+  setChemRenderTheme,
+  getChemRenderTheme,
   setChemPreview,
   setChemInspect,
   setChemMarks,
   chemHitTest,
 } from './render'
-export type { ChemAnimationMode, ChemMark } from './render'
+export type { ChemAnimationMode, ChemMark, ChemRenderTheme } from './render'

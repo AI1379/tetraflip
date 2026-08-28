@@ -1,13 +1,13 @@
 {
   "id": "109.5°-07",
-  "name": "空手只有一次",
-  "hint": "空手撞是纯翻转；一旦拾珠，手就不会再空。A 的目标只能靠纯翻转达成。",
-  "width": 5,
+  "name": "一撞，两座一起转",
+  "hint": "相邻中心面对的两条臂同色时，中间会亮起共振键：一处翻转，震动会沿键传给下一座。先换出蓝珠送进右侧，看看绿键接通时会发生什么。",
+  "width": 7,
   "height": 3,
   "walls": [],
   "player": [
     0,
-    1
+    0
   ],
   "centers": [
     {
@@ -17,22 +17,35 @@
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
+        "E": "green",
+        "S": "blue",
         "W": "yellow"
       },
-      "leaving": "E"
+      "leaving": "S"
     },
     {
       "pos": [
-        3,
+        4,
         1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        5,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "purple",
+        "W": "green"
       },
       "leaving": "E"
     }
@@ -40,7 +53,7 @@
   "groups": [
     {
       "pos": [
-        0,
+        1,
         0
       ],
       "color": "purple"
@@ -49,13 +62,18 @@
   "goals": [
     {
       "center": 0,
-      "arm": "W",
-      "color": "blue"
+      "arm": "N",
+      "color": "purple"
     },
     {
       "center": 1,
-      "arm": "W",
-      "color": "purple"
+      "arm": "N",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "E",
+      "color": "green"
     }
   ],
   "par": 6

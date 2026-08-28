@@ -1,61 +1,75 @@
 {
   "id": "109.5°-31",
-  "name": "转轴再喷流",
-  "hint": "光照会改变弹射中心的合法进攻轴，喷流方向也随之改变。",
+  "name": "迟一拍的链",
+  "hint": "护罩在当前这一步全部结算后才解除——这一击的连锁仍会被挡住。能不能穿过去，看是哪一击。",
   "width": 5,
-  "height": 4,
-  "walls": [
-    [
-      3,
-      3
-    ]
-  ],
+  "height": 3,
+  "walls": [],
   "player": [
-    1,
-    0
+    0,
+    1
   ],
   "centers": [
     {
       "pos": [
-        3,
-        2
+        1,
+        1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
+        "E": "green",
         "S": "yellow",
-        "W": "green"
+        "W": "blue"
       },
-      "leaving": "N",
-      "ejects": true
-    }
-  ],
-  "groups": [
-    {
-      "pos": [
-        0,
-        1
-      ],
-      "color": "purple"
-    }
-  ],
-  "lights": [
-    [
-      0,
-      0
-    ]
-  ],
-  "goals": [
-    {
-      "center": 0,
-      "arm": "W",
-      "color": "purple"
+      "leaving": "E"
     },
     {
-      "center": 0,
-      "arm": "N",
-      "color": "yellow"
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
-  "par": 6
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 5
 }

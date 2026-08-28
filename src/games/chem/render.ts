@@ -34,19 +34,124 @@ import type { CenterKind } from './level'
  * 以上三者均为渲染层只读状态，绝不修改游戏状态。
  */
 
-const COLORS: Record<string, string> = {
-  red: '#ff6369',
-  blue: '#5da9ff',
-  green: '#58d68d',
-  yellow: '#f6c85f',
-  purple: '#c084fc',
+export type ChemRenderTheme = 'dark' | 'light'
+
+interface ChemRenderPalette {
+  colors: Readonly<Record<string, string>>
+  stageTones: readonly string[]
+  canvas: string
+  board: string
+  grid: string
+  wall: string
+  wallHatch: string
+  ink: string
+  bond: string
+  faint: string
+  tetra: string
+  flash: string
+  impact: string
+  playerCore: string
+  panel: string
+  panelMuted: string
+  anchorFill: string
+  previewVeil: string
+  previewPanel: string
+  previewBorder: string
+  markFill: string
+  lockCheck: string
+  centerOutline: string
+  atomOutline: string
+  atomPattern: string
+  lightCell: string
 }
-const colorOf = (name: string): string => COLORS[name] ?? '#c084fc'
-const INK = '#f2f4f8'
-const BOND = '#55617a' // 键线
-const FAINT = '#39424f' // 墙 / 刻度 / 角框
-const TETRA = '#4f8ef7' // 背景四面体线框
-const FLASH = '#e5484d' // 无效进攻红闪
+
+export const CHEM_PALETTES: Record<ChemRenderTheme, ChemRenderPalette> = {
+  dark: {
+    colors: {
+      red: '#ff6369',
+      blue: '#5da9ff',
+      green: '#58d68d',
+      yellow: '#f6c85f',
+      purple: '#c084fc',
+    },
+    stageTones: ['#f0c65a', '#63b3ff', '#c084fc', '#58d68d', '#ff8f70'],
+    canvas: '#0b1018',
+    board: 'rgba(18, 27, 39, 0.72)',
+    grid: '#202b39',
+    wall: '#303b4a',
+    wallHatch: 'rgba(139, 149, 165, 0.16)',
+    ink: '#f2f4f8',
+    bond: '#55617a',
+    faint: '#39424f',
+    tetra: '#4f8ef7',
+    flash: '#e5484d',
+    impact: '#8ad5ff',
+    playerCore: '#111923',
+    panel: 'rgba(13, 19, 28, 0.94)',
+    panelMuted: '#8d9aab',
+    anchorFill: '#10161f',
+    previewVeil: 'rgba(7, 10, 15, 0.42)',
+    previewPanel: 'rgba(13, 19, 28, 0.92)',
+    previewBorder: 'rgba(240, 198, 90, 0.55)',
+    markFill: '#10161f',
+    lockCheck: '#0b1018',
+    centerOutline: '#8b95a5',
+    atomOutline: 'rgba(0, 0, 0, 0.42)',
+    atomPattern: 'rgba(7, 10, 15, 0.62)',
+    lightCell: '#e0b64f',
+  },
+  light: {
+    // 清亮填色（#52 决策，2026-08-28 真人复测确认：压暗追对比度会显脏，已回退）。
+    // 可读性由 atomOutline / atomPattern 深墨轮廓与纹样双编码承担（design §10 红线：
+    // 黄/绿/盾阶段色不得退成褐灰；不要求填充色单独满足正文对比度）。
+    colors: {
+      red: '#ec4f5f',
+      blue: '#2b8bd8',
+      green: '#2fa866',
+      yellow: '#d99a16',
+      purple: '#9768d4',
+    },
+    stageTones: ['#d39516', '#2f8ed8', '#9867d4', '#35a66a', '#e16b4f'],
+    canvas: '#f3f8fb',
+    board: 'rgba(255, 255, 255, 0.94)',
+    grid: '#d7e4ec',
+    wall: '#c8d5de',
+    wallHatch: 'rgba(67, 91, 108, 0.16)',
+    ink: '#294052',
+    // 暗键 / 空穴圈 / 手持键线用低 alpha 绘制：底色保持清亮灰蓝，存在感靠 dimBondAlpha 抬高
+    bond: '#8ba2b4',
+    faint: '#b6c7d2',
+    tetra: '#76b7d9',
+    flash: '#ee4054',
+    impact: '#248dce',
+    playerCore: '#fbfdff',
+    panel: 'rgba(255, 255, 255, 0.97)',
+    panelMuted: '#6d8292',
+    anchorFill: '#f9fcfe',
+    previewVeil: 'rgba(237, 244, 248, 0.5)',
+    previewPanel: 'rgba(255, 255, 255, 0.97)',
+    previewBorder: 'rgba(180, 122, 0, 0.6)',
+    markFill: '#ffffff',
+    lockCheck: '#ffffff',
+    centerOutline: '#7890a2',
+    // 浅色描边不再使用：drawAtom 改用 shadeColor(填充色) 派生同相深色环（藏青圈 × 暖黄会显脏）。
+    // 字段保留给深主题与接口完整性。
+    atomOutline: 'rgba(29, 48, 62, 0.34)',
+    // 纹样是色弱双编码的实际承担者：保持深中性色，但透明度从 0.78 回落到 0.55，避免珠面挂霜
+    atomPattern: 'rgba(43, 38, 30, 0.55)',
+    lightCell: '#dfa723',
+  },
+}
+
+/** 浅色低亮度元素的透明度补偿：负面 / 休眠信息不能在浅底上隐形，但不再压暗色相（v5 修订）。 */
+const dimBondAlpha = (): number => (renderTheme === 'light' ? 0.66 : 0.5)
+const idleShieldAlpha = (): number => (renderTheme === 'light' ? 0.6 : 0.34)
+const idleLinkAlpha = (): number => (renderTheme === 'light' ? 0.5 : 0.32)
+const futureGoalAlpha = (): number => (renderTheme === 'light' ? 0.32 : 0.22)
+
+let renderTheme: ChemRenderTheme = 'dark'
+let palette = CHEM_PALETTES.dark
+const colorOf = (name: string): string => palette.colors[name] ?? palette.colors.purple
 
 const SHAKE_MS = 240 // 无效进攻抖动时长
 
@@ -60,6 +165,8 @@ interface AnimationTiming {
   hopMs: number
   ejectMsPerCell: number
   shieldBurstMs: number
+  shieldPauseMs: number
+  impactMs: number
 }
 
 const ANIMATION_TIMINGS: Record<ChemAnimationMode, AnimationTiming> = {
@@ -72,15 +179,20 @@ const ANIMATION_TIMINGS: Record<ChemAnimationMode, AnimationTiming> = {
     hopMs: 470,
     ejectMsPerCell: 120,
     shieldBurstMs: 520,
+    // R 盾打开后留出独立一拍，再让刚解锁的中心开始转动。
+    shieldPauseMs: 180,
+    impactMs: 220,
   },
   fast: {
     walkMs: 110,
-    contactMs: 0,
+    contactMs: 80,
     exchangeMs: 0,
     flipMs: 260,
     hopMs: 90,
     ejectMsPerCell: 90,
     shieldBurstMs: 420,
+    shieldPauseMs: 0,
+    impactMs: 150,
   },
 }
 
@@ -188,6 +300,15 @@ interface EjectionAnim {
   landing: Vec
 }
 
+interface SuccessfulImpactAnim {
+  start: number
+  contactAt: number
+  end: number
+  player: Vec
+  target: Vec
+  dir: Dir
+}
+
 let lastKey = ''
 let lastState: ChemState | null = null
 let lastDims = ''
@@ -196,7 +317,9 @@ const flips = new Map<number, FlipAnim>()
 let shake: { start: number; dir: Dir } | null = null
 let handPulse: { start: number; color: string | null } | null = null
 let ejectionAnim: EjectionAnim | null = null
+let successfulImpact: SuccessfulImpactAnim | null = null
 const shieldBursts = new Map<number, number>()
+const shieldForms = new Map<number, number>()
 let animationEndsAt = 0
 
 /**
@@ -218,6 +341,51 @@ export function getChemAnimationMode(): ChemAnimationMode {
   return animationMode
 }
 
+/** DOM 与 Canvas 共用主题状态；切换只替换语义调色板，不进入游戏状态。 */
+export function setChemRenderTheme(theme: ChemRenderTheme): void {
+  if (renderTheme === theme) return
+  renderTheme = theme
+  palette = CHEM_PALETTES[theme]
+  resetChemAnim()
+}
+
+export function getChemRenderTheme(): ChemRenderTheme {
+  return renderTheme
+}
+
+export function getChemShieldTransitionPhase(
+  center: number,
+  now = performance.now(),
+): 'waiting-release' | 'releasing' | 'waiting-form' | null {
+  const releaseAt = shieldBursts.get(center)
+  if (releaseAt !== undefined) {
+    if (now < releaseAt) return 'waiting-release'
+    if (now < releaseAt + animationTiming().shieldBurstMs) return 'releasing'
+  }
+  const formAt = shieldForms.get(center)
+  if (formAt !== undefined && now < formAt) return 'waiting-form'
+  return null
+}
+
+/** 回归测试 / 壳层诊断用：区分“等待因果拍”与中心已经开始旋转。 */
+export function getChemCenterFlipPhase(
+  center: number,
+  now = performance.now(),
+): 'waiting' | 'rotating' | null {
+  const flip = flips.get(center)
+  if (!flip) return null
+  if (now < flip.start) return 'waiting'
+  if (now < flip.start + animationTiming().flipMs) return 'rotating'
+  return null
+}
+
+export function getChemSuccessfulImpactPhase(
+  now = performance.now(),
+): 'approach' | 'burst' | null {
+  if (!successfulImpact || now < successfulImpact.start || now >= successfulImpact.end) return null
+  return now < successfulImpact.contactAt ? 'approach' : 'burst'
+}
+
 /** 无效进攻 / 撞墙反馈入口：shell 在 step 无效果（stateKey 不变）时调用 */
 export function notifyChemImpact(dir: Dir): void {
   shake = { start: performance.now(), dir }
@@ -233,7 +401,9 @@ export function resetChemAnim(): void {
   shake = null
   handPulse = null
   ejectionAnim = null
+  successfulImpact = null
   shieldBursts.clear()
+  shieldForms.clear()
   animationEndsAt = 0
 }
 
@@ -304,7 +474,9 @@ function sync(s: ChemState, now: number): void {
     shake = null
     handPulse = null
     ejectionAnim = null
+    successfulImpact = null
     shieldBursts.clear()
+    shieldForms.clear()
   }
   const key = stateKey(s)
   if (lastState && key !== lastKey) {
@@ -346,6 +518,17 @@ function sync(s: ChemState, now: number): void {
       const exchangeStart = now + timing.contactMs
       const rootFlipStart = exchangeStart + (hasExchange ? timing.exchangeMs : 0)
       let actionEndsAt = animationEndsAt
+      if (root !== undefined) {
+        successfulImpact = {
+          start: now,
+          contactAt: exchangeStart,
+          end: exchangeStart + timing.impactMs,
+          player: prev.player,
+          target: prev.centers[root].pos,
+          dir: prev.centers[root].leaving,
+        }
+        actionEndsAt = Math.max(actionEndsAt, successfulImpact.end)
+      }
       if (changed.length > 0) {
         // 共振连锁阶梯动画：从被进攻的中心（玩家相邻、臂有变化者）出发，
         // 按相邻关系 BFS 出传播距离。清晰模式逐核落定，快速模式允许重叠。
@@ -425,13 +608,39 @@ function sync(s: ChemState, now: number): void {
         }
         actionEndsAt = Math.max(actionEndsAt, ejectStart + flightMs)
       }
-      const shieldStart = actionEndsAt
+      let visualEndsAt = actionEndsAt
       for (let i = 0; i < s.centers.length; i++) {
         const before = prev.centers[i]
         const after = s.centers[i]
-        if (before && after && isShielded(prev, before) && !isShielded(s, after)) {
-          shieldBursts.set(i, shieldStart)
-          actionEndsAt = Math.max(actionEndsAt, shieldStart + timing.shieldBurstMs)
+        if (!before || !after) continue
+        const wasShielded = isShielded(prev, before)
+        const isNowShielded = isShielded(s, after)
+        if (wasShielded === isNowShielded) continue
+        const controllerFlip = after.reactiveTo
+          ? flips.get(after.reactiveTo.center)
+          : undefined
+        // R 盾由控制臂落定的瞬间驱动；阶段盾仍等整条连锁结束。
+        const transitionAt = controllerFlip
+          ? controllerFlip.start + timing.flipMs
+          : actionEndsAt
+        if (wasShielded) {
+          const protectedFlip = controllerFlip ? flips.get(i) : undefined
+          if (protectedFlip && timing.shieldPauseMs > 0) {
+            const earliestStart = transitionAt + timing.shieldPauseMs
+            const delay = earliestStart - protectedFlip.start
+            if (delay > 0) {
+              // 后续共振中心不能越过刚解锁的中心；把同拍及更晚的链条整体顺延。
+              const downstreamStart = protectedFlip.start
+              for (const flip of flips.values()) {
+                if (flip.start >= downstreamStart) flip.start += delay
+              }
+            }
+          }
+          shieldBursts.set(i, transitionAt)
+          visualEndsAt = Math.max(visualEndsAt, transitionAt + timing.shieldBurstMs)
+        } else {
+          shieldForms.set(i, transitionAt)
+          visualEndsAt = Math.max(visualEndsAt, transitionAt + 180)
         }
       }
       if (s.holding !== prev.holding) {
@@ -439,13 +648,18 @@ function sync(s: ChemState, now: number): void {
         handPulse = { start: pulseStart, color: s.holding }
         actionEndsAt = Math.max(actionEndsAt, pulseStart + 220)
       }
-      animationEndsAt = Math.max(animationEndsAt, actionEndsAt)
+      for (const flip of flips.values()) {
+        actionEndsAt = Math.max(actionEndsAt, flip.start + timing.flipMs)
+      }
+      animationEndsAt = Math.max(animationEndsAt, actionEndsAt, visualEndsAt)
     } else {
       walk = new Tweens()
       flips.clear()
       handPulse = null
       ejectionAnim = null
+      successfulImpact = null
       shieldBursts.clear()
+      shieldForms.clear()
       animationEndsAt = 0
     }
   }
@@ -466,17 +680,27 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     if (pose) visualPoses.set(i, pose)
     else flips.delete(i)
   }
+  const visuallyShielded = (i: number): boolean => {
+    const center = s.centers[i]
+    if (!center) return false
+    const active = isShielded(s, center)
+    const releaseAt = shieldBursts.get(i)
+    if (!active && releaseAt !== undefined && now < releaseAt) return true
+    const formAt = shieldForms.get(i)
+    if (active && formAt !== undefined && now < formAt) return false
+    return active
+  }
 
-  ctx.fillStyle = '#0b1018'
+  ctx.fillStyle = palette.canvas
   ctx.fillRect(0, 0, W, H)
 
   drawBackdrop(ctx, W, H, now)
   drawFrame(ctx, ox, oy, cell * s.width, cell * s.height, cell)
 
   // 棋盘底板与网格
-  ctx.fillStyle = 'rgba(18, 27, 39, 0.72)'
+  ctx.fillStyle = palette.board
   ctx.fillRect(ox, oy, cell * s.width, cell * s.height)
-  ctx.strokeStyle = '#202b39'
+  ctx.strokeStyle = palette.grid
   ctx.lineWidth = 1
   for (let x = 0; x <= s.width; x++) {
     line(ctx, ox + x * cell + 0.5, oy, ox + x * cell + 0.5, oy + s.height * cell)
@@ -492,7 +716,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     const wx = ox + x * cell + inset
     const wy = oy + y * cell + inset
     const ws = cell - inset * 2
-    ctx.fillStyle = '#303b4a'
+    ctx.fillStyle = palette.wall
     ctx.beginPath()
     ctx.roundRect(wx, wy, ws, ws, cell * 0.12)
     ctx.fill()
@@ -500,7 +724,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     ctx.beginPath()
     ctx.roundRect(wx, wy, ws, ws, cell * 0.12)
     ctx.clip()
-    ctx.strokeStyle = 'rgba(139, 149, 165, 0.16)'
+    ctx.strokeStyle = palette.wallHatch
     ctx.lineWidth = Math.max(1, cell * 0.025)
     for (let d = -ws; d < ws * 2; d += Math.max(7, cell * 0.18)) {
       line(ctx, wx + d, wy + ws, wx + d + ws, wy)
@@ -512,7 +736,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
 
   // 再生护罩的因果关系必须在“罩已打开”时仍可读：控制线画在中心 / 共轭键下层，
   // 端点钉在 reactiveTo 指向的具体颜色臂上，而不是只给受保护中心一个无来源的 R。
-  drawReactiveLinks(ctx, s, cx, cy, cell)
+  drawReactiveLinks(ctx, s, cx, cy, cell, visualPoses, visuallyShielded)
 
   // 相邻中心关系（共轭）：每个中心各方向是否有相邻中心
   const neighborIdx = (i: number, d: Dir): number => {
@@ -555,7 +779,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   }
   s.stages.forEach((st, si) => {
     if (si < s.stage) return // 已完成的段不再显示
-    const alpha = si === s.stage ? 0.85 : 0.22
+    const alpha = si === s.stage ? 0.85 : futureGoalAlpha()
     for (const g of st.goals) drawGoal(g, alpha, s, si)
   })
 
@@ -577,12 +801,12 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       const live = fi === fj
       ctx.save()
       if (live) {
-        ctx.strokeStyle = INK
+        ctx.strokeStyle = palette.ink
         ctx.globalAlpha = 0.55 + 0.25 * Math.sin(now / 260)
         ctx.lineWidth = Math.max(2, cell * 0.09)
       } else {
-        ctx.strokeStyle = BOND
-        ctx.globalAlpha = 0.5
+        ctx.strokeStyle = palette.bond
+        ctx.globalAlpha = dimBondAlpha()
         ctx.lineWidth = Math.max(1.5, cell * 0.05)
       }
       line(ctx, x1, y1, x2, y2)
@@ -675,7 +899,10 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     // 然后才播放碎裂，避免状态已推进却提前消失。
     const burstAt = shieldBursts.get(i)
     const waitingToBurst = burstAt !== undefined && now < burstAt
-    if (isShielded(s, c) || waitingToBurst) {
+    const formAt = shieldForms.get(i)
+    if (formAt !== undefined && now >= formAt) shieldForms.delete(i)
+    const shieldActive = visuallyShielded(i)
+    if (shieldActive) {
       const shieldLabel =
         c.shieldUntilStage !== undefined && (s.stage < c.shieldUntilStage || waitingToBurst)
           ? c.shieldUntilStage + 1
@@ -716,7 +943,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           } else {
             const a = ARM_ANGLE[opposite(shake.dir)]
             ctx.save()
-            ctx.strokeStyle = FLASH
+            ctx.strokeStyle = palette.flash
             ctx.globalAlpha = 1 - age / SHAKE_MS
             ctx.lineWidth = 3
             ctx.beginPath()
@@ -733,6 +960,11 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     drawEjectionFlight(ctx, ejectionAnim, cx, cy, cell, now)
   }
 
+  const impact = successfulImpact
+  if (impact && now >= impact.contactAt && now < impact.end) {
+    drawSuccessfulImpact(ctx, impact, cx, cy, cell, now)
+  }
+
   // 玩家（最后画）：行走补间 + 无效进攻抖动 + 手持色珠
   let px = walk.value('px', now)
   let py = walk.value('py', now)
@@ -740,6 +972,15 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   if (Number.isNaN(py)) py = s.player[1]
   let sx = cx(px)
   let sy = cy(py)
+  if (impact && now >= impact.start && now < impact.end) {
+    const [dx, dy] = DIR_VEC[impact.dir]
+    const approachDuration = Math.max(1, impact.contactAt - impact.start)
+    const offset = now < impact.contactAt
+      ? Math.sin(((now - impact.start) / approachDuration) * Math.PI / 2) * cell * 0.16
+      : (1 - easeOutCubic((now - impact.contactAt) / Math.max(1, impact.end - impact.contactAt))) * cell * 0.16
+    sx += dx * offset
+    sy += dy * offset
+  }
   if (shake) {
     const age = now - shake.start
     if (age < SHAKE_MS) {
@@ -764,7 +1005,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     }
   }
   ctx.save()
-  ctx.strokeStyle = INK
+  ctx.strokeStyle = palette.ink
   ctx.globalAlpha = 0.22
   ctx.lineWidth = 1
   ctx.beginPath()
@@ -772,15 +1013,15 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   ctx.stroke()
   ctx.restore()
   // 玩家使用“亮环 + 暗芯”，与目标圈、中心原子和游离珠形成不同轮廓。
-  ctx.fillStyle = INK
+  ctx.fillStyle = palette.ink
   ctx.beginPath()
   ctx.arc(sx, sy, cell * 0.3, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = '#111923'
+  ctx.fillStyle = palette.playerCore
   ctx.beginPath()
   ctx.arc(sx, sy, cell * 0.2, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = INK
+  ctx.fillStyle = palette.ink
   ctx.beginPath()
   ctx.arc(sx, sy, cell * 0.07, 0, Math.PI * 2)
   ctx.fill()
@@ -794,7 +1035,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   if (displayHolding !== null) {
     const hx = sx + cell * 0.3
     const hy = sy - cell * 0.3
-    ctx.strokeStyle = BOND
+    ctx.strokeStyle = palette.bond
     ctx.lineWidth = Math.max(1, cell * 0.04)
     line(ctx, sx + cell * 0.14, sy - cell * 0.14, hx, hy)
     drawAtom(ctx, hx, hy, cell * 0.12, displayHolding)
@@ -821,7 +1062,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   if (preview && !s.won) {
     const p = preview
     // 整体压暗：当前态退后，「将发生的变化」浮到最上层
-    ctx.fillStyle = 'rgba(7, 10, 15, 0.42)'
+    ctx.fillStyle = palette.previewVeil
     ctx.fillRect(0, 0, W, H)
 
     // 预演后的当前段目标（分步关卡一步连进多段时，直接展示新段目标）
@@ -868,7 +1109,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
           : { arms: pc.arms, leaving: pc.leaving, rot: 0 }
         // ghost 晕圈：虚线 = 尚未发生
         ctx.save()
-        ctx.strokeStyle = INK
+        ctx.strokeStyle = palette.ink
         ctx.globalAlpha = 0.5
         ctx.lineWidth = 2
         ctx.setLineDash([5, 4])
@@ -970,7 +1211,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     // 将消失的珠（被拾取 / 被发射）：淡虚线圈标记原位
     for (const g of s.groups) {
       const nxt = p.groups.find((o) => o.pos[0] === g.pos[0] && o.pos[1] === g.pos[1])
-      if (!nxt) dashedCircle(ctx, cx(g.pos[0]), cy(g.pos[1]), cell * 0.26, INK, 0.35)
+      if (!nxt) dashedCircle(ctx, cx(g.pos[0]), cy(g.pos[1]), cell * 0.26, palette.ink, 0.35)
     }
 
     // 玩家 ghost：移动
@@ -978,7 +1219,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       const gx = cx(p.player[0])
       const gy = cy(p.player[1])
       ctx.save()
-      ctx.strokeStyle = INK
+      ctx.strokeStyle = palette.ink
       ctx.globalAlpha = 0.9
       ctx.lineWidth = 2
       ctx.setLineDash([5, 4])
@@ -986,7 +1227,7 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       ctx.arc(gx, gy, cell * 0.3, 0, Math.PI * 2)
       ctx.stroke()
       ctx.globalAlpha = 0.12
-      ctx.fillStyle = INK
+      ctx.fillStyle = palette.ink
       ctx.fill()
       ctx.restore()
       // 移动箭头（起止缩短，避免压住本体与 ghost）
@@ -998,8 +1239,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
       const ux = dx / len
       const uy = dy / len
       ctx.save()
-      ctx.strokeStyle = INK
-      ctx.fillStyle = INK
+      ctx.strokeStyle = palette.ink
+      ctx.fillStyle = palette.ink
       ctx.globalAlpha = 0.65
       ctx.lineWidth = 2
       line(ctx, ax + ux * cell * 0.36, ay + uy * cell * 0.36, gx - ux * cell * 0.38, gy - uy * cell * 0.38)
@@ -1029,9 +1270,9 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
         ctx.restore()
       } else {
         // 手将被清空
-        dashedCircle(ctx, hx, hy, cell * 0.2, INK, 0.4)
+        dashedCircle(ctx, hx, hy, cell * 0.2, palette.ink, 0.4)
         ctx.save()
-        ctx.strokeStyle = INK
+        ctx.strokeStyle = palette.ink
         ctx.globalAlpha = 0.55
         ctx.lineWidth = 1.5
         const t = cell * 0.08
@@ -1052,10 +1293,11 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   if (inspect !== null && s.centers[inspect] !== undefined) {
     drawInspectPanel(ctx, s, inspect, cx, cy, cell, W)
   }
+  if (successfulImpact && now >= successfulImpact.end) successfulImpact = null
 }
 
-const STAGE_TONES = ['#f0c65a', '#63b3ff', '#c084fc', '#58d68d', '#ff8f70'] as const
-const stageTone = (stageIndex: number): string => STAGE_TONES[stageIndex % STAGE_TONES.length]
+const stageTone = (stageIndex: number): string =>
+  palette.stageTones[stageIndex % palette.stageTones.length]
 
 /** 仪器式小标签：切角轮廓 + 普通数字，避免小圆里的粗等宽字在不同系统上挤压变形。 */
 function drawTelemetryTag(
@@ -1072,7 +1314,7 @@ function drawTelemetryTag(
   const cut = Math.min(w, h) * 0.24
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.fillStyle = 'rgba(8, 14, 22, 0.96)'
+  ctx.fillStyle = palette.anchorFill
   ctx.strokeStyle = tone
   ctx.lineWidth = Math.max(1.25, cell * 0.022)
   ctx.beginPath()
@@ -1127,8 +1369,11 @@ function drawReactiveLinks(
   cx: (x: number) => number,
   cy: (y: number) => number,
   cell: number,
+  visualPoses: ReadonlyMap<number, CenterPose>,
+  visuallyShielded: (index: number) => boolean,
 ): void {
-  for (const guarded of s.centers) {
+  for (let guardedIndex = 0; guardedIndex < s.centers.length; guardedIndex++) {
+    const guarded = s.centers[guardedIndex]
     const trigger = guarded.reactiveTo
     if (!trigger) continue
     const controller = s.centers[trigger.center]
@@ -1149,12 +1394,13 @@ function drawReactiveLinks(
     const bend = Math.min(cell * 0.16, distance * 0.12)
     const midX = (startX + tx) / 2 - uy * bend
     const midY = (startY + ty) / 2 + ux * bend
-    const active = isShielded(s, guarded)
+    const active = visuallyShielded(guardedIndex)
+    const controllerArms = visualPoses.get(trigger.center)?.arms ?? controller.arms
     const tone = colorOf(trigger.color)
 
     ctx.save()
     ctx.strokeStyle = tone
-    ctx.globalAlpha = active ? 0.78 : 0.32
+    ctx.globalAlpha = active ? 0.78 : idleLinkAlpha()
     ctx.lineWidth = Math.max(1.5, cell * (active ? 0.035 : 0.025))
     ctx.setLineDash([cell * 0.09, cell * 0.065])
     ctx.beginPath()
@@ -1164,14 +1410,14 @@ function drawReactiveLinks(
     ctx.setLineDash([])
     // 控制臂端点：目标色空心环，当前臂匹配时补一个实心点。
     ctx.globalAlpha = active ? 0.82 : 0.58
-    ctx.fillStyle = '#10161f'
+    ctx.fillStyle = palette.anchorFill
     ctx.beginPath()
     ctx.arc(tx, ty, cell * 0.095, 0, Math.PI * 2)
     ctx.fill()
     ctx.strokeStyle = tone
     ctx.lineWidth = Math.max(1.5, cell * 0.025)
     ctx.stroke()
-    if (controller.arms[trigger.arm] === trigger.color) {
+    if (controllerArms[trigger.arm] === trigger.color) {
       ctx.fillStyle = tone
       ctx.beginPath()
       ctx.arc(tx, ty, cell * 0.038, 0, Math.PI * 2)
@@ -1192,7 +1438,7 @@ function drawDormantReactiveShield(
   const radius = cell * 0.54
   ctx.save()
   ctx.strokeStyle = tone
-  ctx.globalAlpha = 0.34
+  ctx.globalAlpha = idleShieldAlpha()
   ctx.lineWidth = Math.max(1.5, cell * 0.022)
   for (let k = 0; k < 6; k++) {
     const a1 = -Math.PI / 2 + (k * Math.PI) / 3
@@ -1312,7 +1558,7 @@ function drawShieldReleasePreview(
 /** 已达标锁定圈 + ✓ 徽标（常规与预演共用） */
 function drawLockRing(ctx: CanvasRenderingContext2D, px: number, py: number, cell: number): void {
   ctx.save()
-  ctx.strokeStyle = INK
+  ctx.strokeStyle = palette.ink
   ctx.globalAlpha = 0.34
   ctx.lineWidth = Math.max(1.5, cell * 0.025)
   ctx.beginPath()
@@ -1323,11 +1569,11 @@ function drawLockRing(ctx: CanvasRenderingContext2D, px: number, py: number, cel
   const r = cell * 0.105
   const bx = px + cell * 0.27
   const by = py - cell * 0.27
-  ctx.fillStyle = INK
+  ctx.fillStyle = palette.ink
   ctx.beginPath()
   ctx.arc(bx, by, r, 0, Math.PI * 2)
   ctx.fill()
-  ctx.strokeStyle = '#0b1018'
+  ctx.strokeStyle = palette.lockCheck
   ctx.lineWidth = Math.max(1.5, r * 0.28)
   ctx.beginPath()
   ctx.moveTo(bx - r * 0.45, by + r * 0.05)
@@ -1346,7 +1592,7 @@ function drawChainBadge(
 ): void {
   const bx = px - cell * 0.46
   const by = py - cell * 0.46
-  drawTelemetryTag(ctx, bx, by, cell, String(order + 1).padStart(2, '0'), '#f0c65a')
+  drawTelemetryTag(ctx, bx, by, cell, String(order + 1).padStart(2, '0'), stageTone(0))
 }
 
 /** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性） */
@@ -1359,14 +1605,14 @@ function drawPreviewBanner(ctx: CanvasRenderingContext2D, W: number): void {
   const x = Math.floor((W - w) / 2)
   ctx.save()
   ctx.font = `500 12px ${CANVAS_UI_FONT}`
-  ctx.fillStyle = 'rgba(13, 19, 28, 0.92)'
-  ctx.strokeStyle = 'rgba(240, 198, 90, 0.55)'
+  ctx.fillStyle = palette.previewPanel
+  ctx.strokeStyle = palette.previewBorder
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.roundRect(x, 8, w, h, 12)
   ctx.fill()
   ctx.stroke()
-  ctx.fillStyle = '#f0c65a'
+  ctx.fillStyle = stageTone(0)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, W / 2, 8 + h / 2)
@@ -1392,15 +1638,15 @@ function drawMarks(
     const seq = mark !== 'star' && mark !== 'question' && mark !== 'cross'
     const glyph = seq ? mark : mark === 'star' ? '★' : mark === 'question' ? '?' : '×'
     ctx.save()
-    ctx.fillStyle = '#10161f'
-    ctx.strokeStyle = seq ? '#f0c65a' : INK
+    ctx.fillStyle = palette.markFill
+    ctx.strokeStyle = seq ? stageTone(0) : palette.ink
     ctx.globalAlpha = 0.95
     ctx.lineWidth = 1.5
     ctx.beginPath()
     ctx.arc(bx, by, r, 0, Math.PI * 2)
     ctx.fill()
     ctx.stroke()
-    ctx.fillStyle = seq ? '#f0c65a' : INK
+    ctx.fillStyle = seq ? stageTone(0) : palette.ink
     ctx.font = `${seq ? 700 : 500} ${Math.max(9, Math.floor(cell * (seq ? 0.16 : 0.19)))}px ${seq ? CANVAS_NUM_FONT : CANVAS_UI_FONT}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -1426,7 +1672,7 @@ function drawInspectPanel(
   if (!c) return
   // 棋盘上：被检视中心的虚线高亮环
   ctx.save()
-  ctx.strokeStyle = '#f0c65a'
+  ctx.strokeStyle = stageTone(0)
   ctx.globalAlpha = 0.75
   ctx.lineWidth = 2
   ctx.setLineDash([6, 4])
@@ -1447,14 +1693,14 @@ function drawInspectPanel(
   const y = 10
 
   ctx.save()
-  ctx.fillStyle = 'rgba(13, 19, 28, 0.94)'
-  ctx.strokeStyle = BOND
+  ctx.fillStyle = palette.panel
+  ctx.strokeStyle = palette.bond
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.roundRect(x, y, panelW, panelH, 12)
   ctx.fill()
   ctx.stroke()
-  ctx.fillStyle = INK
+  ctx.fillStyle = palette.ink
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.font = `600 12px ${CANVAS_UI_FONT}`
@@ -1464,7 +1710,7 @@ function drawInspectPanel(
     y + 18,
   )
   ctx.font = `400 10px ${CANVAS_UI_FONT}`
-  ctx.fillStyle = '#8d9aab'
+  ctx.fillStyle = palette.panelMuted
   ctx.fillText('构型周期 · 进攻翻转', x + padX, y + 34)
 
   cycle.forEach((cfg, i) => {
@@ -1472,7 +1718,7 @@ function drawInspectPanel(
     const my = y + 62
     const isCurrent = i === 0
     if (isCurrent) {
-      ctx.strokeStyle = '#f0c65a'
+      ctx.strokeStyle = stageTone(0)
       ctx.globalAlpha = 0.85
       ctx.lineWidth = 1.5
       ctx.beginPath()
@@ -1481,7 +1727,7 @@ function drawInspectPanel(
       ctx.globalAlpha = 1
     }
     drawMiniCenter(ctx, mx, my, cfg.arms, cfg.leaving, cfg.kind, cfg.ejects, isCurrent)
-    ctx.fillStyle = isCurrent ? '#f0c65a' : '#8d9aab'
+    ctx.fillStyle = isCurrent ? stageTone(0) : palette.panelMuted
     ctx.font = `500 10px ${CANVAS_UI_FONT}`
     ctx.textAlign = 'center'
     ctx.fillText(labels[i], mx, y + 88)
@@ -1504,7 +1750,7 @@ function drawMiniCenter(
   const len = 15
   ctx.save()
   ctx.globalAlpha = bright ? 1 : 0.72
-  ctx.strokeStyle = BOND
+  ctx.strokeStyle = palette.bond
   ctx.lineWidth = 1.5
   for (const d of dirs) {
     const [ax, ay] = ARM_VEC[d]
@@ -1530,7 +1776,7 @@ function drawMiniCenter(
     if (missing) {
       const [ax, ay] = ARM_VEC[missing]
       ctx.save()
-      ctx.strokeStyle = BOND
+      ctx.strokeStyle = palette.bond
       ctx.globalAlpha = 0.45
       ctx.setLineDash([2, 2])
       ctx.beginPath()
@@ -1540,8 +1786,8 @@ function drawMiniCenter(
     }
   }
   // 中心原子（三臂中心画小三角）
-  ctx.fillStyle = FAINT
-  ctx.strokeStyle = '#8b95a5'
+  ctx.fillStyle = palette.faint
+  ctx.strokeStyle = palette.centerOutline
   ctx.lineWidth = 1
   if (kind === 'trigonal') {
     ctx.beginPath()
@@ -1593,7 +1839,7 @@ function drawCenter(
   }
 
   // 键线（先画线，原子点压在线端上）
-  ctx.strokeStyle = BOND
+  ctx.strokeStyle = palette.bond
   ctx.lineWidth = Math.max(1.5, cell * 0.05)
   for (const arm of dirs) {
     const [ax, ay] = armPos(arm)
@@ -1618,8 +1864,8 @@ function drawCenter(
       const mx = px + Math.cos(a) * cell * ARM_LEN
       const my = py + Math.sin(a) * cell * ARM_LEN
       ctx.save()
-      ctx.strokeStyle = BOND
-      ctx.globalAlpha = 0.5
+      ctx.strokeStyle = palette.bond
+      ctx.globalAlpha = dimBondAlpha()
       ctx.lineWidth = Math.max(1.5, cell * 0.035)
       ctx.setLineDash([3, 3])
       ctx.beginPath()
@@ -1630,8 +1876,8 @@ function drawCenter(
   }
 
   // 中心原子：弹射中心用菱形喷嘴核；普通三臂用三角，普通四臂用圆形。
-  ctx.fillStyle = FAINT
-  ctx.strokeStyle = '#8b95a5'
+  ctx.fillStyle = palette.faint
+  ctx.strokeStyle = palette.centerOutline
   ctx.lineWidth = 1
   if (ejects) {
     const r = cell * 0.18
@@ -1643,7 +1889,7 @@ function drawCenter(
     ctx.closePath()
     ctx.fill()
     ctx.stroke()
-    ctx.strokeStyle = '#f0c65a'
+    ctx.strokeStyle = stageTone(0)
     ctx.globalAlpha = 0.72
     ctx.lineWidth = Math.max(1.5, cell * 0.025)
     ctx.beginPath()
@@ -1689,7 +1935,7 @@ function drawEjectOutlet(
   const vx = -uy
   const vy = ux
   ctx.save()
-  ctx.strokeStyle = '#f0c65a'
+  ctx.strokeStyle = stageTone(0)
   ctx.globalAlpha = 0.88
   ctx.lineWidth = Math.max(1.5, cell * 0.03)
   ctx.lineCap = 'round'
@@ -1733,7 +1979,7 @@ function drawCenterDirection(
   const wing = cell * 0.038
 
   ctx.save()
-  ctx.strokeStyle = INK
+  ctx.strokeStyle = palette.ink
   ctx.globalAlpha = 0.94
   ctx.lineWidth = Math.max(1.5, cell * 0.025)
   ctx.lineCap = 'round'
@@ -1748,6 +1994,16 @@ function drawCenterDirection(
 }
 
 /** 色珠内部纹样：颜色之外再给一条稳定编码，避免只靠红绿区分。 */
+/** 同相加深：浅色主题下色珠描边用填充色自身的深色变体（藏青圈在暖色珠上会显脏，2026-08-28）。 */
+export function shadeColor(hex: string, factor: number): string {
+  const to = (v: number): string => Math.max(0, Math.min(255, Math.round(v * factor)))
+    .toString(16)
+    .padStart(2, '0')
+  return `#${to(parseInt(hex.slice(1, 3), 16))}${to(parseInt(hex.slice(3, 5), 16))}${to(
+    parseInt(hex.slice(5, 7), 16),
+  )}`
+}
+
 function drawAtom(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1755,17 +2011,20 @@ function drawAtom(
   r: number,
   color: string,
 ): void {
-  ctx.fillStyle = colorOf(color)
+  const fill = colorOf(color)
+  ctx.fillStyle = fill
   ctx.beginPath()
   ctx.arc(x, y, r, 0, Math.PI * 2)
   ctx.fill()
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.42)'
+  // 深色：近黑描边（既定观感）；浅色：填充色派生的同相深色环，保持清亮不挂灰
+  ctx.strokeStyle =
+    renderTheme === 'light' ? shadeColor(fill, 0.62) : palette.atomOutline
   ctx.lineWidth = Math.max(1, r * 0.16)
   ctx.stroke()
 
   ctx.save()
-  ctx.strokeStyle = 'rgba(7, 10, 15, 0.62)'
-  ctx.fillStyle = 'rgba(7, 10, 15, 0.62)'
+  ctx.strokeStyle = palette.atomPattern
+  ctx.fillStyle = palette.atomPattern
   ctx.lineWidth = Math.max(1.2, r * 0.16)
   ctx.lineCap = 'round'
   if (color === 'red') {
@@ -1902,7 +2161,7 @@ function drawEjectionTrajectory(
     const bx = cx(plan.from[0]) + dx * cell * 0.72
     const by = cy(plan.from[1]) + dy * cell * 0.72
     ctx.save()
-    ctx.strokeStyle = FLASH
+    ctx.strokeStyle = palette.flash
     ctx.globalAlpha = 0.78 + 0.18 * Math.sin(now / 110)
     ctx.lineWidth = Math.max(2, cell * 0.045)
     const r = cell * 0.14
@@ -1974,6 +2233,48 @@ function drawEjectionFlight(
   ctx.restore()
 }
 
+/** 有效进攻的接触帧：蓝白冲击环与短射线，和无效进攻的红色撞面弧明确区分。 */
+function drawSuccessfulImpact(
+  ctx: CanvasRenderingContext2D,
+  anim: SuccessfulImpactAnim,
+  cx: (x: number) => number,
+  cy: (y: number) => number,
+  cell: number,
+  now: number,
+): void {
+  const progress = Math.max(0, Math.min(1, (now - anim.contactAt) / Math.max(1, anim.end - anim.contactAt)))
+  const eased = easeOutCubic(progress)
+  const [dx, dy] = DIR_VEC[anim.dir]
+  const px = -dy
+  const py = dx
+  const x = cx(anim.target[0]) - dx * cell * 0.42
+  const y = cy(anim.target[1]) - dy * cell * 0.42
+  ctx.save()
+  ctx.strokeStyle = palette.impact
+  ctx.fillStyle = palette.impact
+  ctx.globalAlpha = 1 - eased
+  ctx.lineWidth = Math.max(2, cell * 0.045 * (1 - progress * 0.35))
+  ctx.beginPath()
+  ctx.arc(x, y, cell * (0.08 + eased * 0.22), 0, Math.PI * 2)
+  ctx.stroke()
+  for (const side of [-1, 0, 1]) {
+    const spread = side * cell * 0.14
+    const inner = cell * (0.08 + eased * 0.04)
+    const outer = cell * (0.2 + eased * 0.18)
+    line(
+      ctx,
+      x + px * spread - dx * inner,
+      y + py * spread - dy * inner,
+      x + px * spread - dx * outer,
+      y + py * spread - dy * outer,
+    )
+  }
+  ctx.beginPath()
+  ctx.arc(x, y, Math.max(2, cell * 0.045 * (1 - progress)), 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
 /** 喷口身后第一格被堵：在堵塞侧显示交叉火花，替代普通“撞错面”弧线。 */
 function drawBlockedNozzle(
   ctx: CanvasRenderingContext2D,
@@ -1992,7 +2293,7 @@ function drawBlockedNozzle(
   const by = cy(plan.from[1]) + dy * cell * 0.72
   const r = cell * 0.16
   ctx.save()
-  ctx.strokeStyle = FLASH
+  ctx.strokeStyle = palette.flash
   ctx.globalAlpha = alpha
   ctx.lineWidth = Math.max(2.5, cell * 0.055)
   line(ctx, bx - r, by - r, bx + r, by + r)
@@ -2017,9 +2318,11 @@ function drawSpecialCells(
     const px = cx(x)
     const py = cy(y)
     ctx.save()
-    ctx.strokeStyle = '#e0b64f'
-    ctx.fillStyle = '#e0b64f'
-    ctx.globalAlpha = 0.55 + 0.2 * Math.sin(now / 500)
+    ctx.strokeStyle = palette.lightCell
+    ctx.fillStyle = palette.lightCell
+    // 浅色下呼吸下限提高到 0.9：光照格是必读信息，不能靠低 alpha 稀释成隐形
+    ctx.globalAlpha =
+      renderTheme === 'light' ? 0.9 + 0.1 * Math.sin(now / 500) : 0.55 + 0.2 * Math.sin(now / 500)
     ctx.lineWidth = Math.max(1.5, cell * 0.04)
     ctx.beginPath()
     ctx.arc(px, py, cell * 0.1, 0, Math.PI * 2)
@@ -2058,7 +2361,7 @@ function drawFrame(
 ): void {
   const L = Math.min(14, cell * 0.4)
   const o = 5
-  ctx.strokeStyle = FAINT
+  ctx.strokeStyle = palette.faint
   ctx.lineWidth = 1
   const corner = (cx: number, cy: number, sx: number, sy: number): void => {
     line(ctx, cx + 0.5, cy + 0.5, cx + sx * L + 0.5, cy + 0.5)
@@ -2139,8 +2442,8 @@ function tetra(
     return [cx + x1 * k, cy + y2 * k] as const
   })
   ctx.save()
-  ctx.strokeStyle = TETRA
-  ctx.fillStyle = TETRA
+  ctx.strokeStyle = palette.tetra
+  ctx.fillStyle = palette.tetra
   ctx.globalAlpha = alpha
   ctx.lineWidth = 1
   for (const [a, b] of TETRA_E) {

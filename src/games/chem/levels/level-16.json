@@ -1,18 +1,18 @@
 {
   "id": "109.5°-16",
-  "name": "光的转向",
-  "hint": "走上金色光照格，所有中心的开口顺时针移到下一条真实臂；颜色臂本身不会转。",
-  "width": 4,
-  "height": 3,
+  "name": "光路接力",
+  "hint": "照光开位，染色改链。第一段的翻转也许顺路就完成了下一段。",
+  "width": 5,
+  "height": 4,
   "walls": [
     [
-      2,
-      2
+      1,
+      1
     ]
   ],
   "player": [
-    3,
-    2
+    4,
+    3
   ],
   "centers": [
     {
@@ -22,25 +22,60 @@
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "purple",
+        "S": "yellow",
+        "W": "green"
       },
-      "leaving": "N"
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "blue",
+        "E": "red",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        0,
+        3
+      ],
+      "color": "blue"
     }
   ],
   "lights": [
     [
-      1,
+      0,
       0
     ]
   ],
-  "goals": [
+  "stages": [
     {
-      "center": 0,
-      "arm": "W",
-      "color": "blue"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "E",
+          "color": "green"
+        }
+      ]
     }
   ],
-  "par": 6
+  "par": 10
 }

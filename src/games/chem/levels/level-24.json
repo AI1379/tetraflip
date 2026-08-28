@@ -1,28 +1,15 @@
 {
   "id": "109.5°-24",
-  "name": "南北换路",
-  "hint": "缺口只在南北两侧切换；每翻一次，接通哪条支路、切断哪条支路恰好对调。",
+  "name": "第一次弹出",
+  "hint": "菱形核是弹射中心。持珠撞入后手会变空，原开口珠沿虚线弹道飞到最后空格。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
   "player": [
-    1,
-    2
+    0,
+    0
   ],
   "centers": [
-    {
-      "pos": [
-        2,
-        2
-      ],
-      "arms": {
-        "E": "red",
-        "S": "blue",
-        "W": "green"
-      },
-      "leaving": "E",
-      "kind": "trigonal"
-    },
     {
       "pos": [
         2,
@@ -30,50 +17,29 @@
       ],
       "arms": {
         "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "green"
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "N"
-    },
+      "leaving": "E",
+      "ejects": true
+    }
+  ],
+  "groups": [
     {
       "pos": [
-        2,
-        3
+        1,
+        0
       ],
-      "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "yellow",
-        "W": "green"
-      },
-      "leaving": "S"
+      "color": "purple"
     }
   ],
-  "stages": [
+  "goals": [
     {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "blue"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "blue"
-        },
-        {
-          "center": 2,
-          "arm": "S",
-          "color": "blue"
-        }
-      ]
+      "center": 0,
+      "arm": "W",
+      "color": "purple"
     }
   ],
-  "par": 8
+  "par": 3
 }

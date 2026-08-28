@@ -1,51 +1,49 @@
 {
   "id": "109.5°-28",
-  "name": "飞珠再利用",
-  "hint": "弹出的珠不是废料；手变空本身就是资源。",
-  "width": 4,
-  "height": 5,
-  "walls": [],
+  "name": "转轴再喷流",
+  "hint": "光照会改变弹射中心的合法进攻轴，喷流方向也随之改变。",
+  "width": 5,
+  "height": 4,
+  "walls": [
+    [
+      3,
+      3
+    ]
+  ],
   "player": [
-    0,
+    1,
     0
   ],
   "centers": [
     {
       "pos": [
-        2,
-        1
+        3,
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "green",
+        "E": "blue",
         "S": "yellow",
-        "W": "blue"
+        "W": "green"
       },
-      "leaving": "E",
+      "leaving": "N",
       "ejects": true
-    },
-    {
-      "pos": [
-        1,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "purple"
-      },
-      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
-        1,
-        0
+        0,
+        1
       ],
       "color": "purple"
     }
+  ],
+  "lights": [
+    [
+      0,
+      0
+    ]
   ],
   "goals": [
     {
@@ -54,10 +52,10 @@
       "color": "purple"
     },
     {
-      "center": 1,
+      "center": 0,
       "arm": "N",
-      "color": "green"
+      "color": "yellow"
     }
   ],
-  "par": 7
+  "par": 6
 }

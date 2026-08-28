@@ -1,18 +1,13 @@
 {
   "id": "109.5°-40",
-  "name": "照光填槽",
-  "hint": "墙挡住初始进攻轴，光能把开口转出来。三臂中心被染色时，缺口同样随臂翻转。",
-  "width": 4,
-  "height": 4,
-  "walls": [
-    [
-      1,
-      2
-    ]
-  ],
+  "name": "回授闸门",
+  "hint": "链第一次穿过闸门时会回拨控制臂，让护罩再次合上；下一次开门也能成为点火。",
+  "width": 5,
+  "height": 3,
+  "walls": [],
   "player": [
     0,
-    0
+    1
   ],
   "centers": [
     {
@@ -21,40 +16,80 @@
         2
       ],
       "arms": {
-        "N": "red",
+        "N": "green",
         "E": "blue",
-        "S": "green"
+        "S": "red",
+        "W": "yellow"
       },
-      "leaving": "E",
-      "kind": "trigonal"
-    }
-  ],
-  "groups": [
+      "leaving": "E"
+    },
     {
       "pos": [
         1,
-        0
+        1
       ],
-      "color": "purple"
-    }
-  ],
-  "lights": [
-    [
-      0,
-      1
-    ]
-  ],
-  "goals": [
-    {
-      "center": 0,
-      "arm": "N",
-      "color": "purple"
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
     },
     {
-      "center": 0,
-      "arm": "W",
-      "color": "blue"
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "W",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "red"
+      }
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "yellow",
+        "W": "green"
+      },
+      "leaving": "E"
     }
   ],
-  "par": 6
+  "groups": [],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    }
+  ],
+  "par": 9
 }

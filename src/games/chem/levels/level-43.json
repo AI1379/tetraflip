@@ -1,37 +1,104 @@
 {
   "id": "109.5°-43",
-  "name": "关闸保形",
-  "hint": "右边两座中心的亮键会把翻转传过去。怎样暂时隔离已经对齐的那一座？",
+  "name": "双态闸门",
+  "hint": "两面护罩听同一条控制臂，却在相反状态开放。先让下支路响应，再翻控制臂把通行权交给上支路。",
   "width": 5,
-  "height": 4,
+  "height": 5,
   "walls": [],
-  "player": [1, 0],
+  "player": [
+    2,
+    2
+  ],
   "centers": [
     {
-      "pos": [1, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "S"
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "E",
-      "reactiveTo": { "center": 0, "arm": "N", "color": "red" }
-    },
-    {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
+    },
+    {
+      "pos": [
+        3,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "red"
+      }
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "green"
+      }
     }
   ],
   "groups": [],
   "lights": [],
-  "stages": [{
-    "goals": [
-      { "center": 0, "arm": "N", "color": "red" },
-      { "center": 1, "arm": "N", "color": "red" },
-      { "center": 2, "arm": "N", "color": "green" }
-    ]
-  }],
-  "par": 7
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 4
 }

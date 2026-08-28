@@ -1,18 +1,34 @@
 {
   "id": "109.5°-38",
-  "name": "开罩三响",
-  "hint": "同一击要完成三件事：注入、共振与飞珠落地。在那之前，先空手把第 1 段做完。",
+  "name": "撞光又撞核",
+  "hint": "弹射珠先落在光照格上转开开口，又顺势撞上刚转好的中心进攻面；捡起落点上的珠时，光照会再转一次。",
   "width": 5,
   "height": 4,
   "walls": [],
   "player": [
-    2,
-    2
+    1,
+    0
   ],
   "centers": [
     {
       "pos": [
-        2,
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitLights": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        0,
         1
       ],
       "arms": {
@@ -21,33 +37,18 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "N"
+      "leaving": "S"
     },
     {
       "pos": [
-        3,
-        2
+        1,
+        3
       ],
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "yellow",
-        "W": "green"
-      },
-      "leaving": "E",
-      "ejects": true,
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        4,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "green"
+        "S": "green",
+        "W": "yellow"
       },
       "leaving": "E"
     }
@@ -55,36 +56,33 @@
   "groups": [
     {
       "pos": [
-        1,
-        2
+        2,
+        0
       ],
       "color": "purple"
     }
+  ],
+  "lights": [
+    [
+      1,
+      1
+    ]
   ],
   "stages": [
     {
       "goals": [
         {
-          "center": 0,
+          "center": 1,
           "arm": "N",
           "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 1,
-          "arm": "W",
-          "color": "purple"
         },
         {
           "center": 2,
-          "arm": "N",
-          "color": "blue"
+          "arm": "E",
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 4
+  "par": 8
 }

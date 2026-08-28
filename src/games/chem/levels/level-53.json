@@ -1,45 +1,123 @@
 {
   "id": "109.5°-53",
-  "name": "双态闸门",
-  "hint": "两面护罩听同一条控制臂，却在相反状态开放。先让下支路响应，再翻控制臂把通行权交给上支路。",
+  "name": "解锁撞链",
+  "hint": "撞核链起初被阶段罩隔离。先在共享站位完成一次空翻，再让弹射珠替你点燃整条链。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [],
-  "player": [2, 2],
+  "player": [
+    1,
+    0
+  ],
   "centers": [
     {
-      "pos": [1, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "W"
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
     },
     {
-      "pos": [3, 2],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        0,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "E"
     },
     {
-      "pos": [3, 3],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "E",
-      "reactiveTo": { "center": 0, "arm": "N", "color": "red" }
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "E",
-      "reactiveTo": { "center": 0, "arm": "N", "color": "green" }
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "purple",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
     }
   ],
-  "groups": [],
+  "groups": [
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "lights": [],
   "stages": [
-    { "goals": [{ "center": 2, "arm": "N", "color": "green" }] },
     {
       "goals": [
-        { "center": 0, "arm": "N", "color": "green" },
-        { "center": 3, "arm": "N", "color": "green" }
+        {
+          "center": 4,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 3,
+          "arm": "E",
+          "color": "green"
+        }
       ]
     }
   ],
-  "par": 4
+  "par": 12
 }

@@ -1,13 +1,13 @@
 {
   "id": "109.5°-06",
-  "name": "手不会自己变空",
-  "hint": "连续三次交换。手不会自己变空，只会换成开口原珠。",
-  "width": 7,
+  "name": "空手只有一次",
+  "hint": "空手撞是纯翻转；一旦拾珠，手就不会再空。A 的目标只能靠纯翻转达成。",
+  "width": 5,
   "height": 3,
   "walls": [],
   "player": [
     0,
-    0
+    1
   ],
   "centers": [
     {
@@ -17,11 +17,11 @@
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "blue",
+        "E": "blue",
+        "S": "green",
         "W": "yellow"
       },
-      "leaving": "S"
+      "leaving": "E"
     },
     {
       "pos": [
@@ -30,30 +30,17 @@
       ],
       "arms": {
         "N": "red",
-        "E": "yellow",
-        "S": "green",
-        "W": "purple"
-      },
-      "leaving": "S"
-    },
-    {
-      "pos": [
-        5,
-        1
-      ],
-      "arms": {
-        "N": "red",
         "E": "blue",
-        "S": "yellow",
-        "W": "purple"
+        "S": "green",
+        "W": "yellow"
       },
-      "leaving": "S"
+      "leaving": "E"
     }
   ],
   "groups": [
     {
       "pos": [
-        1,
+        0,
         0
       ],
       "color": "purple"
@@ -62,19 +49,14 @@
   "goals": [
     {
       "center": 0,
-      "arm": "N",
-      "color": "purple"
-    },
-    {
-      "center": 1,
-      "arm": "N",
+      "arm": "W",
       "color": "blue"
     },
     {
-      "center": 2,
-      "arm": "N",
-      "color": "green"
+      "center": 1,
+      "arm": "W",
+      "color": "purple"
     }
   ],
-  "par": 8
+  "par": 6
 }

@@ -1,21 +1,100 @@
 {
   "id": "109.5°-42",
-  "name": "撞光又撞核",
-  "hint": "弹射珠先落在光照格上转开开口，又顺势撞上刚转好的中心进攻面；捡起落点上的珠时，光照会再转一次。",
+  "name": "撞核共振链",
+  "hint": "弹射珠撞进第一个中心后，共振链会继续往下传；撞完的珠再捡起来，送到链尾完成闭环。",
   "width": 5,
   "height": 4,
   "walls": [],
-  "player": [1, 0],
-  "centers": [
-    { "pos": [3, 1], "arms": { "N": "red", "E": "green", "S": "yellow", "W": "blue" }, "leaving": "E", "ejects": true, "hitLights": true, "hitCenters": true },
-    { "pos": [0, 1], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "S" },
-    { "pos": [1, 3], "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" }, "leaving": "E" }
+  "player": [
+    1,
+    0
   ],
-  "groups": [{ "pos": [2, 0], "color": "purple" }],
-  "lights": [[1, 1]],
-  "stages": [{ "goals": [
-    { "center": 1, "arm": "N", "color": "green" },
-    { "center": 2, "arm": "E", "color": "green" }
-  ] }],
-  "par": 8
+  "centers": [
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        0,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
+  "lights": [],
+  "stages": [
+    {
+      "goals": [
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 3,
+          "arm": "E",
+          "color": "green"
+        }
+      ]
+    }
+  ],
+  "par": 9
 }

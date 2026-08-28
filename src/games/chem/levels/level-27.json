@@ -1,9 +1,9 @@
 {
   "id": "109.5°-27",
-  "name": "第一次弹出",
-  "hint": "菱形核是弹射中心。持珠撞入后手会变空，原开口珠沿虚线弹道飞到最后空格。",
+  "name": "飞珠接力",
+  "hint": "第一次弹射同时完成共振；弹出的珠是下一棒。",
   "width": 5,
-  "height": 3,
+  "height": 5,
   "walls": [],
   "player": [
     0,
@@ -13,7 +13,7 @@
     {
       "pos": [
         2,
-        1
+        2
       ],
       "arms": {
         "N": "red",
@@ -23,13 +23,39 @@
       },
       "leaving": "E",
       "ejects": true
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
+        4
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
-        1,
-        0
+        0,
+        1
       ],
       "color": "purple"
     }
@@ -39,7 +65,17 @@
       "center": 0,
       "arm": "W",
       "color": "purple"
+    },
+    {
+      "center": 1,
+      "arm": "E",
+      "color": "blue"
+    },
+    {
+      "center": 2,
+      "arm": "N",
+      "color": "green"
     }
   ],
-  "par": 3
+  "par": 8
 }

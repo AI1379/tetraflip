@@ -1,54 +1,39 @@
 {
   "id": "109.5°-22",
-  "name": "空穴断路器",
-  "hint": "缺口朝着哪一侧，链就断在哪一侧。翻动缺口，链的路径也随之改变。",
-  "width": 5,
-  "height": 3,
-  "walls": [],
+  "name": "照过空穴",
+  "hint": "光只移动开口，会跳过没有臂的缺口；缺口本身仍随翻转来回换边。",
+  "width": 4,
+  "height": 4,
+  "walls": [
+    [
+      1,
+      2
+    ]
+  ],
   "player": [
-    2,
-    2
+    0,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "S"
-    },
-    {
-      "pos": [
         2,
-        1
+        2
       ],
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "yellow"
+        "S": "green"
       },
-      "leaving": "N",
+      "leaving": "E",
       "kind": "trigonal"
-    },
-    {
-      "pos": [
-        3,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "green",
-        "W": "blue"
-      },
-      "leaving": "E"
     }
+  ],
+  "lights": [
+    [
+      0,
+      1
+    ]
   ],
   "stages": [
     {
@@ -64,16 +49,11 @@
       "goals": [
         {
           "center": 0,
-          "arm": "N",
-          "color": "red"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "green"
+          "arm": "E",
+          "color": "blue"
         }
       ]
     }
   ],
-  "par": 3
+  "par": 9
 }

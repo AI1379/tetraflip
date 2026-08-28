@@ -14,6 +14,7 @@ import {
   resetChemAnim,
   getChemAnimationRemainingMs,
   setChemAnimationMode,
+  setChemRenderTheme,
   setChemPreview,
   setChemInspect,
   setChemMarks,
@@ -31,6 +32,7 @@ import {
 import type { TutorialEvent, TutorialInputMode } from './tutorial'
 import { mountFeedback } from './feedback'
 import { logicalCanvasSize } from './viewport'
+import { SingleSlotInputBuffer } from './input-buffer'
 import {
   SWIPE_DISTANCE,
   shouldStartPreview,
@@ -101,6 +103,29 @@ function filesFor(gameId: string): Record<string, unknown> {
 
 // ---------- DOM ----------
 
+const progressStore = (() => {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+})()
+const TUTORIAL_PREF_KEY = 'lexin-games:tutorial-enabled'
+const ANIMATION_PREF_KEY = 'lexin-games:chem-animation-mode'
+const THEME_PREF_KEY = 'lexin-games:color-theme'
+type ColorTheme = 'dark' | 'light'
+const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+let themePreference: ColorTheme | null = (() => {
+  try {
+    const saved = progressStore?.getItem(THEME_PREF_KEY)
+    return saved === 'dark' || saved === 'light' ? saved : null
+  } catch {
+    return null
+  }
+})()
+const effectiveTheme = (): ColorTheme => themePreference ?? (systemDarkQuery.matches ? 'dark' : 'light')
+document.documentElement.dataset.theme = effectiveTheme()
+
 const app = document.querySelector('#app') as HTMLElement
 const searchParams = new URLSearchParams(window.location.search)
 const visualBlindMode = searchParams.get('blind') === '1'
@@ -108,7 +133,7 @@ const showPrototypeSwitcher = searchParams.get('devGames') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
-      <span class="brand-kicker">LEXIN GAMES · STRUCTURAL PUZZLE</span>
+      <span class="brand-kicker">CHEM GAMES · STRUCTURAL PUZZLE</span>
       <strong>109.5°</strong>
     </div>
     <div class="header-tools">
@@ -121,7 +146,7 @@ app.innerHTML = `
     <button id="levels-btn" class="level-identity" title="打开选关面板" aria-haspopup="dialog">
       <span id="level-number" class="level-number">LEVEL —</span>
       <span id="level-label" class="level-name">加载中</span>
-      <span class="level-picker-cue">全部关卡⌄</span>
+      <span class="level-picker-cue">全部关卡<i aria-hidden="true"></i></span>
     </button>
     <button id="next" class="level-arrow" title="下一关 ]" aria-label="下一关">→</button>
   </section>
@@ -132,14 +157,17 @@ app.innerHTML = `
       <strong id="move-label">0</strong>
     </div>
     <div id="game-stats" class="game-stats"></div>
-    <button id="animation-toggle" class="tutorial-toggle animation-toggle" role="switch" aria-checked="false" aria-label="动画速度：1 倍速" title="动画速度：1×（点击开启 2×）">
-      <span class="tutorial-toggle-copy"><small>动画</small><strong id="animation-toggle-state">1×</strong></span>
-      <span class="tutorial-switch-track" aria-hidden="true"><i></i></span>
-    </button>
-    <button id="tutorial-toggle" class="tutorial-toggle" role="switch" aria-checked="true" aria-label="新手教程已开启">
-      <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
-      <span class="tutorial-switch-track" aria-hidden="true"><i></i></span>
-    </button>
+    <div class="status-toggles" aria-label="显示设置">
+      <button id="animation-toggle" class="tutorial-toggle animation-toggle" role="switch" aria-checked="false" aria-label="动画速度：1 倍速" title="动画速度：1×（点击开启 2×）">
+        <span class="tutorial-toggle-copy"><small>动画</small><strong id="animation-toggle-state">1×</strong></span>
+      </button>
+      <button id="tutorial-toggle" class="tutorial-toggle" role="switch" aria-checked="true" aria-label="新手教程已开启">
+        <span class="tutorial-toggle-copy"><small>教程</small><strong id="tutorial-toggle-state">开</strong></span>
+      </button>
+      <button id="theme-toggle" class="tutorial-toggle theme-toggle" role="switch" aria-checked="true" aria-label="暗色模式已开启">
+        <span class="tutorial-toggle-copy"><small>暗色</small><strong id="theme-toggle-state">开</strong></span>
+      </button>
+    </div>
   </section>
 
   <details id="level-brief" class="level-brief" open>
@@ -155,6 +183,7 @@ app.innerHTML = `
     <canvas id="board" aria-label="游戏棋盘，支持方向滑动"></canvas>
     <div id="board-guide" class="board-guide hidden" aria-live="polite">
       <div id="guide-spotlight" class="guide-spotlight hidden" aria-hidden="true"></div>
+      <div id="guide-orbit" class="guide-orbit hidden" aria-hidden="true"><i></i></div>
       <div id="guide-gesture" class="guide-gesture hidden" aria-hidden="true">
         <span class="gesture-track"></span>
         <span class="gesture-finger"><i></i></span>
@@ -336,6 +365,8 @@ const animationToggle = app.querySelector('#animation-toggle') as HTMLButtonElem
 const animationToggleState = app.querySelector('#animation-toggle-state') as HTMLElement
 const tutorialToggle = app.querySelector('#tutorial-toggle') as HTMLButtonElement
 const tutorialToggleState = app.querySelector('#tutorial-toggle-state') as HTMLElement
+const themeToggle = app.querySelector('#theme-toggle') as HTMLButtonElement
+const themeToggleState = app.querySelector('#theme-toggle-state') as HTMLElement
 const hintBtn = app.querySelector('#hint') as HTMLButtonElement
 const overlay = app.querySelector('#overlay') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
@@ -353,6 +384,7 @@ const hintEl = app.querySelector('#level-hint') as HTMLElement
 const briefEl = app.querySelector('#level-brief') as HTMLDetailsElement
 const boardGuide = app.querySelector('#board-guide') as HTMLElement
 const guideSpotlight = app.querySelector('#guide-spotlight') as HTMLElement
+const guideOrbit = app.querySelector('#guide-orbit') as HTMLElement
 const guideGesture = app.querySelector('#guide-gesture') as HTMLElement
 const guideKey = app.querySelector('#guide-key') as HTMLElement
 const guideKeyLabel = app.querySelector('#guide-key-label') as HTMLElement
@@ -390,15 +422,6 @@ let current: Bundle = bundles.chem
 let levels: LoadedLevel<any>[] = []
 let index = 0
 let hist: History<any> = new History(undefined)
-const progressStore = (() => {
-  try {
-    return window.localStorage
-  } catch {
-    return null
-  }
-})()
-const TUTORIAL_PREF_KEY = 'lexin-games:tutorial-enabled'
-const ANIMATION_PREF_KEY = 'lexin-games:chem-animation-mode'
 let tutorialEnabled = (() => {
   try {
     return progressStore?.getItem(TUTORIAL_PREF_KEY) !== 'off'
@@ -437,6 +460,8 @@ app.dataset.inputMode = tutorialInputMode
 const WIN_SETTLE_MS = 360
 /** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost */
 let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
+/** 1× 因果动画期间只缓存下一步，避免快速连按被静默丢弃。 */
+const inputBuffer = new SingleSlotInputBuffer<Dir>()
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
 /** 01–05 引导的瞬时反馈；局面改变、取消预演或换关后清空。 */
 let tutorialEvent: TutorialEvent = null
@@ -499,6 +524,15 @@ function draw(): void {
 // 渲染循环：补间动画 / 背景自转 / 无效进攻反馈需要连续重绘（棋盘小，开销可忽略）；
 // 同时驱动「按住预演」：按住超过 280ms 注入一步预演态（design §11）。
 function frame(): void {
+  if (
+    inputBuffer.pending !== undefined &&
+    (current.animationRemainingMs?.() ?? 0) <= 0 &&
+    overlay.classList.contains('hidden')
+  ) {
+    const dir = inputBuffer.take()!
+    clearBufferedDir()
+    applyDir(dir)
+  }
   if (pending && !pending.previewing && shouldStartPreview(pending.downAt, performance.now())) {
     pending.previewing = true
     showPreview(pending.dir)
@@ -575,6 +609,21 @@ function positionBoardGuide(
     anchorY = point.y
   }
 
+  const orbit = guide.orbitDemo
+  guideOrbit.classList.toggle('hidden', orbit === undefined)
+  if (orbit) {
+    const center = boardPoint(state, orbit.center)
+    const cssCell = center.cell * canvas.getBoundingClientRect().width / center.logicalWidth
+    const angle: Record<Dir, number> = { N: -90, E: 0, S: 90, W: 180 }
+    guideOrbit.style.left = `${center.x}%`
+    guideOrbit.style.top = `${center.y}%`
+    guideOrbit.style.setProperty('--orbit-radius', `${cssCell * (orbit.radiusCells ?? 0.46)}px`)
+    guideOrbit.style.setProperty('--orbit-from', `${angle[orbit.from]}deg`)
+    guideOrbit.style.setProperty('--orbit-to', `${angle[orbit.from] + 180}deg`)
+    guideOrbit.dataset.tone = orbit.color
+    if (!spotlight) anchorY = center.y
+  }
+
   const gesture = guide.gesture
   const showKeyboardCue = gesture !== undefined && tutorialInputMode === 'keyboard'
   guideGesture.classList.toggle('hidden', gesture === undefined || showKeyboardCue)
@@ -611,7 +660,7 @@ function positionBoardGuide(
 }
 
 /**
- * 01–05 状态驱动操作引导：只把纯模型投影到 DOM，并高亮眼前已相邻的可执行方向。
+ * 01–06 状态驱动操作引导：只把纯模型投影到 DOM，并高亮眼前已相邻的可执行方向。
  * 多步路线不在这里求解，06 起整个模块退出界面。
  */
 function updateTutorialToggle(): void {
@@ -632,7 +681,19 @@ function updateAnimationToggle(): void {
   animationToggleState.textContent = doubled ? '2×' : '1×'
 }
 
+function updateThemeToggle(): void {
+  const dark = effectiveTheme() === 'dark'
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+  setChemRenderTheme(dark ? 'dark' : 'light')
+  themeToggle.dataset.enabled = String(dark)
+  themeToggle.setAttribute('aria-checked', String(dark))
+  themeToggle.setAttribute('aria-label', `暗色模式已${dark ? '开启' : '关闭'}`)
+  themeToggle.title = dark ? '暗色模式：开（点击切换为浅色）' : '暗色模式：关（点击切换为深色）'
+  themeToggleState.textContent = dark ? '开' : '关'
+}
+
 function setAnimationMode(mode: ChemAnimationMode): void {
+  clearBufferedDir()
   chemAnimationMode = mode
   setChemAnimationMode(mode)
   try {
@@ -654,6 +715,17 @@ function setTutorialEnabled(enabled: boolean): void {
   }
   updateTutorialToggle()
   updateTutorial()
+}
+
+function setDarkMode(enabled: boolean): void {
+  clearBufferedDir()
+  themePreference = enabled ? 'dark' : 'light'
+  try {
+    progressStore?.setItem(THEME_PREF_KEY, themePreference)
+  } catch {
+    // 隐私模式下偏好只保留到当前页面；不影响主题切换本身。
+  }
+  updateThemeToggle()
 }
 
 function isTutorialIntroAwaiting(): boolean {
@@ -702,6 +774,7 @@ function updateTutorial(): void {
 
   const hasBoardCue = guide !== null && (
     guide.spotlight !== undefined ||
+    guide.orbitDemo !== undefined ||
     guide.gesture !== undefined ||
     guide.forecast !== null ||
     guide.feedback !== null ||
@@ -919,6 +992,7 @@ function loadGame(id: string): void {
   app.dataset.game = id
   updateTutorialToggle()
   updateAnimationToggle()
+  updateThemeToggle()
   rulesTitle.textContent = id === 'chem' ? '《109.5°》全部规则' : '《t+3》全部规则'
   for (const ruleBook of app.querySelectorAll<HTMLElement>('[data-rules-game]')) {
     ruleBook.classList.toggle('hidden', ruleBook.dataset.rulesGame !== id)
@@ -1017,16 +1091,13 @@ function clearPreview(): void {
 /** 方向按下：若正按住别的方向，先提交它（换键滚动），再开始新的等待 */
 function dirDown(dir: Dir): void {
   if (!overlay.classList.contains('hidden')) return // 胜利面板显示时不吃方向输入
-  if (
-    current.id === 'chem' &&
-    chemAnimationMode === 'clear' &&
-    (current.animationRemainingMs?.() ?? 0) > 0
-  ) {
-    return // 清晰节奏逐个结算；撤销 / 重开 / 换关仍可随时打断。
-  }
   if (advanceTutorialIntro()) return
+  if (bufferDirectionDuringAnimation(dir)) return
   if (pending && pending.dir === dir) return // 键盘连发（repeat）忽略
-  if (pending && pending.dir !== dir) commitPending()
+  if (pending && pending.dir !== dir) {
+    commitPending()
+    if (bufferDirectionDuringAnimation(dir)) return
+  }
   if (!overlay.classList.contains('hidden')) return // 提交可能刚好通关
   pending = { dir, downAt: performance.now(), previewing: false }
 }
@@ -1050,9 +1121,34 @@ function commitPending(): void {
 /** 取消预演，不执行（Esc / 指针移开 / 切到别的动作） */
 function cancelPending(): void {
   pending = null
+  clearBufferedDir()
   clearPreview()
   tutorialEvent = null
   updateTutorial()
+}
+
+function clearBufferedDir(): void {
+  inputBuffer.clear()
+  for (const button of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
+    button.classList.remove('input-buffered')
+  }
+}
+
+/** 返回 true 表示方向已进入 1× 的单步缓冲，不应立刻建立 pending / 改变状态。 */
+function bufferDirectionDuringAnimation(dir: Dir): boolean {
+  if (
+    current.id !== 'chem' ||
+    chemAnimationMode !== 'clear' ||
+    current.def.isWin(hist.current) ||
+    (current.animationRemainingMs?.() ?? 0) <= 0
+  ) {
+    return false
+  }
+  inputBuffer.queue(dir)
+  for (const button of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
+    button.classList.toggle('input-buffered', button.dataset.dir === dir)
+  }
+  return true
 }
 
 // ---------- Inspect（chem）：点按中心看构型周期，纯展示 ----------
@@ -1157,16 +1253,15 @@ function handleCanvasTap(clientX: number, clientY: number): void {
 // ---------- 选关面板：当前游戏全部关卡一屏可选（替代一关关按 ▶） ----------
 
 const CHEM_CHAPTERS = [
-  { start: 0, end: 8, label: '核心搬运' },
-  { start: 9, end: 14, label: '共振传导' },
-  { start: 15, end: 19, label: '光照与分步' },
-  { start: 20, end: 25, label: '三臂空穴' },
-  { start: 26, end: 31, label: '弹射中心' },
-  { start: 32, end: 38, label: '阶段护罩' },
-  { start: 39, end: 39, label: '终盘复习' },
-  { start: 40, end: 45, label: '结构碰撞与回授闸门' },
-  { start: 46, end: 49, label: '综合 mastery' },
-  { start: 50, end: 59, label: '综合候选池' },
+  { start: 0, end: 5, label: '核心搬运' },
+  { start: 6, end: 11, label: '共振传导' },
+  { start: 12, end: 16, label: '光照与分步' },
+  { start: 17, end: 22, label: '三臂空穴' },
+  { start: 23, end: 28, label: '弹射中心' },
+  { start: 29, end: 35, label: '阶段护罩' },
+  { start: 36, end: 42, label: '结构碰撞与回授闸门' },
+  { start: 43, end: 49, label: '综合 mastery' },
+  { start: 50, end: 55, label: '综合候选池' },
 ] as const
 
 function buildPicker(): void {
@@ -1324,6 +1419,10 @@ animationToggle.addEventListener('click', () => {
   setAnimationMode(chemAnimationMode === 'clear' ? 'fast' : 'clear')
 })
 tutorialToggle.addEventListener('click', () => setTutorialEnabled(!tutorialEnabled))
+themeToggle.addEventListener('click', () => setDarkMode(effectiveTheme() !== 'dark'))
+systemDarkQuery.addEventListener('change', () => {
+  if (themePreference === null) updateThemeToggle()
+})
 levelsBtn.addEventListener('click', togglePicker)
 ;(app.querySelector('#picker-close') as HTMLButtonElement).addEventListener('click', closePicker)
 pickerBackdrop.addEventListener('click', (e) => {
@@ -1375,6 +1474,7 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
     if (performance.now() - at < 600) return
     setTutorialInputMode('keyboard')
     if (advanceTutorialIntro()) return
+    if (bufferDirectionDuringAnimation(dir)) return
     hideToast()
     applyDir(dir)
   })
@@ -1382,11 +1482,11 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
 
 // 触屏棋盘（design §11）：拖拽 ≥24px 先锁定方向，快速松手直接执行；
 // 保持方向 ≥280ms 才显示预演。拖回起点 = 取消；短距离轻点 = Inspect / 标记。
-let swipeStart: { x: number; y: number; pointerId: number; engaged: boolean } | null = null
+let swipeStart: { x: number; y: number; pointerId: number; engaged: boolean; buffered: boolean } | null = null
 
 canvas.addEventListener('pointerdown', (e) => {
   observePointerInput(e)
-  swipeStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, engaged: false }
+  swipeStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, engaged: false, buffered: false }
   canvas.setPointerCapture(e.pointerId)
 })
 canvas.addEventListener('pointermove', (e) => {
@@ -1405,6 +1505,12 @@ canvas.addEventListener('pointermove', (e) => {
   const dir = swipeDir(dx, dy)
   if (!dir) return // 斜滑：保持既有方向
   swipeStart.engaged = true
+  if (bufferDirectionDuringAnimation(dir)) {
+    swipeStart.buffered = true
+    pending = null
+    clearPreview()
+    return
+  }
   if (!pending || pending.dir !== dir) {
     // 变向 = 替换意图并重新计时，不提交旧方向；停留到阈值后由 frame 注入预演。
     clearPreview()
@@ -1425,12 +1531,14 @@ canvas.addEventListener('pointerup', (e) => {
   if (!start.engaged && distance >= SWIPE_DISTANCE) {
     const dir = swipeDir(dx, dy)
     if (dir) {
+      if (bufferDirectionDuringAnimation(dir)) return
       pending = { dir, downAt: performance.now(), previewing: false }
       hideToast()
       commitPending()
     }
     return
   }
+  if (start.buffered && distance >= SWIPE_DISTANCE) return
   if (start.engaged && distance >= SWIPE_DISTANCE && pending) {
     hideToast()
     dirUp(pending.dir) // 松开 = 执行

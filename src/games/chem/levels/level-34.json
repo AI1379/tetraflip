@@ -1,7 +1,7 @@
 {
   "id": "109.5°-34",
-  "name": "迟一拍的链",
-  "hint": "护罩在当前这一步全部结算后才解除——这一击的连锁仍会被挡住。能不能穿过去，看是哪一击。",
+  "name": "开罩接空穴",
+  "hint": "第一击的连锁其实够得到罩内中心——被挡住正是设计。阶段推进后，罩内中心自会开放。",
   "width": 5,
   "height": 3,
   "walls": [],
@@ -29,13 +29,12 @@
         1
       ],
       "arms": {
-        "N": "yellow",
+        "N": "green",
         "E": "red",
-        "S": "green",
         "W": "blue"
       },
       "leaving": "N",
-      "shieldUntilStage": 1
+      "kind": "trigonal"
     },
     {
       "pos": [
@@ -44,11 +43,25 @@
       ],
       "arms": {
         "N": "red",
-        "E": "yellow",
-        "S": "green",
+        "E": "green",
+        "S": "yellow",
         "W": "blue"
       },
-      "leaving": "E"
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "N"
     }
   ],
   "stages": [
@@ -66,10 +79,15 @@
         {
           "center": 2,
           "arm": "N",
-          "color": "green"
+          "color": "yellow"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "yellow"
         }
       ]
     }
   ],
-  "par": 5
+  "par": 6
 }

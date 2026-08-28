@@ -1,83 +1,82 @@
 {
   "id": "109.5°-39",
-  "name": "毕业：延迟喷流",
-  "hint": "光进得了护罩，珠进不了。开罩前先预调开口，开罩后珠才有用。",
-  "width": 6,
-  "height": 5,
+  "name": "关闸保形",
+  "hint": "带 R 的护罩由另一条控制臂决定开合：控制臂的颜色被翻走，护罩合上；修回来，护罩重新开放。先想清楚：什么时候该让右边两座暂时断开。",
+  "width": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    4,
-    1
+    1,
+    0
   ],
   "centers": [
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "red"
+      }
+    },
     {
       "pos": [
         3,
         2
       ],
       "arms": {
-        "N": "purple",
-        "E": "red",
-        "S": "green"
-      },
-      "leaving": "N",
-      "kind": "trigonal",
-      "ejects": true,
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        4,
-        2
-      ],
-      "arms": {
         "N": "red",
-        "E": "yellow",
+        "E": "blue",
         "S": "green",
-        "W": "blue"
+        "W": "yellow"
       },
-      "leaving": "S"
+      "leaving": "E"
     }
   ],
-  "groups": [
-    {
-      "pos": [
-        1,
-        2
-      ],
-      "color": "blue"
-    }
-  ],
-  "lights": [
-    [
-      1,
-      0
-    ]
-  ],
+  "groups": [],
+  "lights": [],
   "stages": [
     {
       "goals": [
         {
-          "center": 1,
-          "arm": "N",
-          "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
           "center": 0,
-          "arm": "W",
-          "color": "blue"
+          "arm": "N",
+          "color": "red"
         },
         {
-          "center": 0,
+          "center": 1,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
           "arm": "N",
           "color": "green"
         }
       ]
     }
   ],
-  "par": 9
+  "par": 7
 }

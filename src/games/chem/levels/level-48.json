@@ -1,27 +1,40 @@
 {
   "id": "109.5°-48",
-  "name": "一束光开三层",
-  "hint": "一束光同时预调三个开口；三面护罩按阶段逐层开放。",
+  "name": "光启缺口",
+  "hint": "开局的光只负责把所有进攻轴拨到起点；之后由再生罩与移动的缺口共同决定反馈能走多远。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
   "player": [
-    3,
-    2
+    1,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
+        2,
         2
       ],
       "arms": {
-        "N": "red",
+        "N": "green",
         "E": "blue",
-        "S": "green",
+        "S": "red",
         "W": "yellow"
       },
-      "leaving": "S"
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "N"
     },
     {
       "pos": [
@@ -30,32 +43,23 @@
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "W",
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "E",
-      "shieldUntilStage": 2
+      "leaving": "S",
+      "kind": "trigonal",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "red"
+      }
     }
   ],
+  "groups": [],
   "lights": [
     [
-      3,
-      1
+      0,
+      0
     ]
   ],
   "stages": [
@@ -64,28 +68,38 @@
         {
           "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "red"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
           "arm": "N",
           "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
+        },
         {
           "center": 2,
           "arm": "N",
-          "color": "green"
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "red"
         }
       ]
     }
   ],
-  "par": 6
+  "par": 11
 }

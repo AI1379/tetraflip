@@ -1,8 +1,8 @@
 {
   "id": "109.5°-08",
-  "name": "同一站位，两扇门",
-  "hint": "同一站位，向北与向南撞的是两个不同中心。已达标的那个，别碰。",
-  "width": 6,
+  "name": "三级多米诺",
+  "hint": "震动到达一个中心后，它先翻转，再用翻转后的臂检查下一跳。",
+  "width": 5,
   "height": 5,
   "walls": [],
   "player": [
@@ -12,25 +12,12 @@
   "centers": [
     {
       "pos": [
-        2,
-        1
+        1,
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "N"
-    },
-    {
-      "pos": [
-        4,
-        1
-      ],
-      "arms": {
-        "N": "green",
-        "E": "red",
+        "E": "green",
         "S": "yellow",
         "W": "blue"
       },
@@ -39,42 +26,46 @@
     {
       "pos": [
         2,
-        3
+        2
       ],
       "arms": {
-        "N": "red",
+        "N": "yellow",
         "E": "green",
-        "S": "yellow",
-        "W": "purple"
+        "S": "red",
+        "W": "blue"
       },
-      "leaving": "S"
-    }
-  ],
-  "groups": [
+      "leaving": "W"
+    },
     {
       "pos": [
-        0,
-        3
+        3,
+        2
       ],
-      "color": "blue"
+      "arms": {
+        "N": "green",
+        "E": "yellow",
+        "S": "red",
+        "W": "blue"
+      },
+      "leaving": "E"
     }
   ],
   "goals": [
     {
       "center": 0,
+      "arm": "W",
+      "color": "green"
+    },
+    {
+      "center": 1,
       "arm": "N",
       "color": "red"
     },
     {
-      "center": 1,
-      "arm": "E",
-      "color": "blue"
-    },
-    {
       "center": 2,
-      "arm": "N",
+      "arm": "E",
       "color": "blue"
     }
   ],
-  "par": 8
+  "par": 1
 }

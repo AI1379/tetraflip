@@ -1,80 +1,40 @@
 {
   "id": "109.5°-09",
-  "name": "三中心物流毕业",
-  "hint": "同一站位要兼顾上下。先想好三色接力的顺序，再动手。",
-  "width": 6,
-  "height": 5,
-  "walls": [],
-  "player": [
-    0,
-    2
+  "name": "碰不到的中心",
+  "hint": "墙把右侧两座中心的进攻位封死了——珠子进不去，震动却传得进去。看清楚每一跳需要什么颜色，再决定这一击从哪里开始。",
+  "width": 5,
+  "height": 4,
+  "walls": [
+    [4, 1],
+    [2, 2]
   ],
+  "player": [0, 0],
   "centers": [
     {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "N"
-    },
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "green",
-        "W": "purple"
-      },
+      "pos": [2, 1],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
       "leaving": "S"
     },
     {
-      "pos": [
-        4,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "yellow",
-        "W": "purple"
-      },
+      "pos": [3, 1],
+      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [3, 2],
+      "arms": { "N": "green", "E": "red", "S": "purple", "W": "blue" },
       "leaving": "E"
     }
   ],
-  "groups": [
+  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "stages": [
     {
-      "pos": [
-        1,
-        2
-      ],
-      "color": "purple"
+      "goals": [
+        { "center": 0, "arm": "N", "color": "purple" },
+        { "center": 1, "arm": "N", "color": "blue" },
+        { "center": 2, "arm": "N", "color": "purple" }
+      ]
     }
   ],
-  "goals": [
-    {
-      "center": 0,
-      "arm": "S",
-      "color": "purple"
-    },
-    {
-      "center": 1,
-      "arm": "N",
-      "color": "blue"
-    },
-    {
-      "center": 2,
-      "arm": "W",
-      "color": "green"
-    }
-  ],
-  "par": 6
+  "par": 3
 }

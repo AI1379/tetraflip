@@ -1,40 +1,122 @@
 {
   "id": "109.5°-55",
-  "name": "双喷口接力",
-  "hint": "一束光同时校准三条轴。前一座喷口的离去珠会成为后一座喷口的注入物，第二颗飞珠还要完成终投。",
+  "name": "三路余波",
+  "hint": "空穴与护罩先决定哪条链能响；中段喷流留下的珠不是副产物，它负责最后一层投递。",
   "width": 5,
   "height": 4,
-  "walls": [[4, 3]],
-  "player": [1, 0],
+  "walls": [],
+  "player": [
+    0,
+    2
+  ],
   "centers": [
     {
-      "pos": [3, 2],
-      "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" },
-      "leaving": "N",
-      "ejects": true
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
     },
     {
-      "pos": [1, 3],
-      "arms": { "N": "red", "E": "yellow", "S": "green", "W": "purple" },
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "blue",
+        "W": "yellow"
+      },
       "leaving": "E",
       "ejects": true
     },
     {
-      "pos": [3, 0],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
-      "leaving": "N"
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        0,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N",
+      "shieldUntilStage": 2
     }
   ],
-  "groups": [{ "pos": [0, 1], "color": "purple" }],
-  "lights": [[0, 0]],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "red"
+    }
+  ],
+  "lights": [],
   "stages": [
     {
       "goals": [
-        { "center": 0, "arm": "W", "color": "purple" },
-        { "center": 1, "arm": "N", "color": "blue" },
-        { "center": 2, "arm": "W", "color": "green" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 4,
+          "arm": "S",
+          "color": "red"
+        }
       ]
     }
   ],
-  "par": 14
+  "par": 11
 }

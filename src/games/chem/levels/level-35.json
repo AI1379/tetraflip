@@ -1,28 +1,15 @@
 {
   "id": "109.5°-35",
-  "name": "逐层开罩",
-  "hint": "三面罩、三个编号。同一站位，按什么顺序进攻，编号自己会说。",
-  "width": 4,
-  "height": 5,
+  "name": "开罩三响",
+  "hint": "同一击要完成三件事：注入、共振与飞珠落地。在那之前，先空手把第 1 段做完。",
+  "width": 5,
+  "height": 4,
   "walls": [],
   "player": [
     2,
     2
   ],
   "centers": [
-    {
-      "pos": [
-        1,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "W"
-    },
     {
       "pos": [
         2,
@@ -34,22 +21,44 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "N",
-      "shieldUntilStage": 1
+      "leaving": "N"
     },
     {
       "pos": [
-        2,
-        3
+        3,
+        2
       ],
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "S": "yellow",
+        "W": "green"
       },
-      "leaving": "S",
-      "shieldUntilStage": 2
+      "leaving": "E",
+      "ejects": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        4,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "blue",
+        "W": "green"
+      },
+      "leaving": "E"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "color": "purple"
     }
   ],
   "stages": [
@@ -66,20 +75,16 @@
       "goals": [
         {
           "center": 1,
-          "arm": "N",
-          "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
+          "arm": "W",
+          "color": "purple"
+        },
         {
           "center": 2,
           "arm": "N",
-          "color": "green"
+          "color": "blue"
         }
       ]
     }
   ],
-  "par": 3
+  "par": 4
 }

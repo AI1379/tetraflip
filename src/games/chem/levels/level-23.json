@@ -1,71 +1,93 @@
 {
   "id": "109.5°-23",
-  "name": "空穴保险丝",
-  "hint": "链尾一开始就是对的。震动到达时缺口会先翻转——它能不能保住链尾，看它翻到哪一侧。",
+  "name": "双染引链",
+  "hint": "染色换出的珠，是下一次染色的输入；缺口的翻转决定每一击震动通向哪一侧。",
   "width": 5,
-  "height": 4,
+  "height": 3,
   "walls": [],
   "player": [
     2,
-    0
+    2
   ],
   "centers": [
     {
       "pos": [
-        2,
+        1,
         1
       ],
       "arms": {
-        "N": "blue",
-        "E": "green",
-        "S": "red",
-        "W": "yellow"
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
       },
       "leaving": "S"
     },
     {
       "pos": [
         2,
-        2
+        1
       ],
       "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "green"
+        "N": "yellow",
+        "E": "blue",
+        "S": "red"
       },
-      "leaving": "S",
+      "leaving": "N",
       "kind": "trigonal"
     },
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "yellow",
+        "E": "green",
+        "S": "purple",
+        "W": "red"
+      },
+      "leaving": "N"
+    }
+  ],
+  "groups": [
     {
       "pos": [
         3,
         2
       ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "green",
-        "W": "blue"
-      },
-      "leaving": "E"
+      "color": "purple"
     }
   ],
-  "goals": [
+  "stages": [
     {
-      "center": 0,
-      "arm": "N",
-      "color": "red"
+      "goals": [
+        {
+          "center": 1,
+          "arm": "S",
+          "color": "purple"
+        }
+      ]
     },
     {
-      "center": 1,
-      "arm": "N",
-      "color": "green"
-    },
-    {
-      "center": 2,
-      "arm": "N",
-      "color": "red"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "S",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "purple"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "purple"
+        }
+      ]
     }
   ],
-  "par": 1
+  "par": 5
 }
