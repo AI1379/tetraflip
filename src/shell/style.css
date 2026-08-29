@@ -781,7 +781,8 @@ canvas {
   position: absolute;
   top: 16px;
   left: 50%;
-  z-index: 3;
+  /* 高于选关 / 规则弹窗（20）与通关卡（10）：秘籍诱饵等提示在弹窗打开时也必须可见 */
+  z-index: 70;
   width: max-content;
   max-width: calc(100% - 32px);
   padding: 10px 14px;
@@ -855,6 +856,45 @@ canvas {
   94% { transform: translateX(calc(-50% + 1px)); }
   96% { transform: translateX(calc(-50% - 0.5px)) skewX(0.6deg); }
   98%, 100% { transform: translateX(-50%); }
+}
+
+/* LV.999 隐藏化（design §5 四次决策）：发现前的「??? 未知扇区」诱饵与 50 终局面包屑。 */
+.level-item.lv999-bait {
+  border-style: dashed;
+  opacity: 0.66;
+}
+
+.level-item.lv999-bait :is(.level-item-number, .level-item-name) {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+.win-secret-hint {
+  margin-top: 6px;
+  padding: 6px 14px;
+  border: 1px dashed rgba(120, 90, 160, 0.5);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  animation: win-secret-flicker 2.6s steps(1, end) infinite;
+}
+
+.win-secret-hint:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+@keyframes win-secret-flicker {
+  0%, 84% { opacity: 0.78; }
+  86% { opacity: 0.3; }
+  88% { opacity: 0.85; }
+  91% { opacity: 0.42; }
+  94%, 100% { opacity: 0.78; }
 }
 
 .winbar {
@@ -2037,6 +2077,7 @@ canvas {
   .lv999-flash,
   .lv999-flash::before { animation: none !important; }
   .toast[data-tone^='lv999'] { animation: none !important; }
+  .win-secret-hint { animation: none !important; }
   .budget-alarm.pulse { animation: none !important; }
   .guide-spotlight, .gesture-finger, .guide-key kbd, .dpad-key.tutorial-focus { animation: none !important; }
   .guide-orbit i {

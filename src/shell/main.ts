@@ -36,6 +36,12 @@ import { BLOCKED_FEEDBACK_MS, redrawBudgetMs } from './frame-budget'
 import { logicalCanvasSize } from './viewport'
 import { SingleSlotInputBuffer } from './input-buffer'
 import {
+  createKeyboardKonamiMatcher,
+  createTouchKonamiMatcher,
+  isKonamiAlphabetKey,
+  konamiKeyFromDir,
+} from './konami'
+import {
   SWIPE_DISTANCE,
   shouldStartPreview,
   swipeDir,
@@ -225,6 +231,7 @@ app.innerHTML = `
         <div id="win-mark" class="win-mark"><span>✓</span> 关卡完成</div>
         <strong id="win-title" class="win-title"></strong>
         <div id="win-stats" class="win-stats"></div>
+        <button id="win-secret-hint" class="win-secret-hint hidden" aria-label="似乎还有没结束的游戏">GAME… NOT OVER?</button>
         <div id="feedback-panel" class="feedback-panel hidden"></div>
         <div class="win-actions">
           <button id="replay-after-win" class="secondary-button">再玩一次</button>
@@ -388,6 +395,7 @@ const overlay = app.querySelector('#overlay') as HTMLElement
 const winMark = app.querySelector('#win-mark') as HTMLElement
 const winTitle = app.querySelector('#win-title') as HTMLElement
 const winStats = app.querySelector('#win-stats') as HTMLElement
+const winSecretHint = app.querySelector('#win-secret-hint') as HTMLButtonElement
 const feedbackPanel = app.querySelector('#feedback-panel') as HTMLElement
 const nextAfterWin = app.querySelector('#next-after-win') as HTMLButtonElement
 const replayAfterWin = app.querySelector('#replay-after-win') as HTMLButtonElement
@@ -612,6 +620,76 @@ function isLv999Level(levelIndex = index): boolean {
   if (current.id !== 'chem') return false
   const meta = (levels[levelIndex]?.level ?? {}) as { id?: string }
   return meta.id === LV999_LEVEL_ID
+}
+
+// ---------- LV.999 入口隐藏化（design §5 LV.999 四次决策）：发现制，不是关卡锁 ----------
+// 发现前：选关面板只有「??? 未知扇区」诱饵、状态栏总数 / 74、74 关按最后一关处理；
+// 主入口 = Konami 序列（桌面）/ 滑动序列 + 双击（触屏）/ 50 终局通关卡 idle 面包屑 / 深链接。
+// 任何方式进入即持久发现标记，之后恢复霓虹入口与真实总数。
+
+const LV999_DISCOVERED_KEY = 'lexin-games:lv999-discovered'
+let lv999Discovered: boolean = (() => {
+  try {
+    return progressStore?.getItem(LV999_DISCOVERED_KEY) === '1'
+  } catch {
+    return false
+  }
+})()
+
+function markLv999Discovered(): void {
+  if (lv999Discovered) return
+  lv999Discovered = true
+  try {
+    progressStore?.setItem(LV999_DISCOVERED_KEY, '1')
+  } catch {
+    /* 隐私模式等存储不可用：本次会话内仍生效 */
+  }
+}
+
+/** 玩家可见的关卡总数：发现前隐藏 LV.999，避免「/ 75」直接泄漏还有一关 */
+function visibleLevelCount(): number {
+  return current.id === 'chem' && !lv999Discovered ? levels.length - 1 : levels.length
+}
+
+/** 接入隐藏挑战：关弹窗 → 持久发现标记 → 直达末关（主题切换自动播放既有故障闪屏） */
+function enterLv999(): void {
+  closeRules()
+  closePicker()
+  markLv999Discovered()
+  openLevel(levels.length - 1)
+  toast('> 隐藏挑战已接入 · LV.999', 4200, 'lv999')
+}
+
+// 秘籍入口（只在未发现时激活；发现后由选关面板霓虹入口承担，避免游玩中误触发重进）
+const keyboardKonami = createKeyboardKonamiMatcher()
+const touchKonami = createTouchKonamiMatcher()
+let touchKonamiArmedAt = 0
+let touchKonamiLastTapAt = 0
+
+/** 键盘 Konami：↑↑↓↓←→←→BA（方向键 / WASD 逐拍同权，a 在左位是左、末位是 A）；字母表外的键打断进度 */
+function trackKonamiKeydown(e: KeyboardEvent): void {
+  if (current.id !== 'chem' || lv999Discovered || isLv999Level()) return
+  const target = e.target
+  if (
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  ) {
+    return
+  }
+  if (!isKonamiAlphabetKey(e.key)) {
+    keyboardKonami.reset()
+    return
+  }
+  if (keyboardKonami.push(e.key)) {
+    keyboardKonami.reset()
+    enterLv999()
+  }
+}
+
+/** 触屏滑动序列：↑↑↓↓←→←→ 命中后 3 秒内双击棋盘接入 */
+function recordTouchKonamiSwipe(dir: Dir): void {
+  if (current.id !== 'chem' || lv999Discovered || isLv999Level()) return
+  if (touchKonami.push(konamiKeyFromDir(dir))) touchKonamiArmedAt = performance.now()
 }
 
 // LV.999 骇客介入（design §5 LV.999 二次决策）：四段完成逐段拼出 GAME / NOT / OVER；
@@ -968,7 +1046,7 @@ function updateHud(): void {
   levelNumber.textContent = isLv999Level()
     ? 'LV.999 // HIDDEN RAID'
     : levels.length > 0
-      ? `LEVEL ${String(index + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`
+      ? `LEVEL ${String(index + 1).padStart(2, '0')} / ${String(visibleLevelCount()).padStart(2, '0')}`
       : 'LEVEL —'
   levelLabel.textContent = meta.name ?? meta.id ?? '未命名关卡'
   moveLabel.textContent = String(hist.depth).padStart(2, '0')
@@ -1008,7 +1086,7 @@ function updateHud(): void {
   }
 
   prevBtn.disabled = index <= 0
-  nextBtn.disabled = index >= levels.length - 1
+  nextBtn.disabled = index >= visibleLevelCount() - 1
   undoBtn.disabled = !hist.canUndo
   updateBudgetAlarm()
   // 关卡 hint（教学/点拨文案）：纯展示，有则显示，无则隐藏
@@ -1033,15 +1111,45 @@ function winResult(): string {
   return result
 }
 
+/** 50《终局》通关卡 idle 4 秒后的面包屑（design §5 LV.999 四次决策）：给不用秘籍的玩家留发现路径。 */
+let winSecretHintTimer: ReturnType<typeof setTimeout> | null = null
+function cancelWinSecretHint(): void {
+  if (winSecretHintTimer !== null) {
+    clearTimeout(winSecretHintTimer)
+    winSecretHintTimer = null
+  }
+  winSecretHint.classList.add('hidden')
+}
+
+function scheduleWinSecretHint(): void {
+  cancelWinSecretHint()
+  if (current.id !== 'chem' || index !== 49 || lv999Discovered) return
+  winSecretHintTimer = setTimeout(() => {
+    winSecretHintTimer = null
+    if (lv999Discovered || index !== 49 || overlay.classList.contains('hidden')) return
+    winSecretHint.classList.remove('hidden')
+  }, 4000)
+}
+
 function showOverlay(): void {
-  const isLast = index >= levels.length - 1
+  const isLast = index >= visibleLevelCount() - 1
   const lv999 = isLv999Level()
   const meta = levelMeta()
   const result = winResult()
-  winMark.textContent = lv999 ? '◆ GODMODE CLEAR · GAME NOT OVER' : '✓ 关卡完成'
+  // 50《终局》= 主线完结：明确宣告「主线通关」，之后的 51–74 是通关后挑战（design §6）
+  const mainDone = current.id === 'chem' && index === 49
+  winMark.textContent = lv999
+    ? '◆ GODMODE CLEAR · GAME NOT OVER'
+    : mainDone
+      ? '✓ 主线通关'
+      : '✓ 关卡完成'
   winTitle.textContent = meta.name ?? meta.id ?? `第 ${index + 1} 关`
   winStats.textContent = result
-  winbarOpen.textContent = lv999 ? `LV.999 CLEAR · ${result}` : `✓ 已通关 · ${result}`
+  winbarOpen.textContent = lv999
+    ? `LV.999 CLEAR · ${result}`
+    : mainDone
+      ? `✓ 主线通关 · ${result}`
+      : `✓ 已通关 · ${result}`
   nextAfterWin.textContent = lv999 ? '再次挑战' : isLast ? '回到本关' : '下一关 →'
   winbarNext.textContent = lv999 ? '再次挑战' : isLast ? '回到本关' : '下一关 →'
   // 可选通关反馈（构建期开关，design §8）：未启用时面板保持隐藏、零请求
@@ -1054,6 +1162,7 @@ function showOverlay(): void {
     par: s.par,
   })
   reopenOverlay()
+  scheduleWinSecretHint()
 }
 
 function cancelWinReveal(): void {
@@ -1061,6 +1170,7 @@ function cancelWinReveal(): void {
     clearTimeout(winRevealTimer)
     winRevealTimer = null
   }
+  cancelWinSecretHint()
 }
 
 /** 动画完整结束，再停顿一小拍；期间若撤销 / 重开 / 换关，旧卡片不会穿越局面弹出。 */
@@ -1108,6 +1218,7 @@ function hideWinbar(): void {
 function openLevel(i: number): void {
   cancelWinReveal()
   index = Math.max(0, Math.min(i, levels.length - 1))
+  if (current.id === 'chem' && isLv999Level()) markLv999Discovered() // 深链接等任何进入都算发现
   tutorialIntroBeat = 0
   gameIndices[current.id] = index
   progress = setCurrentLevel(progress, current.id, index)
@@ -1209,7 +1320,7 @@ function restart(): void {
 }
 
 function nextLevel(): void {
-  if (index < levels.length - 1) openLevel(index + 1)
+  if (index < visibleLevelCount() - 1) openLevel(index + 1)
 }
 
 function prevLevel(): void {
@@ -1423,44 +1534,75 @@ const CHEM_CHAPTERS = [
   { start: 29, end: 35, label: '阶段护罩' },
   { start: 36, end: 42, label: '撞结构与再生护罩' },
   { start: 43, end: 49, label: '综合' },
-  { start: 50, end: 55, label: '综合候选池' },
-  { start: 56, end: 65, label: '高难候选池' },
-  { start: 66, end: 73, label: '转辙与红线' },
+  { start: 50, end: 55, label: '通关后·进阶综合' },
+  { start: 56, end: 65, label: '通关后·全机制组合' },
+  { start: 66, end: 73, label: '通关后·转辙与红线' },
   { start: 74, end: 74, label: '隐藏挑战' },
 ] as const
+
+// 「??? 未知扇区」诱饵：发现前顶替 LV.999 入口。点击只回访问拒绝；
+// 连点 9 次作为触屏友好兜底（999 母题），第 9 次直接接入隐藏挑战。
+let lv999BaitClicks = 0
+function onLv999BaitClick(): void {
+  lv999BaitClicks += 1
+  if (lv999BaitClicks >= 9) {
+    enterLv999()
+    return
+  }
+  toast(
+    lv999BaitClicks >= 5 ? '> ……还在试？' : '> ??? · 扇区不存在或无权访问',
+    2600,
+    'lv999-warn',
+  )
+}
 
 function buildPicker(): void {
   pickerEl.innerHTML = ''
   levels.forEach((l, i) => {
     const chapter = current.id === 'chem' ? CHEM_CHAPTERS.find((c) => c.start === i) : undefined
+    const meta = l.level as { id?: string; name?: string }
+    const lv999 = current.id === 'chem' && meta.id === LV999_LEVEL_ID
+    const lv999Hidden = lv999 && !lv999Discovered
     if (chapter) {
       const heading = document.createElement('div')
       heading.className = 'level-chapter'
-      const range = chapter.start === 74
-        ? 'LV.999'
-        : `${String(chapter.start + 1).padStart(2, '0')}–${String(chapter.end + 1).padStart(2, '0')}`
-      heading.innerHTML = `<span>${range}</span><strong>${chapter.label}</strong>`
+      const range =
+        chapter.start === 74
+          ? lv999Discovered
+            ? 'LV.999'
+            : '???'
+          : `${String(chapter.start + 1).padStart(2, '0')}–${String(chapter.end + 1).padStart(2, '0')}`
+      const label = chapter.start === 74 && !lv999Discovered ? '未知扇区' : chapter.label
+      heading.innerHTML = `<span>${range}</span><strong>${label}</strong>`
       pickerEl.appendChild(heading)
     }
-    const meta = l.level as { id?: string; name?: string }
     const btn = document.createElement('button')
     const isComplete = completed.has(levelProgressKey(current.id, i))
-    const lv999 = current.id === 'chem' && meta.id === LV999_LEVEL_ID
-    btn.className = ['level-item', i === index ? 'active' : '', isComplete ? 'complete' : '', lv999 ? 'lv999' : '']
+    btn.className = [
+      'level-item',
+      i === index ? 'active' : '',
+      isComplete && !lv999Hidden ? 'complete' : '',
+      lv999 ? 'lv999' : '',
+      lv999Hidden ? 'lv999-bait' : '',
+    ]
       .filter(Boolean)
       .join(' ')
     const number = document.createElement('span')
     number.className = 'level-item-number'
-    number.textContent = lv999 ? 'LV.999' : String(i + 1).padStart(2, '0')
+    number.textContent = lv999Hidden ? '???' : lv999 ? 'LV.999' : String(i + 1).padStart(2, '0')
     const name = document.createElement('span')
     name.className = 'level-item-name'
-    name.textContent = meta.name ?? meta.id ?? ''
+    name.textContent = lv999Hidden ? '∅∅∅ // 访问受限' : (meta.name ?? meta.id ?? '')
     const mark = document.createElement('span')
     mark.className = 'level-item-mark'
-    mark.textContent = isComplete ? '✓' : '→'
+    mark.textContent = isComplete && !lv999Hidden ? '✓' : '→'
     btn.append(number, name, mark)
-    btn.title = meta.id ?? ''
+    btn.title = lv999Hidden ? '???' : (meta.id ?? '')
     btn.addEventListener('click', () => {
+      if (lv999Hidden) {
+        onLv999BaitClick()
+        return
+      }
       openLevel(i)
       closePicker()
     })
@@ -1607,15 +1749,19 @@ rulesBackdrop.addEventListener('click', (e) => {
   if (e.target === rulesBackdrop) closeRules()
 })
 nextAfterWin.addEventListener('click', () => {
-  if (index >= levels.length - 1) restart()
+  if (index >= visibleLevelCount() - 1) restart()
   else nextLevel()
 })
 replayAfterWin.addEventListener('click', restart)
 viewAfterWin.addEventListener('click', viewBoard)
+winSecretHint.addEventListener('click', () => {
+  cancelWinSecretHint()
+  enterLv999()
+})
 winbarReplay.addEventListener('click', restart)
 winbarOpen.addEventListener('click', reopenOverlay)
 winbarNext.addEventListener('click', () => {
-  if (index >= levels.length - 1) restart()
+  if (index >= visibleLevelCount() - 1) restart()
   else nextLevel()
 })
 winbarClose.addEventListener('click', hideWinbar)
@@ -1705,6 +1851,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!start.engaged && distance >= SWIPE_DISTANCE) {
     const dir = swipeDir(dx, dy)
     if (dir) {
+      recordTouchKonamiSwipe(dir)
       if (bufferDirectionDuringAnimation(dir)) return
       pending = { dir, downAt: performance.now(), previewing: false, origin: 'pointer' }
       hideToast()
@@ -1714,6 +1861,7 @@ canvas.addEventListener('pointerup', (e) => {
   }
   if (start.buffered && distance >= SWIPE_DISTANCE) return
   if (start.engaged && distance >= SWIPE_DISTANCE && pending) {
+    recordTouchKonamiSwipe(pending.dir)
     hideToast()
     dirUp(pending.dir) // 松开 = 执行
     return
@@ -1721,6 +1869,20 @@ canvas.addEventListener('pointerup', (e) => {
   if (start.engaged) {
     cancelPending() // 拖回起点 = 取消
     return
+  }
+  // 秘籍尾拍：滑动序列已命中且 3 秒内双击棋盘 → 接入隐藏挑战
+  if (touchKonamiArmedAt > 0) {
+    const tapAt = performance.now()
+    if (tapAt - touchKonamiArmedAt <= 3000) {
+      if (tapAt - touchKonamiLastTapAt <= 500) {
+        touchKonamiArmedAt = 0
+        enterLv999()
+        return
+      }
+      touchKonamiLastTapAt = tapAt
+    } else {
+      touchKonamiArmedAt = 0
+    }
   }
   handleCanvasTap(e.clientX, e.clientY) // 轻点：Inspect / 标记
 })
@@ -1736,6 +1898,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault()
     return
   }
+  trackKonamiKeydown(e)
   if (!pickerBackdrop.classList.contains('hidden')) {
     if (e.key === 'Escape') closePicker()
     return
@@ -1829,6 +1992,83 @@ window.addEventListener('keyup', (e) => {
 
 // 失焦：清掉按住状态，避免回来后误执行
 window.addEventListener('blur', cancelPending)
+
+// ---------- 隐藏关控制台彩蛋 + dev 调试接口 ----------
+// 正式版即暴露 __lexin.lv999.enter() / .state()，并在控制台留一条主题化邀请（design §5 四次决策：
+// 控制台是骇客的主场，打开 devtools 的玩家正是彩蛋的目标受众）；reset / discover 仍仅限开发构建。
+declare global {
+  interface Window {
+    __lexin?: {
+      lv999: {
+        /** 接入隐藏挑战（任何状态可用；正在其中时只回一句终端台词） */
+        enter(): void
+        /** 当前发现状态与所在关卡 */
+        state(): { discovered: boolean; levelIndex: number; baitClicks: number }
+        /** 重置为未发现（仅 dev）；若正身处隐藏关则跳回 50《终局》便于复测面包屑 */
+        reset?(): void
+        /** 标记为已发现（仅 dev，不跳转），用于反向复测发现后的 UI 恢复 */
+        discover?(): void
+      }
+    }
+  }
+}
+
+window.__lexin = {
+  lv999: {
+    enter: () => {
+      if (isLv999Level()) {
+        console.info('[lexin] > 你已经在这里了')
+        return
+      }
+      console.info('[lexin] > 隐藏挑战已接入 · LV.999')
+      enterLv999()
+    },
+    state: () => ({ discovered: lv999Discovered, levelIndex: index, baitClicks: lv999BaitClicks }),
+  },
+}
+
+/** 正式版与 dev 都输出的主题化终端邀请（dev 便于直接调试彩蛋观感） */
+function printLv999ConsoleInvite(): void {
+  const art = [
+    '█    █   █    ████ ████ ████',
+    '█    █   █    █  █ █  █ █  █',
+    '█    █   █    ████ ████ ████',
+    '█     █ █  ██    █    █    █',
+    '████   █   ██ ████ ████ ████',
+  ].join('\n')
+  console.info(
+    `%c${art}\n\n> PUNKLORDE TERMINAL v9.99\n> 检测到空闲扇区……\n> __lexin.lv999.enter()   // 仅限无敌玩家`,
+    'color:#bd7cff;font-family:ui-monospace,Menlo,Consolas,monospace;',
+  )
+}
+
+if (import.meta.env.DEV) {
+  const refreshLv999Ui = (): void => {
+    updateHud()
+    if (!pickerBackdrop.classList.contains('hidden')) buildPicker()
+  }
+  window.__lexin.lv999.reset = () => {
+    try {
+      progressStore?.removeItem(LV999_DISCOVERED_KEY)
+    } catch {
+      /* 存储不可用时仅重置内存态 */
+    }
+    lv999Discovered = false
+    lv999BaitClicks = 0
+    if (isLv999Level()) openLevel(49) // 面包屑在 50《终局》的通关卡上
+    else refreshLv999Ui()
+    console.info('[lexin] LV.999 已重置为未发现')
+  }
+  window.__lexin.lv999.discover = () => {
+    markLv999Discovered()
+    refreshLv999Ui()
+    console.info('[lexin] LV.999 已标记为发现')
+  }
+  printLv999ConsoleInvite()
+  console.info('[dev] 隐藏关调试：__lexin.lv999.enter() / .reset() / .discover() / .state()')
+} else {
+  printLv999ConsoleInvite()
+}
 
 const requestedGame = searchParams.get('game')
 const initialGame = requestedGame !== null && Object.hasOwn(bundles, requestedGame) ? requestedGame : 'chem'

@@ -21,7 +21,7 @@ const levelFiles = import.meta.glob('./levels/*.json', {
   import: 'default',
 }) as Record<string, unknown>
 
-/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；01–50 正式 + 51–74 扩展 + LV.999 彩蛋） */
+/** 设计意图基线：文件名 → 最短解步数（逐关 `pnpm solve` 核对；01–74 正式 + LV.999 隐藏彩蛋） */
 const baseline: Record<string, number> = {
   './levels/level-01.json': 2, // 滑动到固定站位，再完成第一次撞入
   './levels/level-02.json': 5, // 从错误侧绕到背面
@@ -73,22 +73,22 @@ const baseline: Record<string, number> = {
   './levels/level-48.json': 11, // mastery：光照预调后三臂再生闸门开→关→开（候选池 58 提升）
   './levels/level-49.json': 14, // mastery：双喷口接力，飞珠连续接力（候选池 55 提升）
   './levels/level-50.json': 12, // 终局：三阶段光照 × 搬运 × 弹射 × 护罩（旧 50，唯一终局）
-  './levels/level-51.json': 9, // 扩展池：双锁撞核（旧 51）
-  './levels/level-52.json': 10, // 扩展池：缺口缓冲（旧 52）
-  './levels/level-53.json': 12, // 扩展池：解锁撞链（旧 54）
-  './levels/level-54.json': 12, // 扩展池：三段注入（旧 56）
-  './levels/level-55.json': 11, // 扩展池：三路余波（旧 57）
-  './levels/level-56.json': 12, // 扩展池：双锁回收（旧 60，去终局命名）
-  './levels/level-57.json': 11, // 高难池：撞核转喷口（撞核目标首次是弹射中心本体）
-  './levels/level-58.json': 11, // 高难池：空穴准星（撞核翻空穴接通共振键）
-  './levels/level-59.json': 9, // 高难池：撞核关闸（空穴撞进监视槽主动关再生闸）
-  './levels/level-60.json': 11, // 高难池：双光时序（双光照 + 双护罩顺序谜题）
-  './levels/level-61.json': 14, // 高难池：喷口对射（对脸撞核再瞄准 + 撞光转轴）
-  './levels/level-62.json': 13, // 高难池：空手关闸（监视臂怕染料，只能空手撞）
-  './levels/level-63.json': 14, // 高难池：三级火箭（弹射三级接力，中段触光）
-  './levels/level-64.json': 11, // 高难池：罩内预瞄（护罩内预转喷口，解锁即射）
-  './levels/level-65.json': 19, // 高难池：合流（三段闭环：连锁 → 光瞄撞核关闸 → 余料终投）
-  './levels/level-66.json': 23, // 高难池：四段全谱（四段闭环 + 双弹射 + 双光照 + 空穴接收端）
+  './levels/level-51.json': 9, // 进阶综合：双锁撞核（旧 51）
+  './levels/level-52.json': 10, // 进阶综合：缺口缓冲（旧 52）
+  './levels/level-53.json': 12, // 进阶综合：解锁撞链（旧 54）
+  './levels/level-54.json': 12, // 进阶综合：三段注入（旧 56）
+  './levels/level-55.json': 11, // 进阶综合：三路余波（旧 57）
+  './levels/level-56.json': 12, // 进阶综合：双锁回收（旧 60，去终局命名）
+  './levels/level-57.json': 11, // 全机制组合：撞核转喷口（撞核目标首次是弹射中心本体）
+  './levels/level-58.json': 11, // 全机制组合：空穴准星（撞核翻空穴接通共振键）
+  './levels/level-59.json': 9, // 全机制组合：撞核关闸（空穴撞进监视槽主动关再生闸）
+  './levels/level-60.json': 11, // 全机制组合：双光时序（双光照 + 双护罩顺序谜题）
+  './levels/level-61.json': 14, // 全机制组合：喷口对射（对脸撞核再瞄准 + 撞光转轴）
+  './levels/level-62.json': 13, // 全机制组合：空手关闸（监视臂怕染料，只能空手撞）
+  './levels/level-63.json': 14, // 全机制组合：三级火箭（弹射三级接力，中段触光）
+  './levels/level-64.json': 11, // 全机制组合：罩内预瞄（护罩内预转喷口，解锁即射）
+  './levels/level-65.json': 19, // 全机制组合：合流（三段闭环：连锁 → 光瞄撞核关闸 → 余料终投）
+  './levels/level-66.json': 23, // 全机制组合：四段全谱（四段闭环 + 双弹射 + 双光照 + 空穴接收端）
   './levels/level-67.json': 11, // 转辙：北口回声（波反弹换向 + 三段接力注入）
   './levels/level-68.json': 10, // 转辙：唤醒（先西后北的顺序由键奇偶锁死）
   './levels/level-69.json': 10, // 转辙·遥扳（步数红线 + 漏斗墙 + 撞核二跳级联）
@@ -266,7 +266,7 @@ function hasWinningPathAvoiding(
   return false
 }
 
-describe('chem（109.5°）正式 01–50 + 赛后扩展 51–74 + LV.999 彩蛋', () => {
+describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   it('关卡数量与基线表一致', () => {
     expect(entries.map(([file]) => file)).toEqual(Object.keys(baseline))
     expect(entries).toHaveLength(75)
@@ -335,7 +335,7 @@ describe('chem（109.5°）正式 01–50 + 赛后扩展 51–74 + LV.999 彩蛋
     for (const n of [39, 40, 41, 43, 48]) {
       expect(at(n).centers.some((c) => c.reactiveTo), `level-${n} 应使用再生护罩`).toBe(true)
     }
-    // 唯一终局：50；扩展池与正式曲线其余关不得使用终局命名
+    // 唯一终局：50；赛后挑战 51–74 与正式曲线其余关不得使用终局命名
     for (let n = 1; n <= 49; n++) expect(at(n).name).not.toMatch(/^终局/)
     for (let n = 51; n <= 75; n++) expect(at(n).name).not.toMatch(/^终局/)
     expect(at(50).name).toMatch(/^终局/)
