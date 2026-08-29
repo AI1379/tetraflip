@@ -97,7 +97,7 @@ const baseline: Record<string, number> = {
   './levels/level-72.json': 11, // 红线·预瞄（64 旋转 + 预算）
   './levels/level-73.json': 19, // 红线·合流（65 旋转 + 预算）
   './levels/level-74.json': 14, // 转辙·终章（三波换向 + 借射第四波 + 红线）
-  './levels/level-75.json': 23, // LV.999：四段全谱 NG+ 重编，零冗余红线
+  './levels/level-75.json': 25, // LV.999：01 复刻口袋 + 重写总线 + 全锁设施，零冗余红线
 }
 
 const entries = Object.entries(levelFiles).sort(([a], [b]) => a.localeCompare(b))
@@ -685,7 +685,7 @@ describe('chem（109.5°）正式 01–50 + 赛后扩展 51–74 + LV.999 彩蛋
     ['./levels/level-64.json', 1, 2],
     ['./levels/level-65.json', 5, 4],
     ['./levels/level-66.json', 5, 4],
-    ['./levels/level-75.json', 5, 4],
+    ['./levels/level-75.json', 4, 5],
   ] as const)('%s 撞核命题不可绕开：最短解必须由弹射珠撞翻指定目标', (file, launcher, target) => {
     const hitsTarget = (t: Transition): boolean =>
       attackedCenter(t) === launcher && isEjection(t, launcher) && centerChanged(t, target)
@@ -780,7 +780,7 @@ describe('chem（109.5°）正式 01–50 + 赛后扩展 51–74 + LV.999 彩蛋
     expect(level.lights.some(([x, y]) => cellKey(x, y) === lightKey)).toBe(true)
   })
 
-  it('level-75 以 LV.999 特殊 ID 收尾，并保留四阶段全机制零冗余挑战', () => {
+  it('level-75 以 LV.999 特殊 ID 收尾：01 复刻口袋 + 重写总线 + 全机制闭环零冗余', () => {
     const file = './levels/level-75.json'
     const level = chemGame.parseLevel(levelFiles[file])
     expect(level.id).toBe('109.5°-999')
@@ -790,7 +790,102 @@ describe('chem（109.5°）正式 01–50 + 赛后扩展 51–74 + LV.999 彩蛋
     expect(level.centers.filter((center) => center.ejects)).toHaveLength(2)
     expect(level.centers.filter((center) => center.kind === 'trigonal')).toHaveLength(2)
     expect(level.centers.filter((center) => center.reactiveTo !== undefined)).toHaveLength(1)
+    // 全锁设施：盾 1（T1/V，段 1 开）与盾 2（E2/G1，段 2 开）各两座，锁廊里锁号不同
+    expect(level.centers.filter((center) => center.shieldUntilStage === 1)).toHaveLength(2)
+    expect(level.centers.filter((center) => center.shieldUntilStage === 2)).toHaveLength(2)
     expect(level.moveLimit).toBe(baseline[file])
+
+    // 口袋 = 01 复刻：出生点、中心 0 构型与首段目标逐字段一致，最短解前两步就是 01 的解
+    const lv01 = chemGame.parseLevel(levelFiles['./levels/level-01.json'])
+    expect(level.player).toEqual(lv01.player)
+    expect(level.centers[0].arms).toEqual(lv01.centers[0].arms)
+    expect(level.centers[0].leaving).toBe(lv01.centers[0].leaving)
+    expect(level.stages[0].goals).toEqual(lv01.stages[0].goals)
+    const solution = solve(chemGame, level, { maxDepth: 30 }).solution
+    expect(solution.slice(0, 2)).toEqual(solve(chemGame, lv01, { maxDepth: 10 }).solution)
+
+    // 重写总线的结构性保护：中心 1–3 的进攻位被总线邻座永久占据，只有共振能翻动它们
+    for (const i of [1, 2, 3]) {
+      const [dx, dy] = DIR_VEC[opposite(level.centers[i].leaving)]
+      const attackX = level.centers[i].pos[0] + dx
+      const attackY = level.centers[i].pos[1] + dy
+      expect(
+        level.centers.some((c) => c.pos[0] === attackX && c.pos[1] === attackY),
+        `中心 ${i} 的进攻位应被总线邻座占据`,
+      ).toBe(true)
+    }
+  })
+
+  it('level-75 第 999 场：第二步重写五中心；假绝路内只有口袋能推进；弹射回扫全总线', () => {
+    const file = './levels/level-75.json'
+    const level = chemGame.parseLevel(levelFiles[file])
+    const transitions = shortestTransitions(file)
+
+    // 第二步收尾 01 复刻：一次动作翻转口袋 + 总线共 5 座中心，阶段 0 → 1，主盘纹丝不动
+    const rewrite = transitions[1]
+    expect(rewrite.before.stage).toBe(0)
+    expect(rewrite.after.stage).toBe(1)
+    expect([0, 1, 2, 3, 4].every((i) => centerChanged(rewrite, i))).toBe(true)
+    expect([5, 6, 7, 8, 9, 10].every((i) => !centerChanged(rewrite, i))).toBe(true)
+
+    // 假绝路：不直接进攻口袋中心，阶段永远无法推进（深度 10 穷举全部非等价局面）
+    let frontier: ChemState[] = [initialState(level)]
+    const visited = new Set([chemGame.stateKey(frontier[0])])
+    let escaped = false
+    for (let depth = 0; depth < 10; depth++) {
+      const next: ChemState[] = []
+      for (const before of frontier) {
+        for (const action of chemGame.actions(before)) {
+          const after = step(before, action)
+          if (chemGame.stateKey(after) === chemGame.stateKey(before)) continue
+          if (attackedCenter({ before, after, action }) === 0) continue
+          if (after.stage > 0) escaped = true
+          const key = chemGame.stateKey(after)
+          if (!visited.has(key) && !after.won) {
+            visited.add(key)
+            next.push(after)
+          }
+        }
+      }
+      frontier = next
+    }
+    expect(escaped, '除口袋进攻外不应存在任何推进阶段的路线').toBe(false)
+
+    // HUB 弹射回扫：撞翻 T1 的同一动作把总线翻回开局构型（单动作 7 座，全游戏最长）
+    const hubShot = transitions.find((t) => isEjection(t, 4))
+    expect(hubShot, '最短解必须包含对 HUB 的持珠弹射').toBeDefined()
+    expect(centerChanged(hubShot!, 5), 'T1 必须被飞珠撞翻').toBe(true)
+    expect(centerChanged(hubShot!, 6), 'V 必须被共振续翻').toBe(true)
+    expect([0, 1, 2, 3].every((i) => centerChanged(hubShot!, i)), '总线必须整体回扫').toBe(true)
+    for (const i of [0, 1, 2, 3]) {
+      expect(hubShot!.after.centers[i].arms, `总线中心 ${i} 应回到开局构型`).toEqual(
+        initialState(level).centers[i].arms,
+      )
+    }
+
+    // 末段：拾蓝必须踩光，R 的终投在南侧进攻位完成并共振翻 F
+    const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
+    const finalPickup = transitions.find(
+      (t) => t.after.holding === 'blue' && t.before.holding === null,
+    )
+    expect(finalPickup, '必须从光照格拾起蓝珠').toBeDefined()
+    expect(lightKeys.has(cellKey(finalPickup!.after.player[0], finalPickup!.after.player[1]))).toBe(
+      true,
+    )
+    const final = transitions.at(-1)!
+    expect(attackedCenter(final)).toBe(9)
+    expect(final.before.centers[9].leaving, '踩光后 R 的开口必须朝北').toBe('N')
+    expect(centerChanged(final, 10), '终投 R 必须共振翻 F').toBe(true)
+    expect(final.after.won).toBe(true)
+
+    // 双光陷阱：通往圣所的光照格恰好踏入一次；盾门暗格里的陷阱光格 (8,0) 最短解从不踏入
+    const visits = new Map<string, number>()
+    for (const t of transitions) {
+      const key = cellKey(t.after.player[0], t.after.player[1])
+      if (lightKeys.has(key)) visits.set(key, (visits.get(key) ?? 0) + 1)
+    }
+    expect(visits.get(cellKey(3, 4)), '拾蓝光照格应恰好踏入一次').toBe(1)
+    expect(visits.get(cellKey(8, 0)), '陷阱光照格不应出现在最短解').toBeUndefined()
   })
 
   it.each([

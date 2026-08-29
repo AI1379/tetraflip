@@ -817,7 +817,8 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
   })
 
   // 目标（虚线圈）：当前段正常显示，未来段淡圈预告（分步目标，v3）。
-  // 臂若朝向相邻中心，圈画在两中心之间的半程位置（避让邻居）。
+  // 臂若朝向相邻中心，圈紧扣属主中心自己的短臂原子（与普通目标圈同一「圈住原子」语法），
+  // 不画在键中点——否则玩家分不清圈要求的是左侧还是右侧中心的臂色（2026-08-29 协作者反馈）。
   const drawGoal = (
     g: { center: number; arm: Dir; color: string },
     alpha: number,
@@ -831,9 +832,10 @@ export function render(s: ChemState, ctx: CanvasRenderingContext2D, W: number, H
     let gy: number
     if (neighborIdx(g.center, g.arm) >= 0) {
       const [dx, dy] = DIR_VEC[g.arm]
-      gx = cx(c.pos[0]) + dx * cell * 0.5
-      gy = cy(c.pos[1]) + dy * cell * 0.5
-      dashedCircle(ctx, gx, gy, cell * 0.17, colorOf(g.color), ringAlpha, goalDash(g.color))
+      gx = cx(c.pos[0]) + dx * cell * ARM_LEN_SHORT
+      gy = cy(c.pos[1]) + dy * cell * ARM_LEN_SHORT
+      // 半径收敛到 0.16：键两侧同时有目标时（如 66 段 4）两圈相切不重叠
+      dashedCircle(ctx, gx, gy, cell * 0.16, colorOf(g.color), ringAlpha, goalDash(g.color))
     } else {
       const [dx, dy] = DIR_VEC[g.arm]
       gx = cx(c.pos[0]) + dx * cell * ARM_LEN

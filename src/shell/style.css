@@ -797,6 +797,66 @@ canvas {
   pointer-events: none;
 }
 
+/* LV.999 骇客终端 toast：等宽字体 + 霓虹辉光 + 色差抖动 + CRT 开机闪 + 扫描线（零素材，纯 CSS）。 */
+.toast[data-tone^='lv999'] {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #dff7ff;
+  border-color: rgba(88, 217, 255, 0.55);
+  background:
+    repeating-linear-gradient(0deg, rgba(88, 217, 255, 0.045) 0 1px, transparent 1px 3px),
+    var(--floating-surface);
+  box-shadow:
+    0 0 0 1px rgba(88, 217, 255, 0.14),
+    0 0 22px rgba(88, 217, 255, 0.16),
+    0 12px 36px var(--floating-shadow);
+  text-shadow:
+    0 0 6px rgba(88, 217, 255, 0.55),
+    0 0 18px rgba(189, 124, 255, 0.35),
+    1.5px 0 0 rgba(255, 94, 219, 0.75),
+    -1.5px 0 0 rgba(88, 217, 255, 0.75);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  animation: toast-lv999-boot 460ms steps(1, end) both, toast-lv999-jitter 1.4s steps(1, end) 460ms infinite;
+}
+
+/* 警告变体（嘲讽文案）：玫红告警描边 + 暖色色差 */
+.toast[data-tone='lv999-warn'] {
+  color: #ffeaf3;
+  border-color: rgba(255, 94, 122, 0.62);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 94, 122, 0.05) 0 1px, transparent 1px 3px),
+    var(--floating-surface);
+  box-shadow:
+    0 0 0 1px rgba(255, 94, 122, 0.14),
+    0 0 22px rgba(255, 94, 122, 0.15),
+    0 12px 36px var(--floating-shadow);
+  text-shadow:
+    0 0 6px rgba(255, 94, 122, 0.6),
+    0 0 18px rgba(255, 94, 219, 0.3),
+    1.5px 0 0 rgba(255, 94, 122, 0.8),
+    -1.5px 0 0 rgba(255, 216, 102, 0.65);
+}
+
+@keyframes toast-lv999-boot {
+  0%, 12%, 24% { opacity: 0; }
+  6%, 18% { opacity: 0.9; }
+  30% { opacity: 0.25; }
+  42% { opacity: 1; }
+  54% { opacity: 0.55; }
+  66%, 100% { opacity: 1; }
+}
+
+@keyframes toast-lv999-jitter {
+  0%, 91% { transform: translateX(-50%); }
+  92% { transform: translateX(calc(-50% - 1.5px)) skewX(-1deg); }
+  94% { transform: translateX(calc(-50% + 1px)); }
+  96% { transform: translateX(calc(-50% - 0.5px)) skewX(0.6deg); }
+  98%, 100% { transform: translateX(-50%); }
+}
+
 .winbar {
   position: absolute;
   left: 50%;
@@ -1976,6 +2036,7 @@ canvas {
   :root[data-level-theme="lv999"] .stage::after { animation: none !important; }
   .lv999-flash,
   .lv999-flash::before { animation: none !important; }
+  .toast[data-tone^='lv999'] { animation: none !important; }
   .budget-alarm.pulse { animation: none !important; }
   .guide-spotlight, .gesture-finger, .guide-key kbd, .dpad-key.tutorial-focus { animation: none !important; }
   .guide-orbit i {

@@ -605,6 +605,26 @@ function isLv999Level(levelIndex = index): boolean {
   return meta.id === LV999_LEVEL_ID
 }
 
+// LV.999 骇客介入（design §5 LV.999 二次决策）：四段完成逐段拼出 GAME / NOT / OVER；
+// 迷路 5 步仍卡在第一段时播一次性「低效操作」嘲讽——它同时是变相指路（回起点的口袋）。
+// 阈值 5 = 走出单门口袋并撞上第一道锁的距离，避免刚出门就被打断。
+const LV999_STAGE_SPELLS = ['GAME', 'NOT', 'OVER'] as const
+let lv999TauntShown = false
+
+/** 只在 LV.999 的有效动作后调用；won 状态交给通关卡片，不重复播字。 */
+function notifyLv999Progress(after: { stage: number; moves: number }, beforeStage: number): void {
+  if (after.stage > beforeStage) {
+    if (after.stage <= LV999_STAGE_SPELLS.length) {
+      toast(`> 段 0${after.stage} 改写完成 —— ${LV999_STAGE_SPELLS[after.stage - 1]}`, 3200, 'lv999')
+    }
+    return
+  }
+  if (!lv999TauntShown && after.moves >= 5 && after.stage === 0) {
+    lv999TauntShown = true
+    toast('> 低效操作已记录 ▸ 第 999 场，仍从第 1 场的房间开始', 6000, 'lv999-warn')
+  }
+}
+
 function levelProgressKey(game: string, levelIndex: number): string {
   const meta = (levels[levelIndex]?.level ?? {}) as { id?: string }
   return `${game}:${meta.id ?? levelIndex}`
@@ -1087,6 +1107,7 @@ function openLevel(i: number): void {
   current.resetAnim?.()
   hist = new History(current.def.initialState(levels[index].level))
   tutorialEvent = null
+  lv999TauntShown = false
   cancelPending()
   setChemInspect(null)
   clearInspectTimer()
@@ -1148,11 +1169,14 @@ function applyDir(dir: Dir): void {
   }
   setChemInspect(null) // 局面已变：Inspect 面板收起（design §11）
   clearInspectTimer()
+  const lv999 = current.id === 'chem' && isLv999Level()
+  const lv999BeforeStage = lv999 ? (hist.current as { stage: number }).stage : -1
   current.setTransition?.(transition)
   hist.push(next)
   draw()
   updateHud()
   pulseBudgetAlarm()
+  if (lv999) notifyLv999Progress(next as { stage: number; moves: number }, lv999BeforeStage)
   if (def.isWin(next)) scheduleWinOverlay()
 }
 
@@ -1476,14 +1500,23 @@ const DIR_TEXT: Record<string, string> = {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
-function toast(msg: string, ms = 5000): void {
+function toast(msg: string, ms = 5000, tone?: 'lv999' | 'lv999-warn'): void {
   toastEl.textContent = msg
+  if (tone === undefined) {
+    delete toastEl.dataset.tone
+  } else {
+    // 先摘再挂同名属性并强制回流，让骇客变体的入场动画每次从头播放
+    delete toastEl.dataset.tone
+    void toastEl.offsetWidth
+    toastEl.dataset.tone = tone
+  }
   toastEl.classList.remove('hidden')
   if (toastTimer !== null) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => toastEl.classList.add('hidden'), ms)
 }
 function hideToast(): void {
   toastEl.classList.add('hidden')
+  delete toastEl.dataset.tone
   if (toastTimer !== null) {
     clearTimeout(toastTimer)
     toastTimer = null

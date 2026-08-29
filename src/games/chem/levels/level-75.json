@@ -1,98 +1,132 @@
 {
   "id": "109.5°-999",
   "name": "GAME NOT OVER",
-  "hint": "满级挑战只有一条路线。看清四个阶段，算准两次弹射与两块光格，再走第一步。",
-  "width": 8,
-  "height": 5,
-  "walls": [],
-  "player": [7, 3],
+  "hint": "第 999 场，从第 1 场的房间开始：先在房间里完成第一次背面进攻，整条总线的开口会被一次共振全部改写，各段的锁依次松开。之后是两段发射：第一发撞开东边的核，第二发的落珠停在光上；踏进光里拾起它，末段从南面收束。本关步数有红线。",
+  "width": 10,
+  "height": 6,
+  "walls": [
+    [7, 0],
+    [9, 0],
+    [0, 2],
+    [1, 2],
+    [2, 2],
+    [3, 2],
+    [4, 2],
+    [5, 2],
+    [7, 2],
+    [8, 2],
+    [9, 3],
+    [0, 4],
+    [9, 4],
+    [0, 5],
+    [1, 5],
+    [4, 5],
+    [5, 5],
+    [6, 5],
+    [7, 5],
+    [8, 5],
+    [9, 5]
+  ],
+  "player": [0, 0],
   "centers": [
     {
-      "pos": [6, 4],
-      "arms": { "S": "purple", "W": "yellow", "N": "green", "E": "red" },
-      "leaving": "W"
-    },
-    {
-      "pos": [6, 3],
-      "arms": { "S": "purple", "W": "yellow", "N": "blue", "E": "green" },
-      "leaving": "S",
-      "reactiveTo": { "center": 4, "arm": "S", "color": "red" }
-    },
-    {
-      "pos": [6, 2],
-      "arms": { "S": "purple", "W": "yellow", "N": "blue", "E": "red" },
+      "pos": [1, 1],
+      "arms": { "N": "blue", "E": "red", "S": "green", "W": "yellow" },
       "leaving": "E"
     },
     {
-      "pos": [5, 3],
-      "arms": { "S": "yellow", "W": "green", "N": "blue", "E": "red" },
-      "leaving": "N",
-      "ejects": true
+      "pos": [2, 1],
+      "arms": { "N": "green", "E": "blue", "S": "red", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [3, 1],
+      "arms": { "N": "red", "E": "green", "S": "blue", "W": "yellow" },
+      "leaving": "W"
+    },
+    {
+      "pos": [4, 1],
+      "arms": { "N": "blue", "E": "purple", "S": "green", "W": "yellow" },
+      "leaving": "W"
     },
     {
       "pos": [5, 1],
-      "arms": { "S": "red", "W": "blue", "E": "yellow" },
-      "leaving": "W",
-      "kind": "trigonal"
-    },
-    {
-      "pos": [2, 1],
-      "arms": { "S": "blue", "W": "purple", "N": "green", "E": "yellow" },
-      "leaving": "S",
+      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "leaving": "E",
       "ejects": true,
       "hitCenters": true
     },
     {
-      "pos": [0, 4],
-      "arms": { "S": "purple", "W": "blue", "N": "yellow" },
+      "pos": [9, 1],
+      "arms": { "N": "green", "E": "purple", "S": "blue", "W": "red" },
+      "leaving": "E",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [9, 2],
+      "arms": { "N": "green", "E": "yellow", "S": "red" },
       "leaving": "S",
-      "kind": "trigonal"
+      "kind": "trigonal",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [7, 4],
+      "arms": { "N": "red", "E": "blue", "S": "green", "W": "purple" },
+      "leaving": "E",
+      "ejects": true,
+      "shieldUntilStage": 2
+    },
+    {
+      "pos": [8, 4],
+      "arms": { "N": "yellow", "S": "green", "W": "purple" },
+      "leaving": "N",
+      "kind": "trigonal",
+      "shieldUntilStage": 2
+    },
+    {
+      "pos": [2, 4],
+      "arms": { "N": "yellow", "E": "red", "S": "green", "W": "purple" },
+      "leaving": "W",
+      "reactiveTo": { "center": 8, "arm": "N", "color": "green" }
     },
     {
       "pos": [1, 4],
-      "arms": { "S": "yellow", "W": "blue", "N": "purple", "E": "red" },
-      "leaving": "S"
+      "arms": { "N": "yellow", "E": "red", "S": "blue", "W": "green" },
+      "leaving": "E"
     }
   ],
   "groups": [
-    { "pos": [7, 4], "color": "blue" }
+    { "pos": [2, 0], "color": "green" }
   ],
   "lights": [
-    [4, 0],
-    [0, 3]
+    [8, 0],
+    [3, 4]
   ],
   "stages": [
     {
       "goals": [
-        { "center": 0, "arm": "E", "color": "blue" },
-        { "center": 0, "arm": "W", "color": "red" },
-        { "center": 1, "arm": "S", "color": "blue" },
-        { "center": 2, "arm": "S", "color": "blue" }
+        { "center": 0, "arm": "N", "color": "green" }
       ]
     },
     {
       "goals": [
-        { "center": 5, "arm": "E", "color": "yellow" },
-        { "center": 5, "arm": "S", "color": "green" },
-        { "center": 4, "arm": "N", "color": "red" }
+        { "center": 5, "arm": "W", "color": "purple" },
+        { "center": 6, "arm": "N", "color": "red" }
       ]
     },
     {
       "goals": [
-        { "center": 3, "arm": "W", "color": "purple" },
-        { "center": 3, "arm": "S", "color": "blue" },
-        { "center": 1, "arm": "S", "color": "blue" },
-        { "center": 2, "arm": "S", "color": "blue" }
+        { "center": 7, "arm": "W", "color": "red" },
+        { "center": 8, "arm": "N", "color": "green" }
       ]
     },
     {
       "goals": [
-        { "center": 6, "arm": "S", "color": "yellow" },
-        { "center": 6, "arm": "E", "color": "blue" },
-        { "center": 7, "arm": "W", "color": "red" }
+        { "center": 9, "arm": "S", "color": "blue" },
+        { "center": 10, "arm": "N", "color": "blue" }
       ]
     }
   ],
-  "par": 23,
-  "moveLimit": 23
+  "par": 25,
+  "moveLimit": 25
 }
