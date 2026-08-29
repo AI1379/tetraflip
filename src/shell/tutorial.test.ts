@@ -184,7 +184,9 @@ describe('状态驱动操作引导与机制首现教学', () => {
     expect(preview?.title).toContain('虚线')
     expect(preview?.body).toContain('落进目标圈')
     expect(preview?.feedback).toContain('预演中')
-    expect(preview?.feedback).toContain('回到原位或按 Esc')
+    // 键盘松开 = 取消（2026-08-29 输入模型决策）；触屏仍提示回到原位取消
+    expect(preview?.feedback).toContain('松开即取消')
+    expect(preview?.tip).toContain('轻点执行，松开取消')
     expect(preview?.forecast).toMatchObject({
       center: 0,
       dir: 'S',
@@ -197,6 +199,9 @@ describe('状态驱动操作引导与机制首现教学', () => {
     const touchGuide = getChemTutorial(2, carrying, null, 'touch', 5)
     expect(touchGuide?.title).toContain('向下拖住')
     expect(touchGuide?.tip).toContain('保持手指不动')
+    const touchPreview = getChemTutorial(2, carrying, { kind: 'preview', dir: 'S' }, 'touch', 5)
+    expect(touchPreview?.feedback).toContain('回到原位或按 Esc')
+    expect(touchPreview?.tip).toContain('松手执行')
   })
 
   it('第四关把放入和换出作为两条结果并排说明', () => {

@@ -54,7 +54,7 @@ import {
  *
  * 认知外置层（design §11）在本层的落点：
  * - 输入模型：tap = 执行，hold ≥ 280ms = 预演（预览 = 对当前局面求一次 step 交给渲染层画 ghost），
- *   松开 = 执行，Esc / 指针移开 = 取消；棋盘拖拽先锁定方向，停留后才进入预演。
+ *   键盘松开 = 取消（轻点执行）、指针松开 = 执行（回到原位 / 移出取消）；棋盘拖拽先锁定方向，停留后才进入预演。
  * - 标记模式（chem）：点按中心循环 ①–⑤，点按其他格循环 ★/？/×；按「游戏:关卡」存会话内。
  * - Inspect（chem）：点按中心显示构型周期面板（渲染层实现），6 秒自动收起、任何动作即收起。
  */
@@ -75,7 +75,7 @@ interface Bundle {
   /** 当前棋盘动画还需多久结束；通关卡片据此避让终局反馈 */
   animationRemainingMs?: () => number
   /** 按住预演（design §11）：注入 / 清除 step(当前, 方向) 的 ghost 态；未实现则缺省 */
-  setPreview?: (state: any | null) => void
+  setPreview?: (state: any | null, inputHint?: 'key' | 'pointer') => void
   /** 是否支持玩家标记（design §11 层 ③）；当前仅 chem */
   supportsMarks?: boolean
 }
@@ -271,7 +271,7 @@ app.innerHTML = `
   </section>
 
   <footer class="app-footer">
-    <div class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开执行，Esc 取消） · Z 撤销 · R 重开 · H 提示 · G 规则 · M 标记</div>
+    <div class="shortcut-hint">方向键 / WASD 移动 · 长按预演（松开取消，轻点执行） · Z 撤销 · R 重开 · H 提示 · G 规则 · M 标记</div>
     <div class="copyright">© 2026 <a href="https://github.com/AI1379" target="_blank" rel="noopener noreferrer" aria-label="Renatus Madrigal 的 GitHub 主页">Renatus Madrigal</a></div>
   </footer>
 
@@ -309,7 +309,7 @@ app.innerHTML = `
               <span class="rule-number">03</span><div><strong>拾珠与交换</strong><p>走过场上的珠会拿起它；手里已经有珠时，会和地上的珠交换。拿着珠撞进开口时，手里的珠进去，开口上原来的珠换到你手里，然后中心整体翻转。手不会自己变空。</p></div>
             </li>
             <li>
-              <span class="rule-number">04</span><div><strong>长按预演</strong><p>按住方向键或拖住不松手，可先看松开后的完整结果；虚线轮廓表示尚未发生。回到原位或按 Esc 取消。</p></div>
+              <span class="rule-number">04</span><div><strong>长按预演</strong><p>按住方向键或拖住不松手可预演完整结果；虚线轮廓表示尚未发生。键盘松开即取消，轻点执行；棋盘拖拽拖回原位取消，松开执行。</p></div>
             </li>
             <li>
               <span class="rule-number">05</span><div><strong>共振键</strong><p>相邻两座中心面对面的臂都有珠、而且同色，中间会形成亮键。一座中心被撞后先翻转，再按翻转后的样子看亮键；传到的邻居也是先翻转，再看下一座。</p></div>
@@ -474,8 +474,17 @@ app.dataset.inputMode = tutorialInputMode
 
 /** 棋盘动画结束后保留终局局面的短暂停顿，让玩家先看懂“为什么通关”。 */
 const WIN_SETTLE_MS = 360
-/** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost */
-let pending: { dir: Dir; downAt: number; previewing: boolean } | null = null
+/** 当前「按住待执行」的方向；预演态 = step(当前, pending.dir) 由渲染层画 ghost。
+ *  origin 记录预演来源：键盘松开 = 取消，指针（拖拽 / 触屏方向键）松开 = 执行（design §11）。
+ *  fromPreviewSwitch：该 pending 由「换键打断预演」产生——换键手势链不允许执行任何步，
+ *  松开一律取消，只有松开后重新干净轻点才会执行。 */
+let pending: {
+  dir: Dir
+  downAt: number
+  previewing: boolean
+  origin: 'key' | 'pointer'
+  fromPreviewSwitch?: boolean
+} | null = null
 /** 1× 因果动画期间只缓存下一步，避免快速连按被静默丢弃。 */
 const inputBuffer = new SingleSlotInputBuffer<Dir>()
 let winRevealTimer: ReturnType<typeof setTimeout> | null = null
@@ -1207,7 +1216,7 @@ function prevLevel(): void {
   if (index > 0) openLevel(index - 1)
 }
 
-// ---------- 输入模型（design §11）：tap=执行 / hold=预演 / 松开=执行 / Esc=取消 ----------
+// ---------- 输入模型（design §11）：tap=执行 / hold=预演 / 键盘松开=取消 · 指针松开=执行 / Esc=取消 ----------
 // 预演 = 壳层对当前局面求一次 step 后把 ghost 态交给渲染层；不碰任何游戏规则。
 
 /** 计算并注入一步预演态；无效果动作（stateKey 不变）不画 ghost */
@@ -1220,7 +1229,7 @@ function showPreview(dir: Dir): void {
     current.setPreview?.(null)
     tutorialEvent = null
   } else {
-    current.setPreview?.(transition ?? next)
+    current.setPreview?.(transition ?? next, pending?.origin ?? 'pointer')
     tutorialEvent = { kind: 'preview', dir }
   }
   updateTutorial()
@@ -1230,23 +1239,34 @@ function clearPreview(): void {
   current.setPreview?.(null)
 }
 
-/** 方向按下：若正按住别的方向，先提交它（换键滚动），再开始新的等待 */
-function dirDown(dir: Dir): void {
+/** 方向按下：若正按住别的方向，先处理它（未预演=换键滚动提交；预演中=取消，不偷偷执行），再开始新的等待 */
+function dirDown(dir: Dir, origin: 'key' | 'pointer' = 'key'): void {
   if (!overlay.classList.contains('hidden')) return // 胜利面板显示时不吃方向输入
   if (advanceTutorialIntro()) return
   if (bufferDirectionDuringAnimation(dir)) return
   if (pending && pending.dir === dir) return // 键盘连发（repeat）忽略
+  let fromPreviewSwitch = false
   if (pending && pending.dir !== dir) {
-    commitPending()
+    if (pending.previewing) {
+      cancelPending() // 预演中的意图不因换键被偷偷执行
+      fromPreviewSwitch = true // 接续方向的首拍只用于查看：松开取消，重新轻点才执行
+    } else {
+      commitPending()
+    }
     if (bufferDirectionDuringAnimation(dir)) return
   }
   if (!overlay.classList.contains('hidden')) return // 提交可能刚好通关
-  pending = { dir, downAt: performance.now(), previewing: false }
+  pending = { dir, downAt: performance.now(), previewing: false, origin, fromPreviewSwitch }
 }
 
-/** 方向松开：快速点按直接执行；已预演则「松开即执行」 */
+/** 方向松开（指针路径：拖拽 / 触屏方向键）：快速点按直接执行；预演中松开 = 执行。
+ *  换键打断预演后的接续方向在松开时取消——换键手势链永不执行任何步。 */
 function dirUp(dir: Dir): void {
   if (!pending || pending.dir !== dir) return
+  if (pending.fromPreviewSwitch && !pending.previewing) {
+    cancelPending()
+    return
+  }
   commitPending()
 }
 
@@ -1612,7 +1632,7 @@ for (const btn of app.querySelectorAll<HTMLButtonElement>('.dpad-key')) {
     e.preventDefault()
     btn.setPointerCapture(e.pointerId)
     dpadPointerAt.set(btn, performance.now())
-    dirDown(dir)
+    dirDown(dir, 'pointer')
   })
   btn.addEventListener('pointerup', (e) => {
     const r = btn.getBoundingClientRect()
@@ -1669,7 +1689,7 @@ canvas.addEventListener('pointermove', (e) => {
     // 变向 = 替换意图并重新计时，不提交旧方向；停留到阈值后由 frame 注入预演。
     clearPreview()
     tutorialEvent = null
-    pending = { dir, downAt: performance.now(), previewing: false }
+    pending = { dir, downAt: performance.now(), previewing: false, origin: 'pointer' }
     updateTutorial()
   }
 })
@@ -1686,7 +1706,7 @@ canvas.addEventListener('pointerup', (e) => {
     const dir = swipeDir(dx, dy)
     if (dir) {
       if (bufferDirectionDuringAnimation(dir)) return
-      pending = { dir, downAt: performance.now(), previewing: false }
+      pending = { dir, downAt: performance.now(), previewing: false, origin: 'pointer' }
       hideToast()
       commitPending()
     }
@@ -1792,7 +1812,8 @@ window.addEventListener('keydown', (e) => {
   }
 })
 
-// 方向键松开：快速点按 / 预演后的「松开即执行」
+// 方向键松开：快速点按执行；预演中松开 = 取消——键盘没有「拖回原位 / 移出按钮」式的
+// 位置性取消，松开取消让放弃与轻点确认一样便宜（拖拽 / 触屏方向键仍走 dirUp 的松开=执行）。
 window.addEventListener('keyup', (e) => {
   if (visualBlindMode) {
     e.preventDefault()
@@ -1801,7 +1822,8 @@ window.addEventListener('keyup', (e) => {
   const dir = dirFromKey(e)
   if (dir) {
     e.preventDefault()
-    dirUp(dir)
+    if (pending?.dir === dir && pending.previewing) cancelPending()
+    else dirUp(dir)
   }
 })
 

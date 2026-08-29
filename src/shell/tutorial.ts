@@ -171,10 +171,15 @@ function exchangeForecast(
   }
 }
 
+/** 最近一次 getChemTutorial 调用的输入模态（键盘 = 松开取消 / 指针 = 松开执行，design §11）。 */
+let tutorialKeyboard = false
+
 function feedbackFor(state: ChemState, event: TutorialEvent): Pick<TutorialModel, 'feedback' | 'feedbackTone'> {
   if (event?.kind === 'preview') {
     return {
-      feedback: '预演中：虚线轮廓是松开后将发生的结果；回到原位或按 Esc 可以取消。',
+      feedback: tutorialKeyboard
+        ? '预演中：虚线轮廓是这一步将发生的结果；松开即取消，想执行就轻点一次。'
+        : '预演中：虚线轮廓是松开后将发生的结果；回到原位或按 Esc 可以取消。',
       feedbackTone: 'info',
     }
   }
@@ -270,6 +275,7 @@ export function getChemTutorial(
   introBeat = 0,
 ): TutorialModel | null {
   if (state.won) return null
+  tutorialKeyboard = inputMode === 'keyboard'
 
   // 共振首现只解释规则，不预告本关颜色路线或第一步（v5.1）。
   if (levelIndex === 6) {
@@ -662,7 +668,9 @@ export function getChemTutorial(
         return actionKicker(model(levelIndex, state, event, {
           title: '喷口已对齐，长按先看珠落在哪',
           body: '这一撞之后你的手会变空；开口上的珠朝你身后的方向，飞到直线上最后一个空格。',
-          tip: '松开执行；身后第一格被堵时整次进攻无效',
+          tip: inputMode === 'keyboard'
+            ? '松开取消；身后第一格被堵时整次进攻无效'
+            : '松开执行；身后第一格被堵时整次进攻无效',
           focusDirs: [ejectAttack.dir],
           forecast: exchangeForecast(state, false),
           spotlight: { pos: state.player, radiusCells: 0.58 },
@@ -795,7 +803,9 @@ export function getChemTutorial(
       body: attack
         ? '这里就是白箭头反面的进攻位。沿箭头方向撞进去，中心会整体翻转半圈。'
         : '从错误的一面撞，中心不会动；普通空格仍可行走。找到箭头反面的进攻位，再沿箭头方向出手。',
-      tip: '不确定时按住方向约 0.3 秒预演；松开执行，回到原位或按 Esc 取消',
+      tip: inputMode === 'keyboard'
+        ? '不确定时按住方向约 0.3 秒预演；松开即取消，轻点执行'
+        : '不确定时按住方向约 0.3 秒预演；松开执行，回到原位或按 Esc 取消',
       focusDirs: attack ? [attack.dir] : [],
       forecast: null,
       spotlight: attack ? { pos: state.centers[0].pos, radiusCells: 0.85 } : undefined,
@@ -889,15 +899,18 @@ export function getChemTutorial(
           : `把${holdingText}带到中心的进攻位`
         : '先走到那颗紫珠上',
       body: previewing && forecast
-        ? `棋盘上的虚线是松手后的结果：手里${tutorialColorText(forecast.injected)}珠先进入开口，再随整个中心翻到${tutorialDirText(forecast.landingArm)}侧，落进目标圈。`
+        ? `棋盘上的虚线是这一步之后的结果：手里${tutorialColorText(forecast.injected)}珠先进入开口，再随整个中心翻到${tutorialDirText(forecast.landingArm)}侧，落进目标圈。`
         : holdingText
           ? attack
             ? '保持按住会先显示动作结果，但不会立刻改变局面；这次先用预演看清色珠怎样进入中心。'
             : '把手中的色珠带到中心箭头反面的进攻位，靠近后再学习预演。'
         : '经过色珠会自动拿起；上方状态栏的「手持」会从“空”变成对应颜色。',
-      tip: previewing && forecast
-        ? `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来，再松手执行；回到原位或按 Esc 取消`
-        : holdingText
+      tip:
+        previewing && forecast
+          ? keyboard
+            ? `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来；轻点执行，松开取消`
+            : `把上面的“放入”与虚线${tutorialDirText(forecast.landingArm)}侧对应起来，再松手执行；回到原位或按 Esc 取消`
+          : holdingText
           ? attack
             ? keyboard
               ? '按住约 0.3 秒进入预演；方向键同样可以'

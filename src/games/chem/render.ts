@@ -256,14 +256,20 @@ const CANVAS_UI_FONT = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system
 /** 玩家自笔记标记：中心顺序标 ①–⑤；任意格 ★/？/×。含义由玩家自己理解。 */
 export type ChemMark = '1' | '2' | '3' | '4' | '5' | 'star' | 'question' | 'cross'
 
-/** 壳层按住方向时注入的一步预演态（= step(当前态, 按住方向)）；null = 无预演。 */
+/** 壳层按住方向时注入的一步预演态（= step(当前态, 按住方向)）；null = 无预演。
+ *  inputHint 标记预演来源：键盘松开 = 取消、指针松开 = 执行，预演横幅据此显示正确语义。 */
 let preview: ChemState | null = null
 let previewTransition: ChemStepResult | null = null
 let previewStartedAt = 0
-export function setChemPreview(next: ChemStepResult | ChemState | null): void {
+let previewInputHint: 'key' | 'pointer' = 'pointer'
+export function setChemPreview(
+  next: ChemStepResult | ChemState | null,
+  inputHint?: 'key' | 'pointer',
+): void {
   previewTransition = next !== null && 'state' in next ? next : null
   preview = previewTransition?.state ?? (next as ChemState | null)
   previewStartedAt = preview === null ? 0 : performance.now()
+  if (inputHint !== undefined && preview !== null) previewInputHint = inputHint
 }
 
 /** Inspect 检视的中心下标；null = 关闭面板。 */
@@ -1668,9 +1674,13 @@ function drawChainBadge(
   drawTelemetryTag(ctx, bx, by, cell, String(order + 1).padStart(2, '0'), stageTone(0))
 }
 
-/** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性） */
+/** 预演提示条：告诉玩家当前处于预演、如何执行 / 取消（输入模型可发现性）。
+ *  松开语义按预演来源区分（design §11）：键盘松开 = 取消；拖拽 / 触屏方向键松开 = 执行。 */
 function drawPreviewBanner(ctx: CanvasRenderingContext2D, W: number): void {
-  const text = '预演中 · 松开执行 · 回到原位 / Esc 取消'
+  const text =
+    previewInputHint === 'key'
+      ? '预演中 · 松开取消 · 轻点执行'
+      : '预演中 · 松开执行 · 回到原位 / Esc 取消'
   // 宽度按字符估算（CJK ≈ 12px / ASCII ≈ 7px @12px 字号），不依赖 measureText
   const textW = [...text].reduce((w, ch) => w + ((ch.codePointAt(0) ?? 0) > 0x2e80 ? 12 : 7), 0)
   const w = textW + 28
