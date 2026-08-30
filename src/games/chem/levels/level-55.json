@@ -1,12 +1,12 @@
 {
   "id": "109.5°-55",
-  "name": "哪条链能通",
-  "hint": "空穴和护罩先决定哪条链能传过去。中间弹出的那颗珠留着，最后一个阶段要用它。",
+  "name": "一颗珠开三道门",
+  "hint": "踩一次光格，三座中心的开口一起转好。第 1 阶段要带着珠撞：手里的珠送进去，后面两个阶段才开得开。",
   "width": 5,
-  "height": 4,
+  "height": 5,
   "walls": [],
   "player": [
-    0,
+    3,
     2
   ],
   "centers": [
@@ -17,57 +17,16 @@
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        2,
-        2
-      ],
-      "arms": {
-        "E": "red",
+        "E": "blue",
         "S": "green",
-        "W": "blue"
+        "W": "yellow"
       },
-      "leaving": "E",
-      "kind": "trigonal"
+      "leaving": "S"
     },
     {
       "pos": [
         2,
         1
-      ],
-      "arms": {
-        "N": "green",
-        "E": "red",
-        "S": "blue",
-        "W": "yellow"
-      },
-      "leaving": "E",
-      "ejects": true
-    },
-    {
-      "pos": [
-        3,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "E",
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        0,
-        0
       ],
       "arms": {
         "N": "red",
@@ -75,48 +34,72 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "N",
+      "leaving": "W",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        3
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E",
       "shieldUntilStage": 2
     }
   ],
   "groups": [
     {
       "pos": [
-        0,
+        4,
         1
       ],
-      "color": "red"
+      "color": "purple"
     }
   ],
-  "lights": [],
+  "lights": [
+    [
+      3,
+      1
+    ]
+  ],
   "stages": [
     {
       "goals": [
         {
           "center": 0,
           "arm": "N",
-          "color": "yellow"
+          "color": "green"
+        },
+        {
+          "center": 0,
+          "arm": "E",
+          "color": "purple"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 3,
+          "center": 1,
           "arm": "N",
-          "color": "yellow"
+          "color": "green"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 4,
-          "arm": "S",
-          "color": "red"
+          "center": 2,
+          "arm": "N",
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 11
+  "par": 12
 }

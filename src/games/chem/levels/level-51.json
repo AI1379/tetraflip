@@ -1,48 +1,73 @@
 {
   "id": "109.5°-51",
-  "name": "先过两道关",
-  "hint": "第一撞要同时打开两道关：让带编号的护罩放开弹射中心，让控制臂放开远处的中心。先踩光格转好开口，再让弹出的珠去撞最后一下。",
-  "width": 7,
-  "height": 5,
+  "name": "哪条链能通",
+  "hint": "空穴和护罩先决定哪条链能传过去。中间弹出的那颗珠留着，最后一个阶段要用它。",
+  "width": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    5,
-    1
+    0,
+    2
   ],
   "centers": [
     {
       "pos": [
-        4,
-        2
-      ],
-      "arms": {
-        "N": "purple",
-        "E": "red",
-        "S": "green"
-      },
-      "leaving": "N",
-      "kind": "trigonal",
-      "ejects": true,
-      "hitCenters": true,
-      "shieldUntilStage": 1
-    },
-    {
-      "pos": [
-        5,
+        1,
         2
       ],
       "arms": {
         "N": "red",
-        "E": "yellow",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "E": "red",
         "S": "green",
         "W": "blue"
       },
-      "leaving": "S"
+      "leaving": "E",
+      "kind": "trigonal"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "blue",
+        "W": "yellow"
+      },
+      "leaving": "E",
+      "ejects": true
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "shieldUntilStage": 1
     },
     {
       "pos": [
         0,
-        2
+        0
       ],
       "arms": {
         "N": "red",
@@ -50,58 +75,48 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "S",
-      "reactiveTo": {
-        "center": 1,
-        "arm": "N",
-        "color": "green"
-      }
+      "leaving": "N",
+      "shieldUntilStage": 2
     }
   ],
   "groups": [
     {
       "pos": [
-        2,
-        2
+        0,
+        1
       ],
-      "color": "blue"
+      "color": "red"
     }
   ],
-  "lights": [
-    [
-      2,
-      0
-    ]
-  ],
+  "lights": [],
   "stages": [
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "yellow"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 0,
-          "arm": "W",
-          "color": "blue"
-        },
-        {
-          "center": 0,
+          "center": 3,
           "arm": "N",
-          "color": "green"
-        },
+          "color": "yellow"
+        }
+      ]
+    },
+    {
+      "goals": [
         {
-          "center": 2,
-          "arm": "N",
-          "color": "green"
+          "center": 4,
+          "arm": "S",
+          "color": "red"
         }
       ]
     }
   ],
-  "par": 9
+  "par": 11
 }

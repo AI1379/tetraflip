@@ -1,24 +1,24 @@
 {
   "id": "109.5°-20",
-  "name": "空穴保险丝",
-  "hint": "链尾一开始就是对的。共振传到时，空穴会先翻过去——能不能保住链尾，看它翻到哪边。",
+  "name": "空穴断路器",
+  "hint": "空穴朝着哪边，链就在哪边断开。翻转空穴，链走哪条路也跟着变。",
   "width": 5,
-  "height": 4,
+  "height": 3,
   "walls": [],
   "player": [
     2,
-    0
+    2
   ],
   "centers": [
     {
       "pos": [
-        2,
+        1,
         1
       ],
       "arms": {
-        "N": "blue",
-        "E": "green",
-        "S": "red",
+        "N": "red",
+        "E": "blue",
+        "S": "green",
         "W": "yellow"
       },
       "leaving": "S"
@@ -26,20 +26,20 @@
     {
       "pos": [
         2,
-        2
+        1
       ],
       "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "green"
+        "N": "red",
+        "E": "blue",
+        "S": "yellow"
       },
-      "leaving": "S",
+      "leaving": "N",
       "kind": "trigonal"
     },
     {
       "pos": [
         3,
-        2
+        1
       ],
       "arms": {
         "N": "red",
@@ -50,22 +50,30 @@
       "leaving": "E"
     }
   ],
-  "goals": [
+  "stages": [
     {
-      "center": 0,
-      "arm": "N",
-      "color": "red"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
     },
     {
-      "center": 1,
-      "arm": "N",
-      "color": "green"
-    },
-    {
-      "center": 2,
-      "arm": "N",
-      "color": "red"
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
+        }
+      ]
     }
   ],
-  "par": 1
+  "par": 3
 }

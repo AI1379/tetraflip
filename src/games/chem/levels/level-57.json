@@ -1,57 +1,71 @@
 {
   "id": "109.5°-57",
-  "name": "撞核转喷口",
-  "hint": "让西边喷口喷出的珠撞上东边喷口的进攻位，把它的朝向撞转过来。撞出来的红色珠别浪费，它就是第二次发射的弹药。本关步数有红线。",
-  "width": 7,
-  "height": 5,
+  "name": "撞核关闸",
+  "hint": "监视槽被空穴占住时护罩会重新合上。让弹出的珠替你把空穴撞进槽位，后面那记必需的共振就烧不到已达标的两座中心。本关步数有红线。",
+  "width": 6,
+  "height": 4,
   "walls": [],
   "player": [
-    5,
-    3
+    0,
+    2
   ],
   "centers": [
     {
       "pos": [
-        2,
-        2
+        0,
+        1
       ],
       "arms": {
         "N": "red",
-        "S": "green",
-        "W": "blue"
+        "E": "green",
+        "S": "yellow",
+        "W": "purple"
       },
-      "leaving": "W",
-      "kind": "trigonal",
-      "ejects": true,
-      "hitLights": true
+      "leaving": "N"
     },
     {
       "pos": [
-        5,
-        2
+        1,
+        1
       ],
       "arms": {
-        "N": "yellow",
-        "E": "red",
-        "S": "purple",
-        "W": "green"
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
       },
-      "leaving": "E",
-      "ejects": true,
-      "hitCenters": true
+      "leaving": "N",
+      "reactiveTo": {
+        "center": 3,
+        "arm": "N",
+        "color": "yellow"
+      }
+    },
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "N"
     },
     {
       "pos": [
         2,
-        3
+        1
       ],
       "arms": {
-        "N": "green",
-        "E": "blue",
-        "S": "red",
-        "W": "yellow"
+        "N": "yellow",
+        "E": "purple",
+        "W": "blue"
       },
-      "leaving": "N"
+      "leaving": "W",
+      "kind": "trigonal"
     },
     {
       "pos": [
@@ -59,74 +73,81 @@
         1
       ],
       "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "purple",
-        "W": "green"
+        "N": "purple",
+        "E": "red",
+        "S": "green",
+        "W": "yellow"
       },
-      "leaving": "N"
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
     }
   ],
   "groups": [
     {
       "pos": [
-        5,
-        4
+        0,
+        3
       ],
       "color": "blue"
     }
   ],
-  "lights": [
-    [
-      0,
-      2
-    ]
-  ],
+  "lights": [],
   "stages": [
     {
       "goals": [
         {
-          "center": 1,
-          "arm": "W",
+          "center": 0,
+          "arm": "S",
           "color": "blue"
         },
         {
-          "center": 1,
-          "arm": "N",
+          "center": 0,
+          "arm": "E",
           "color": "purple"
         },
         {
-          "center": 3,
+          "center": 1,
           "arm": "N",
-          "color": "purple"
+          "color": "green"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "green"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 0,
+          "center": 4,
           "arm": "W",
           "color": "red"
         },
         {
-          "center": 0,
+          "center": 4,
           "arm": "N",
-          "color": "red"
+          "color": "green"
         },
         {
-          "center": 0,
+          "center": 3,
           "arm": "S",
+          "color": "yellow"
+        },
+        {
+          "center": 1,
+          "arm": "N",
           "color": "green"
         },
         {
           "center": 2,
-          "arm": "E",
-          "color": "yellow"
+          "arm": "N",
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 11,
-  "moveLimit": 14
+  "par": 9,
+  "moveLimit": 12
 }

@@ -31,7 +31,22 @@ import {
   tutorialKeyForDir,
 } from './tutorial'
 import type { TutorialControlTarget, TutorialEvent, TutorialInputMode } from './tutorial'
-import { mountFeedback } from './feedback'
+import { getEndpoint, mountFeedback } from './feedback'
+import {
+  PARTICIPANT_STORE_KEY,
+  SESSION_STORE_KEY,
+  anonymousId,
+  appendLocalAttempt,
+  beaconAttempt,
+  createAttempt,
+  finishAttempt,
+  observeAttemptStage,
+  persistentAnonymousId,
+  postAttempt,
+  recordAttemptEvent,
+  setAttemptActive,
+} from './telemetry'
+import type { AttemptDraft, AttemptOutcome, AttemptRecord } from './telemetry'
 import { BLOCKED_FEEDBACK_MS, redrawBudgetMs } from './frame-budget'
 import { logicalCanvasSize } from './viewport'
 import { SingleSlotInputBuffer } from './input-buffer'
@@ -122,6 +137,15 @@ const progressStore = (() => {
     return null
   }
 })()
+const sessionStore = (() => {
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+})()
+const telemetryParticipantId = persistentAnonymousId(progressStore, PARTICIPANT_STORE_KEY)
+const telemetrySessionId = persistentAnonymousId(sessionStore, SESSION_STORE_KEY)
 const TUTORIAL_PREF_KEY = 'lexin-games:tutorial-enabled'
 const ANIMATION_PREF_KEY = 'lexin-games:chem-animation-mode'
 const THEME_PREF_KEY = 'lexin-games:color-theme'
@@ -141,6 +165,8 @@ document.documentElement.dataset.theme = effectiveTheme()
 const app = document.querySelector('#app') as HTMLElement
 const searchParams = new URLSearchParams(window.location.search)
 const visualBlindMode = searchParams.get('blind') === '1'
+/** 自动上报只用于已知情同意的受控试玩链接；普通游玩只留在本机。 */
+const telemetryUploadEnabled = searchParams.get('telemetry') === '1'
 app.innerHTML = `
   <header class="app-header">
     <div class="brand">
@@ -447,6 +473,9 @@ let current: Bundle = bundles.chem
 let levels: LoadedLevel<any>[] = []
 let index = 0
 let hist: History<any> = new History(undefined)
+let activeAttempt: AttemptDraft | null = null
+let lastCompletedAttempt: AttemptRecord | null = null
+let telemetryAttemptIndex = 0
 let tutorialEnabled = (() => {
   try {
     return progressStore?.getItem(TUTORIAL_PREF_KEY) !== 'off'
@@ -522,11 +551,12 @@ const COLOR_TEXT: Record<string, string> = {
 }
 
 /** 棋盘内对象揭示优先于静态 hint；hint 仍可由玩家手动展开复习。 */
-const BOARD_GUIDE_LEVELS = new Set([0, 1, 2, 3, 4, 9, 15, 16, 20, 26, 32, 40, 41, 42])
+const BOARD_GUIDE_LEVELS = new Set([0, 1, 2, 3, 4, 6, 12, 13, 17, 23, 29, 36, 37, 38])
 
 function setTutorialInputMode(next: TutorialInputMode): void {
   if (tutorialInputMode === next) return
   tutorialInputMode = next
+  if (activeAttempt) activeAttempt.condition.inputMode = next
   app.dataset.inputMode = next
   if (hist.current !== undefined) updateTutorial()
 }
@@ -612,6 +642,66 @@ function frame(): void {
 
 function levelMeta(): { id?: string; name?: string; hint?: string } {
   return (levels[index]?.level ?? {}) as { id?: string; name?: string; hint?: string }
+}
+
+function beginAttempt(): void {
+  const meta = levelMeta()
+  const level = levels[index]?.level as {
+    id?: string
+    par?: number
+    moveLimit?: number
+    stages?: readonly unknown[]
+  } | undefined
+  if (!level) return
+  activeAttempt = createAttempt({
+    attemptId: anonymousId(),
+    participantId: telemetryParticipantId,
+    sessionId: telemetrySessionId,
+    game: current.id,
+    level: index + 1,
+    levelId: meta.id ?? String(index + 1),
+    sessionAttemptIndex: ++telemetryAttemptIndex,
+    condition: {
+      tutorialEnabled,
+      animationMode: chemAnimationMode,
+      inputMode: tutorialInputMode,
+      visualBlindMode,
+      ...(searchParams.get('study') ? { cohort: searchParams.get('study')!.slice(0, 64) } : {}),
+      ...(searchParams.get('assignment') ? { assignment: searchParams.get('assignment')!.slice(0, 64) } : {}),
+    },
+    par: level.par,
+    moveLimit: level.moveLimit,
+    stageCount: level.stages?.length,
+  }, Date.now(), document.visibilityState === 'visible')
+}
+
+function finishCurrentAttempt(outcome: AttemptOutcome, useBeacon = false): AttemptRecord | null {
+  if (!activeAttempt) return null
+  const state = hist.current as { moves?: number; stage?: number } | undefined
+  const record = finishAttempt(
+    activeAttempt,
+    outcome,
+    { moves: state?.moves ?? hist.depth, stage: state?.stage },
+    Date.now(),
+  )
+  activeAttempt = null
+  if (!record) return null
+  appendLocalAttempt(progressStore, record)
+  if (outcome === 'completed') lastCompletedAttempt = record
+  if (telemetryUploadEnabled) {
+    const endpoint = getEndpoint()
+    if (useBeacon) beaconAttempt(endpoint, record)
+    else void postAttempt(endpoint, record)
+  }
+  return record
+}
+
+function trackAttempt(event: Parameters<typeof recordAttemptEvent>[1]): void {
+  if (activeAttempt) recordAttemptEvent(activeAttempt, event)
+}
+
+function trackAttemptStage(stage: number): void {
+  if (activeAttempt) observeAttemptStage(activeAttempt, stage)
 }
 
 const LV999_LEVEL_ID = '109.5°-999'
@@ -901,6 +991,7 @@ function updateThemeToggle(): void {
 function setAnimationMode(mode: ChemAnimationMode): void {
   clearBufferedDir()
   chemAnimationMode = mode
+  if (activeAttempt) activeAttempt.condition.animationMode = mode
   setChemAnimationMode(mode)
   try {
     progressStore?.setItem(ANIMATION_PREF_KEY, mode)
@@ -913,6 +1004,7 @@ function setAnimationMode(mode: ChemAnimationMode): void {
 
 function setTutorialEnabled(enabled: boolean): void {
   tutorialEnabled = enabled
+  if (activeAttempt) activeAttempt.condition.tutorialEnabled = enabled
   tutorialEvent = null
   try {
     progressStore?.setItem(TUTORIAL_PREF_KEY, enabled ? 'on' : 'off')
@@ -1160,6 +1252,9 @@ function showOverlay(): void {
     levelId: meta.id ?? String(index + 1),
     moves: s.moves ?? hist.depth,
     par: s.par,
+    participantId: lastCompletedAttempt?.participantId,
+    sessionId: lastCompletedAttempt?.sessionId,
+    attemptId: lastCompletedAttempt?.attemptId,
   })
   reopenOverlay()
   scheduleWinSecretHint()
@@ -1176,6 +1271,7 @@ function cancelWinReveal(): void {
 /** 动画完整结束，再停顿一小拍；期间若撤销 / 重开 / 换关，旧卡片不会穿越局面弹出。 */
 function scheduleWinOverlay(): void {
   cancelWinReveal()
+  finishCurrentAttempt('completed')
   const progressKey = levelProgressKey(current.id, index)
   completed.add(progressKey)
   progress = addCompleted(progress, progressKey)
@@ -1215,7 +1311,8 @@ function hideWinbar(): void {
   winbar.classList.add('hidden')
 }
 
-function openLevel(i: number): void {
+function openLevel(i: number, exitOutcome: AttemptOutcome = 'level_exit'): void {
+  finishCurrentAttempt(exitOutcome)
   cancelWinReveal()
   index = Math.max(0, Math.min(i, levels.length - 1))
   if (current.id === 'chem' && isLv999Level()) markLv999Discovered() // 深链接等任何进入都算发现
@@ -1226,6 +1323,7 @@ function openLevel(i: number): void {
   if (current.id === 'chem' && BOARD_GUIDE_LEVELS.has(index)) briefEl.open = false
   current.resetAnim?.()
   hist = new History(current.def.initialState(levels[index].level))
+  beginAttempt()
   tutorialEvent = null
   lv999TauntShown = false
   cancelPending()
@@ -1271,6 +1369,14 @@ function applyDir(dir: Dir): void {
   const transition = current.resolveStep?.(hist.current, dir) ?? null
   const next = transition?.state ?? def.step(hist.current, dir)
   if (def.stateKey(next) === def.stateKey(hist.current)) {
+    trackAttempt('invalid_input')
+    const budgetState = hist.current as { moves?: number; moveLimit?: number }
+    if (
+      budgetState.moveLimit !== undefined &&
+      (budgetState.moves ?? 0) >= budgetState.moveLimit
+    ) {
+      trackAttempt('budget_exhausted')
+    }
     current.setTransition?.(null)
     current.onBlocked?.(dir) // 无效果输入：交给游戏渲染层做反馈（抖动/红闪）
     blockedFeedbackUntil = performance.now() + BLOCKED_FEEDBACK_MS // 抖动期间全速重绘
@@ -1293,6 +1399,8 @@ function applyDir(dir: Dir): void {
   const lv999BeforeStage = lv999 ? (hist.current as { stage: number }).stage : -1
   current.setTransition?.(transition)
   hist.push(next)
+  trackAttempt('valid_move')
+  trackAttemptStage((next as { stage?: number }).stage ?? 0)
   draw()
   updateHud()
   pulseBudgetAlarm()
@@ -1302,6 +1410,7 @@ function applyDir(dir: Dir): void {
 
 function doUndo(): void {
   if (!hist.canUndo) return
+  trackAttempt('undo')
   cancelWinReveal()
   current.setTransition?.(null)
   current.resetAnim?.()
@@ -1316,7 +1425,7 @@ function doUndo(): void {
 }
 
 function restart(): void {
-  openLevel(index)
+  openLevel(index, 'restart')
 }
 
 function nextLevel(): void {
@@ -1340,6 +1449,7 @@ function showPreview(dir: Dir): void {
     current.setPreview?.(null)
     tutorialEvent = null
   } else {
+    trackAttempt('preview')
     current.setPreview?.(transition ?? next, pending?.origin ?? 'pointer')
     tutorialEvent = { kind: 'preview', dir }
   }
@@ -1434,6 +1544,7 @@ function clearInspectTimer(): void {
 }
 
 function startInspect(centerIndex: number): void {
+  trackAttempt('inspect')
   setChemInspect(centerIndex)
   clearInspectTimer()
   inspectTimer = setTimeout(() => {
@@ -1493,6 +1604,7 @@ function cycleMark(hit: { kind: 'center'; index: number } | { kind: 'cell'; x: n
     currentMarks.set(key, cycle[idx + 1])
   }
   setChemMarks(currentMarks)
+  trackAttempt('mark')
   draw()
 }
 
@@ -1634,6 +1746,7 @@ function togglePicker(): void {
 }
 
 function openRules(): void {
+  trackAttempt('rules_open')
   cancelPending()
   pickerBackdrop.classList.add('hidden')
   rulesBackdrop.classList.remove('hidden')
@@ -1686,6 +1799,7 @@ function hideToast(): void {
 }
 
 function showHint(): void {
+  trackAttempt('solver_hint')
   if (current.def.isWin(hist.current)) {
     toast('这关已经解出来了！按 ] 或「下一关」继续。')
     return
@@ -1992,6 +2106,24 @@ window.addEventListener('keyup', (e) => {
 
 // 失焦：清掉按住状态，避免回来后误执行
 window.addEventListener('blur', cancelPending)
+document.addEventListener('visibilitychange', () => {
+  if (activeAttempt) {
+    setAttemptActive(activeAttempt, document.visibilityState === 'visible', Date.now())
+  }
+})
+window.addEventListener('pagehide', () => {
+  finishCurrentAttempt('page_exit', true)
+})
+window.addEventListener('pageshow', () => {
+  if (
+    !activeAttempt &&
+    levels.length > 0 &&
+    hist.current !== undefined &&
+    !current.def.isWin(hist.current)
+  ) {
+    beginAttempt()
+  }
+})
 
 // ---------- 隐藏关控制台彩蛋 + dev 调试接口 ----------
 // 正式版即暴露 __lexin.lv999.enter() / .state()，并在控制台留一条主题化邀请（design §5 四次决策：

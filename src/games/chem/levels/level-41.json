@@ -1,13 +1,13 @@
 {
   "id": "109.5°-41",
-  "name": "替它挡一下",
-  "hint": "弹出的珠会撞上左边已经对齐的中心。R 护罩除了控制开关，还能替它挡这一下。",
+  "name": "撞完自己关门",
+  "hint": "链穿过去时会把控制臂一起翻走，护罩又关上。下次开门，照样能引来一条链。",
   "width": 5,
-  "height": 4,
+  "height": 3,
   "walls": [],
   "player": [
-    1,
-    0
+    0,
+    1
   ],
   "centers": [
     {
@@ -21,24 +21,37 @@
         "S": "red",
         "W": "yellow"
       },
-      "leaving": "S"
+      "leaving": "E"
     },
     {
       "pos": [
-        0,
+        1,
         1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
       "leaving": "W",
       "reactiveTo": {
         "center": 0,
         "arm": "N",
-        "color": "green"
+        "color": "red"
       }
     },
     {
@@ -48,37 +61,14 @@
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "E",
-      "ejects": true,
-      "hitCenters": true
-    },
-    {
-      "pos": [
-        0,
-        3
-      ],
-      "arms": {
-        "N": "red",
         "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "S": "yellow",
+        "W": "green"
       },
-      "leaving": "W"
+      "leaving": "E"
     }
   ],
-  "groups": [
-    {
-      "pos": [
-        2,
-        0
-      ],
-      "color": "purple"
-    }
-  ],
+  "groups": [],
   "lights": [],
   "stages": [
     {
@@ -86,20 +76,20 @@
         {
           "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "red"
         },
         {
-          "center": 1,
+          "center": 2,
           "arm": "N",
           "color": "red"
         },
         {
           "center": 3,
-          "arm": "E",
-          "color": "green"
+          "arm": "N",
+          "color": "yellow"
         }
       ]
     }
   ],
-  "par": 10
+  "par": 9
 }

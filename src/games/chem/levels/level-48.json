@@ -1,10 +1,15 @@
 {
   "id": "109.5°-48",
-  "name": "开局先踩光",
-  "hint": "开局那次光格只是把开口都摆正；之后再生护罩和会移动的空穴，决定共振能传多远。",
-  "width": 5,
-  "height": 3,
-  "walls": [],
+  "name": "转好开口接珠子",
+  "hint": "踩一次光格，要同时转好两个开口；被弹出来的珠，接下来还要再送一趟。",
+  "width": 4,
+  "height": 4,
+  "walls": [
+    [
+      3,
+      3
+    ]
+  ],
   "player": [
     1,
     0
@@ -12,7 +17,7 @@
   "centers": [
     {
       "pos": [
-        2,
+        3,
         2
       ],
       "arms": {
@@ -21,85 +26,44 @@
         "S": "red",
         "W": "yellow"
       },
-      "leaving": "N"
+      "leaving": "N",
+      "ejects": true
     },
     {
       "pos": [
         1,
-        1
+        3
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
+        "E": "yellow",
+        "S": "green",
+        "W": "purple"
       },
-      "leaving": "N"
-    },
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "S",
-      "kind": "trigonal",
-      "reactiveTo": {
-        "center": 0,
-        "arm": "N",
-        "color": "red"
-      }
+      "leaving": "E"
     }
   ],
-  "groups": [],
+  "groups": [
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "color": "purple"
+    }
+  ],
   "lights": [
     [
       0,
       0
     ]
   ],
-  "stages": [
+  "goals": [
     {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "red"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "green"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "yellow"
-        }
-      ]
-    },
-    {
-      "goals": [
-        {
-          "center": 0,
-          "arm": "N",
-          "color": "red"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "red"
-        }
-      ]
+      "center": 1,
+      "arm": "N",
+      "color": "blue"
     }
   ],
-  "par": 11
+  "par": 10
 }

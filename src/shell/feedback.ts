@@ -62,6 +62,10 @@ export interface FeedbackInfo {
   levelId: string
   moves: number
   par?: number
+  /** 与匿名完整尝试表连接；旧反馈和关闭遥测存储时均可省略。 */
+  participantId?: string
+  sessionId?: string
+  attemptId?: string
 }
 
 export interface FeedbackPayload extends FeedbackInfo {

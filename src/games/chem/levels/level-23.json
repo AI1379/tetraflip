@@ -1,71 +1,47 @@
 {
   "id": "109.5°-23",
-  "name": "染两次",
-  "hint": "染色换出来的珠，正好给下一次染色用；空穴翻到哪边，决定每一撞的共振传去哪边。",
-  "width": 5,
-  "height": 3,
-  "walls": [],
+  "name": "照过空穴",
+  "hint": "光格只移动开口，碰到空穴会直接跳过去；空穴自己还是会跟着翻转，在两边之间来回换。",
+  "width": 4,
+  "height": 4,
+  "walls": [
+    [
+      1,
+      2
+    ]
+  ],
   "player": [
-    2,
-    2
+    0,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        1
+        2,
+        2
       ],
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "green",
-        "W": "purple"
+        "S": "green"
       },
-      "leaving": "S"
-    },
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "blue",
-        "S": "red"
-      },
-      "leaving": "N",
+      "leaving": "E",
       "kind": "trigonal"
-    },
-    {
-      "pos": [
-        2,
-        0
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "green",
-        "S": "purple",
-        "W": "red"
-      },
-      "leaving": "N"
     }
   ],
-  "groups": [
-    {
-      "pos": [
-        3,
-        2
-      ],
-      "color": "purple"
-    }
+  "lights": [
+    [
+      0,
+      1
+    ]
   ],
   "stages": [
     {
       "goals": [
         {
-          "center": 1,
-          "arm": "S",
-          "color": "purple"
+          "center": 0,
+          "arm": "N",
+          "color": "green"
         }
       ]
     },
@@ -73,21 +49,11 @@
       "goals": [
         {
           "center": 0,
-          "arm": "S",
-          "color": "yellow"
-        },
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "purple"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "purple"
+          "arm": "E",
+          "color": "blue"
         }
       ]
     }
   ],
-  "par": 5
+  "par": 9
 }

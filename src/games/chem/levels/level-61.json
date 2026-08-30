@@ -1,72 +1,83 @@
 {
   "id": "109.5°-61",
-  "name": "喷口对射",
-  "hint": "把珠从中间塞进西边喷口，喷出的珠正好撞上东边喷口的进攻位，替你把它转过身。转身后的第二发要落在光格上，转出最后一扇门。本关步数有红线。",
-  "width": 7,
-  "height": 4,
-  "walls": [],
+  "name": "双光时序",
+  "hint": "三臂开口转一圈只要三步，还会跳过空穴。两块光格各自只该踩一次：先照亮北方，再照亮南方，两道锁才会按顺序开。本关步数有红线。",
+  "width": 5,
+  "height": 5,
+  "walls": [
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      4
+    ]
+  ],
   "player": [
-    2,
-    0
+    0,
+    3
   ],
   "centers": [
     {
       "pos": [
-        1,
+        0,
         2
       ],
       "arms": {
         "N": "red",
         "E": "green",
         "S": "yellow",
-        "W": "blue"
+        "W": "purple"
       },
-      "leaving": "W",
-      "ejects": true,
-      "hitCenters": true
+      "leaving": "W"
     },
     {
       "pos": [
-        4,
-        2
-      ],
-      "arms": {
-        "N": "yellow",
-        "E": "purple",
-        "S": "red",
-        "W": "green"
-      },
-      "leaving": "E",
-      "ejects": true,
-      "hitLights": true
-    },
-    {
-      "pos": [
-        6,
+        2,
         0
       ],
       "arms": {
-        "N": "blue",
+        "N": "red",
         "E": "green",
-        "S": "red",
-        "W": "yellow"
+        "S": "yellow"
       },
-      "leaving": "W"
+      "leaving": "S",
+      "kind": "trigonal",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        4
+      ],
+      "arms": {
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "kind": "trigonal",
+      "shieldUntilStage": 2
     }
   ],
   "groups": [
     {
       "pos": [
-        2,
-        1
+        1,
+        2
       ],
-      "color": "purple"
+      "color": "blue"
     }
   ],
   "lights": [
     [
-      6,
+      2,
       2
+    ],
+    [
+      3,
+      3
     ]
   ],
   "stages": [
@@ -75,7 +86,7 @@
         {
           "center": 0,
           "arm": "E",
-          "color": "purple"
+          "color": "blue"
         },
         {
           "center": 0,
@@ -88,32 +99,36 @@
       "goals": [
         {
           "center": 1,
-          "arm": "E",
-          "color": "blue"
+          "arm": "S",
+          "color": "purple"
+        },
+        {
+          "center": 1,
+          "arm": "W",
+          "color": "green"
         },
         {
           "center": 1,
           "arm": "N",
           "color": "yellow"
-        },
+        }
+      ]
+    },
+    {
+      "goals": [
         {
           "center": 2,
-          "arm": "W",
-          "color": "purple"
-        },
-        {
-          "center": 2,
-          "arm": "N",
+          "arm": "E",
           "color": "red"
         },
         {
           "center": 2,
-          "arm": "S",
-          "color": "blue"
+          "arm": "W",
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 14,
-  "moveLimit": 17
+  "par": 11,
+  "moveLimit": 14
 }

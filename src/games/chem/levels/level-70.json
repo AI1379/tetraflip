@@ -1,72 +1,85 @@
 {
   "id": "109.5°-70",
-  "name": "红线·对射",
-  "hint": "把珠从中间塞进东边喷口，喷出的珠正好撞上西边喷口的进攻位，替你把它转过身。转身后的第二发要落在光格上，转出最后一扇门。步数红线：一步都不能多。",
-  "width": 7,
-  "height": 4,
+  "name": "红线·预瞄",
+  "hint": "护罩挡得住进攻，挡不住光格。趁喷口还被罩着，先用一束光把它和邻居一起转向；等锁一开，弹药立刻出膛，撞翻远处那对被保护到现在的中心。步数红线之内留了三步余地。",
+  "width": 6,
+  "height": 5,
   "walls": [],
   "player": [
-    4,
-    0
+    5,
+    3
   ],
   "centers": [
     {
       "pos": [
-        5,
-        2
+        3,
+        4
       ],
       "arms": {
-        "N": "red",
-        "W": "green",
-        "S": "yellow",
-        "E": "blue"
+        "S": "green",
+        "W": "yellow",
+        "N": "purple",
+        "E": "red"
       },
-      "leaving": "E",
-      "ejects": true,
-      "hitCenters": true
-    },
-    {
-      "pos": [
-        2,
-        2
-      ],
-      "arms": {
-        "N": "yellow",
-        "W": "purple",
-        "S": "red",
-        "E": "green"
-      },
-      "leaving": "W",
-      "ejects": true,
-      "hitLights": true
+      "leaving": "N"
     },
     {
       "pos": [
         0,
-        0
+        2
       ],
       "arms": {
-        "N": "blue",
+        "S": "yellow",
         "W": "green",
-        "S": "red",
+        "N": "purple",
+        "E": "blue"
+      },
+      "leaving": "S",
+      "ejects": true,
+      "hitCenters": true,
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "S": "green",
+        "W": "blue",
+        "N": "red",
         "E": "yellow"
       },
-      "leaving": "E"
+      "leaving": "N",
+      "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "S": "green",
+        "W": "yellow",
+        "N": "red",
+        "E": "blue"
+      },
+      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
-        4,
-        1
+        5,
+        4
       ],
-      "color": "purple"
+      "color": "green"
     }
   ],
   "lights": [
     [
-      0,
-      2
+      4,
+      3
     ]
   ],
   "stages": [
@@ -75,12 +88,17 @@
         {
           "center": 0,
           "arm": "W",
-          "color": "purple"
+          "color": "green"
         },
         {
           "center": 0,
           "arm": "E",
-          "color": "green"
+          "color": "yellow"
+        },
+        {
+          "center": 0,
+          "arm": "S",
+          "color": "purple"
         }
       ]
     },
@@ -88,32 +106,32 @@
       "goals": [
         {
           "center": 1,
-          "arm": "W",
-          "color": "blue"
+          "arm": "E",
+          "color": "red"
         },
         {
           "center": 1,
-          "arm": "N",
-          "color": "yellow"
-        },
-        {
-          "center": 2,
-          "arm": "E",
+          "arm": "S",
           "color": "purple"
         },
         {
           "center": 2,
-          "arm": "N",
-          "color": "red"
+          "arm": "E",
+          "color": "blue"
         },
         {
           "center": 2,
+          "arm": "W",
+          "color": "yellow"
+        },
+        {
+          "center": 3,
           "arm": "S",
-          "color": "blue"
+          "color": "red"
         }
       ]
     }
   ],
-  "par": 14,
+  "par": 11,
   "moveLimit": 14
 }

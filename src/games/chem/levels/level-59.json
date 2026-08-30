@@ -1,58 +1,42 @@
 {
   "id": "109.5°-59",
-  "name": "撞核关闸",
-  "hint": "监视槽被空穴占住时护罩会重新合上。让弹出的珠替你把空穴撞进槽位，后面那记必需的共振就烧不到已达标的两座中心。本关步数有红线。",
+  "name": "空穴准星",
+  "hint": "空穴朝北时，北边的键永远接不上。让弹出的珠从东侧撞进，把空穴翻到南边——断键就在同一瞬间接通。本关步数有红线。",
   "width": 6,
-  "height": 4,
+  "height": 5,
   "walls": [],
   "player": [
-    0,
-    2
+    4,
+    3
   ],
   "centers": [
     {
       "pos": [
-        0,
-        1
+        5,
+        2
       ],
       "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "purple"
+        "N": "yellow",
+        "E": "red",
+        "S": "purple",
+        "W": "green"
       },
-      "leaving": "N"
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
     },
     {
       "pos": [
-        1,
-        1
+        2,
+        2
       ],
       "arms": {
-        "N": "red",
         "E": "blue",
-        "S": "green",
-        "W": "purple"
+        "S": "red",
+        "W": "green"
       },
-      "leaving": "N",
-      "reactiveTo": {
-        "center": 3,
-        "arm": "N",
-        "color": "yellow"
-      }
-    },
-    {
-      "pos": [
-        1,
-        0
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "N"
+      "leaving": "W",
+      "kind": "trigonal"
     },
     {
       "pos": [
@@ -60,34 +44,20 @@
         1
       ],
       "arms": {
-        "N": "yellow",
-        "E": "purple",
-        "W": "blue"
-      },
-      "leaving": "W",
-      "kind": "trigonal"
-    },
-    {
-      "pos": [
-        5,
-        1
-      ],
-      "arms": {
-        "N": "purple",
-        "E": "red",
-        "S": "green",
-        "W": "yellow"
+        "N": "green",
+        "E": "yellow",
+        "S": "red",
+        "W": "purple"
       },
       "leaving": "E",
-      "ejects": true,
-      "hitCenters": true
+      "shieldUntilStage": 1
     }
   ],
   "groups": [
     {
       "pos": [
-        0,
-        3
+        4,
+        4
       ],
       "color": "blue"
     }
@@ -98,56 +68,41 @@
       "goals": [
         {
           "center": 0,
-          "arm": "S",
+          "arm": "W",
           "color": "blue"
         },
         {
           "center": 0,
-          "arm": "E",
+          "arm": "N",
           "color": "purple"
-        },
-        {
-          "center": 1,
-          "arm": "N",
-          "color": "green"
-        },
-        {
-          "center": 2,
-          "arm": "N",
-          "color": "green"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 4,
-          "arm": "W",
+          "center": 1,
+          "arm": "N",
           "color": "red"
         },
         {
-          "center": 4,
-          "arm": "N",
-          "color": "green"
-        },
-        {
-          "center": 3,
-          "arm": "S",
-          "color": "yellow"
-        },
-        {
           "center": 1,
-          "arm": "N",
+          "arm": "E",
           "color": "green"
         },
         {
           "center": 2,
-          "arm": "N",
-          "color": "green"
+          "arm": "W",
+          "color": "red"
+        },
+        {
+          "center": 2,
+          "arm": "E",
+          "color": "purple"
         }
       ]
     }
   ],
-  "par": 9,
-  "moveLimit": 12
+  "par": 11,
+  "moveLimit": 14
 }

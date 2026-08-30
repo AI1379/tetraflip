@@ -1,7 +1,7 @@
 {
   "id": "109.5°-42",
-  "name": "一撞传到底",
-  "hint": "弹出的珠撞进第一座中心后，共振会顺着链继续传；那颗珠捡起来，送到链的最后一座。",
+  "name": "替它挡一下",
+  "hint": "弹出的珠会撞上左边已经对齐的中心。R 护罩除了控制开关，还能替它挡这一下。",
   "width": 5,
   "height": 4,
   "walls": [],
@@ -10,6 +10,37 @@
     0
   ],
   "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "green",
+        "E": "blue",
+        "S": "red",
+        "W": "yellow"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
+        0,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "green"
+      }
+    },
     {
       "pos": [
         3,
@@ -24,45 +55,6 @@
       "leaving": "E",
       "ejects": true,
       "hitCenters": true
-    },
-    {
-      "pos": [
-        0,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "W"
-    },
-    {
-      "pos": [
-        0,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "W"
     }
   ],
   "groups": [
@@ -79,19 +71,28 @@
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
+          "arm": "N",
+          "color": "purple"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
           "arm": "N",
           "color": "green"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "red"
         },
         {
           "center": 2,
-          "arm": "N",
-          "color": "green"
-        },
-        {
-          "center": 3,
-          "arm": "E",
-          "color": "green"
+          "arm": "W",
+          "color": "red"
         }
       ]
     }

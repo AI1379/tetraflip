@@ -29,13 +29,13 @@ import level05 from './levels/level-05.json'
 import level07 from './levels/level-07.json'
 import level08 from './levels/level-08.json'
 import level09 from './levels/level-09.json'
-import level12 from './levels/level-12.json'
+import level12 from './levels/level-11.json'
 import level15 from './levels/level-15.json'
-import level26 from './levels/level-26.json'
+import level27 from './levels/level-27.json'
 import level30 from './levels/level-30.json'
 import level39 from './levels/level-39.json'
-import level48 from './levels/level-48.json'
-import level56 from './levels/level-56.json'
+import level47 from './levels/level-47.json'
+import level56 from './levels/level-55.json'
 import level74 from './levels/level-74.json'
 import level75 from './levels/level-75.json'
 
@@ -87,7 +87,7 @@ function styleRecordingCtx(styles: string[]): CanvasRenderingContext2D {
 
 describe('chem（109.5°）渲染冒烟', () => {
   it('深浅与 LV.999 语义调色板均覆盖代表机制关，并实际切换画布与玩法色', () => {
-    const representatives = [level01, level07, level15, level26, level30, level39, level48, level56]
+    const representatives = [level01, level07, level15, level27, level30, level39, level47, level56]
     const darkStyles: string[] = []
     const lightStyles: string[] = []
     const lv999Styles: string[] = []
@@ -366,7 +366,7 @@ describe('chem（109.5°）渲染冒烟', () => {
 
   it('弹射中心：静态轮廓、就位弹道、按住预演、执行飞珠与喷口受阻反馈均可渲染', () => {
     const ctx = stubCtx()
-    let s = initialState(chemGame.parseLevel(level26))
+    let s = initialState(chemGame.parseLevel(level27))
     expect(() => render(s, ctx, 480, 480)).not.toThrow() // 静态菱形喷嘴核 + 常驻双箭头
     s = step(s, 'S')
     s = step(s, 'S') // 拾取 blue
@@ -380,7 +380,7 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(next, ctx, 480, 480)).not.toThrow()
 
     const blocked = chemGame.parseLevel({
-      ...level26,
+      ...level27,
       id: 'render-eject-blocked',
       player: [0, 1],
       groups: [{ pos: [1, 1], color: 'blue' }],
@@ -450,12 +450,12 @@ describe('chem（109.5°）渲染冒烟', () => {
     expect(() => render(reopened, ctx, 480, 480)).not.toThrow()
   })
 
-  it('level-48：R 盾在控制臂落定后、后续共振翻转结束前释放', () => {
+  it('level-47：R 盾在控制臂落定后、后续共振翻转结束前释放', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(0)
     try {
       setChemAnimationMode('clear')
       resetChemAnim()
-      let before = initialState(chemGame.parseLevel(level48))
+      let before = initialState(chemGame.parseLevel(level47))
       for (const action of ['W', 'S', 'S', 'E', 'E', 'W', 'N', 'E', 'S', 'E'] as const) {
         before = step(before, action)
       }

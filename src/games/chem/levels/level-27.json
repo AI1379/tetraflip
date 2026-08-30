@@ -1,7 +1,7 @@
 {
   "id": "109.5°-27",
-  "name": "弹出的珠接着用",
-  "hint": "第一次弹射顺带传一次共振。弹出去的珠别丢，后面还要用。",
+  "name": "一撞三件事",
+  "hint": "这一撞同时做三件事：珠进中心、亮键带动邻居、开口上的珠弹到身后。撞之前，先都想过。",
   "width": 5,
   "height": 5,
   "walls": [],
@@ -19,7 +19,7 @@
         "N": "red",
         "E": "green",
         "S": "yellow",
-        "W": "blue"
+        "W": "purple"
       },
       "leaving": "E",
       "ejects": true
@@ -32,50 +32,37 @@
       "arms": {
         "N": "yellow",
         "E": "red",
-        "S": "green",
-        "W": "blue"
+        "S": "blue",
+        "W": "purple"
       },
       "leaving": "E"
-    },
-    {
-      "pos": [
-        1,
-        4
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "green"
-      },
-      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
         0,
-        1
+        2
       ],
-      "color": "purple"
+      "color": "blue"
     }
   ],
   "goals": [
     {
       "center": 0,
       "arm": "W",
-      "color": "purple"
+      "color": "blue"
+    },
+    {
+      "center": 0,
+      "arm": "S",
+      "color": "red"
     },
     {
       "center": 1,
       "arm": "E",
-      "color": "blue"
-    },
-    {
-      "center": 2,
-      "arm": "N",
-      "color": "green"
+      "color": "purple"
     }
   ],
-  "par": 8
+  "par": 4
 }

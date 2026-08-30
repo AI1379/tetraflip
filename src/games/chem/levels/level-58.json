@@ -1,42 +1,71 @@
 {
   "id": "109.5°-58",
-  "name": "空穴准星",
-  "hint": "空穴朝北时，北边的键永远接不上。让弹出的珠从东侧撞进，把空穴翻到南边——断键就在同一瞬间接通。本关步数有红线。",
-  "width": 6,
-  "height": 5,
+  "name": "空手关闸",
+  "hint": "共振第一次烧过后，护罩必须重新合上——但监视臂怕染料，关闸只能空手去撞。之后那次必需的进攻若烧进罩内，之前达标的两座中心就全毁了。本关步数有红线。",
+  "width": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    4,
-    3
+    0,
+    2
   ],
   "centers": [
     {
       "pos": [
-        5,
-        2
+        0,
+        1
       ],
       "arms": {
-        "N": "yellow",
+        "N": "purple",
         "E": "red",
-        "S": "purple",
-        "W": "green"
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "E",
-      "ejects": true,
-      "hitCenters": true
+      "leaving": "N"
     },
     {
       "pos": [
-        2,
+        1,
+        0
+      ],
+      "arms": {
+        "N": "green",
+        "E": "yellow",
+        "S": "red",
+        "W": "blue"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "reactiveTo": {
+        "center": 5,
+        "arm": "N",
+        "color": "yellow"
+      }
+    },
+    {
+      "pos": [
+        1,
         2
       ],
       "arms": {
-        "E": "blue",
-        "S": "red",
-        "W": "green"
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "purple"
       },
-      "leaving": "W",
-      "kind": "trigonal"
+      "leaving": "N"
     },
     {
       "pos": [
@@ -44,22 +73,34 @@
         1
       ],
       "arms": {
-        "N": "green",
+        "N": "purple",
         "E": "yellow",
         "S": "red",
-        "W": "purple"
+        "W": "blue"
       },
-      "leaving": "E",
-      "shieldUntilStage": 1
+      "leaving": "N"
+    },
+    {
+      "pos": [
+        4,
+        0
+      ],
+      "arms": {
+        "N": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "N",
+      "kind": "trigonal"
     }
   ],
   "groups": [
     {
       "pos": [
-        4,
-        4
+        3,
+        0
       ],
-      "color": "blue"
+      "color": "green"
     }
   ],
   "lights": [],
@@ -67,14 +108,19 @@
     {
       "goals": [
         {
-          "center": 0,
-          "arm": "W",
-          "color": "blue"
+          "center": 2,
+          "arm": "N",
+          "color": "green"
         },
         {
-          "center": 0,
+          "center": 3,
           "arm": "N",
-          "color": "purple"
+          "color": "green"
+        },
+        {
+          "center": 4,
+          "arm": "N",
+          "color": "red"
         }
       ]
     },
@@ -82,27 +128,32 @@
       "goals": [
         {
           "center": 1,
-          "arm": "N",
-          "color": "red"
-        },
-        {
-          "center": 1,
           "arm": "E",
           "color": "green"
         },
         {
-          "center": 2,
-          "arm": "W",
+          "center": 1,
+          "arm": "N",
           "color": "red"
         },
         {
-          "center": 2,
-          "arm": "E",
-          "color": "purple"
+          "center": 5,
+          "arm": "S",
+          "color": "yellow"
+        },
+        {
+          "center": 3,
+          "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 4,
+          "arm": "N",
+          "color": "red"
         }
       ]
     }
   ],
-  "par": 11,
-  "moveLimit": 14
+  "par": 13,
+  "moveLimit": 16
 }

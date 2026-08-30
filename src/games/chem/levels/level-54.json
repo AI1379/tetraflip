@@ -1,31 +1,33 @@
 {
   "id": "109.5°-54",
-  "name": "一颗珠开三道门",
-  "hint": "踩一次光格，三座中心的开口一起转好。第 1 阶段要带着珠撞：手里的珠送进去，后面两个阶段才开得开。",
+  "name": "隔开的链",
+  "hint": "这条链一开始被带编号的护罩隔开。先在两座中心共用的位置空手翻一次，再让弹出的珠替你把整条链传通。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    3,
-    2
+    1,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        2
+        3,
+        1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
-      "leaving": "S"
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
     },
     {
       "pos": [
-        2,
+        0,
         1
       ],
       "arms": {
@@ -39,6 +41,19 @@
     },
     {
       "pos": [
+        0,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
         2,
         3
       ],
@@ -48,37 +63,39 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "E",
-      "shieldUntilStage": 2
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        1,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "purple",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
-        4,
-        1
+        2,
+        0
       ],
       "color": "purple"
     }
   ],
-  "lights": [
-    [
-      3,
-      1
-    ]
-  ],
+  "lights": [],
   "stages": [
     {
       "goals": [
         {
-          "center": 0,
+          "center": 4,
           "arm": "N",
           "color": "green"
-        },
-        {
-          "center": 0,
-          "arm": "E",
-          "color": "purple"
         }
       ]
     },
@@ -88,14 +105,15 @@
           "center": 1,
           "arm": "N",
           "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
+        },
         {
           "center": 2,
           "arm": "N",
+          "color": "green"
+        },
+        {
+          "center": 3,
+          "arm": "E",
           "color": "green"
         }
       ]

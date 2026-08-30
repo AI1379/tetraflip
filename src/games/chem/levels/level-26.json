@@ -1,8 +1,8 @@
 {
   "id": "109.5°-26",
-  "name": "一撞三件事",
-  "hint": "这一撞同时做三件事：珠进中心、亮键带动邻居、开口上的珠弹到身后。撞之前，先都想过。",
-  "width": 5,
+  "name": "飞珠再利用",
+  "hint": "弹出去的珠会留在场上，走过去就能再捡。空出来的手，正好再拿一颗。",
+  "width": 4,
   "height": 5,
   "walls": [],
   "player": [
@@ -13,56 +13,51 @@
     {
       "pos": [
         2,
-        2
+        1
       ],
       "arms": {
         "N": "red",
         "E": "green",
         "S": "yellow",
-        "W": "purple"
+        "W": "blue"
       },
       "leaving": "E",
       "ejects": true
     },
     {
       "pos": [
-        3,
-        2
+        1,
+        3
       ],
       "arms": {
-        "N": "yellow",
-        "E": "red",
+        "N": "red",
+        "E": "yellow",
         "S": "blue",
         "W": "purple"
       },
-      "leaving": "E"
+      "leaving": "S"
     }
   ],
   "groups": [
     {
       "pos": [
-        0,
-        2
+        1,
+        0
       ],
-      "color": "blue"
+      "color": "purple"
     }
   ],
   "goals": [
     {
       "center": 0,
       "arm": "W",
-      "color": "blue"
-    },
-    {
-      "center": 0,
-      "arm": "S",
-      "color": "red"
+      "color": "purple"
     },
     {
       "center": 1,
-      "arm": "E",
-      "color": "purple"
+      "arm": "N",
+      "color": "green"
     }
   ],
-  "par": 4
+  "par": 7
 }

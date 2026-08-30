@@ -1,10 +1,23 @@
 {
   "id": "109.5°-25",
-  "name": "飞珠再利用",
-  "hint": "弹出去的珠会留在场上，走过去就能再捡。空出来的手，正好再拿一颗。",
-  "width": 4,
+  "name": "带空穴的弹射",
+  "hint": "三臂的弹射中心一翻，珠、空穴和弹出的方向都跟着翻到对面；身后有什么挡着，决定珠落在哪。",
+  "width": 5,
   "height": 5,
-  "walls": [],
+  "walls": [
+    [
+      0,
+      2
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      2,
+      3
+    ]
+  ],
   "player": [
     0,
     0
@@ -12,30 +25,17 @@
   "centers": [
     {
       "pos": [
-        2,
-        1
+        3,
+        2
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
+        "E": "blue",
+        "S": "green"
       },
       "leaving": "E",
+      "kind": "trigonal",
       "ejects": true
-    },
-    {
-      "pos": [
-        1,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "purple"
-      },
-      "leaving": "S"
     }
   ],
   "groups": [
@@ -44,20 +44,20 @@
         1,
         0
       ],
-      "color": "purple"
+      "color": "yellow"
     }
   ],
   "goals": [
     {
       "center": 0,
-      "arm": "W",
-      "color": "purple"
-    },
-    {
-      "center": 1,
       "arm": "N",
       "color": "green"
+    },
+    {
+      "center": 0,
+      "arm": "W",
+      "color": "yellow"
     }
   ],
-  "par": 7
+  "par": 5
 }

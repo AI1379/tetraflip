@@ -567,26 +567,21 @@ export function getChemTutorial(
           body: '顺序是先触发光格，再检查撞中心。箭头转到左边后，金色格正好变成远处中心的新进攻位。',
           spotlight: { pos: light, radiusCells: 0.46 },
         },
-        {
-          title: '捡起那颗珠，光格会再转一次',
-          body: '珠还停在金色格上；你之后走上去捡它时，光格会再转一次，白箭头继续顺时针移动。',
-          spotlight: { pos: light, radiusCells: 0.62 },
-        },
       ]
       if (introBeat < pages.length) {
-        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 5, 'LIGHT IMPACT')
+        return revealModel(levelIndex, state, event, pages[introBeat], introBeat + 1, 4, 'LIGHT IMPACT')
       }
       const group = state.groups[0]
       const dir = group ? nextDirToward(state, group.pos) : undefined
       return actionKicker(model(levelIndex, state, event, {
         title: '先拿起紫珠，准备弹射',
         body: '站到弹射的进攻位后，按住预演，按顺序看三件事：珠落光格、箭头转向、再撞上中心。',
-        tip: '同一个光格会被珠和你各触发一次',
+        tip: '顺序是先转开口，再检查能不能撞中',
         focusDirs: dir ? [dir] : [],
         forecast: null,
         spotlight: { pos: group?.pos ?? state.player, radiusCells: 0.34 },
         gesture: dir ? { from: state.player, dir, distanceCells: 0.88 } : undefined,
-      }), 'LIGHT IMPACT', 5)
+      }), 'LIGHT IMPACT', 4)
     }
     if (levelIndex === 38) {
       const reactiveIndex = state.centers.findIndex((center) => center.reactiveTo !== undefined)

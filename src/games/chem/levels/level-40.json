@@ -1,53 +1,53 @@
 {
   "id": "109.5°-40",
-  "name": "撞完自己关门",
-  "hint": "链穿过去时会把控制臂一起翻走，护罩又关上。下次开门，照样能引来一条链。",
+  "name": "一条臂，两扇门",
+  "hint": "两面护罩听同一条控制臂，却是一个开一个关。先让下面那条链通，再翻控制臂，换上面的链通。",
   "width": 5,
-  "height": 3,
+  "height": 5,
   "walls": [],
   "player": [
-    0,
-    1
+    2,
+    2
   ],
   "centers": [
     {
       "pos": [
-        2,
+        1,
         2
       ],
       "arms": {
-        "N": "green",
+        "N": "red",
         "E": "blue",
-        "S": "red",
+        "S": "green",
+        "W": "yellow"
+      },
+      "leaving": "W"
+    },
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
         "W": "yellow"
       },
       "leaving": "E"
     },
     {
       "pos": [
-        1,
-        1
+        3,
+        3
       ],
       "arms": {
         "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
       },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        2,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
-      },
-      "leaving": "W",
+      "leaving": "E",
       "reactiveTo": {
         "center": 0,
         "arm": "N",
@@ -62,10 +62,15 @@
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "yellow",
-        "W": "green"
+        "S": "green",
+        "W": "yellow"
       },
-      "leaving": "E"
+      "leaving": "E",
+      "reactiveTo": {
+        "center": 0,
+        "arm": "N",
+        "color": "green"
+      }
     }
   ],
   "groups": [],
@@ -74,22 +79,26 @@
     {
       "goals": [
         {
-          "center": 0,
-          "arm": "N",
-          "color": "red"
-        },
-        {
           "center": 2,
           "arm": "N",
-          "color": "red"
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "green"
         },
         {
           "center": 3,
           "arm": "N",
-          "color": "yellow"
+          "color": "green"
         }
       ]
     }
   ],
-  "par": 9
+  "par": 4
 }

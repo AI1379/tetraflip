@@ -5,34 +5,87 @@
   "width": 5,
   "height": 4,
   "walls": [
-    [4, 1],
-    [2, 2]
+    [
+      4,
+      1
+    ],
+    [
+      2,
+      2
+    ]
   ],
-  "player": [0, 0],
+  "player": [
+    0,
+    0
+  ],
   "centers": [
     {
-      "pos": [2, 1],
-      "arms": { "N": "red", "E": "blue", "S": "green", "W": "yellow" },
+      "pos": [
+        2,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "yellow"
+      },
       "leaving": "S"
     },
     {
-      "pos": [3, 1],
-      "arms": { "N": "green", "E": "red", "S": "blue", "W": "yellow" },
+      "pos": [
+        3,
+        1
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "blue",
+        "W": "yellow"
+      },
       "leaving": "W"
     },
     {
-      "pos": [3, 2],
-      "arms": { "N": "green", "E": "red", "S": "purple", "W": "blue" },
+      "pos": [
+        3,
+        2
+      ],
+      "arms": {
+        "N": "green",
+        "E": "red",
+        "S": "purple",
+        "W": "blue"
+      },
       "leaving": "E"
     }
   ],
-  "groups": [{ "pos": [1, 0], "color": "purple" }],
+  "groups": [
+    {
+      "pos": [
+        1,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "stages": [
     {
       "goals": [
-        { "center": 0, "arm": "N", "color": "purple" },
-        { "center": 1, "arm": "N", "color": "blue" },
-        { "center": 2, "arm": "N", "color": "purple" }
+        {
+          "center": 0,
+          "arm": "N",
+          "color": "purple"
+        },
+        {
+          "center": 1,
+          "arm": "N",
+          "color": "blue"
+        },
+        {
+          "center": 2,
+          "arm": "N",
+          "color": "purple"
+        }
       ]
     }
   ],

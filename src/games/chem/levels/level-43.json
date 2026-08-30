@@ -1,19 +1,34 @@
 {
   "id": "109.5°-43",
-  "name": "一条臂，两扇门",
-  "hint": "两面护罩听同一条控制臂，却是一个开一个关。先让下面那条链通，再翻控制臂，换上面的链通。",
+  "name": "一撞传到底",
+  "hint": "弹出的珠撞进第一座中心后，共振会顺着链继续传；那颗珠捡起来，送到链的最后一座。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [],
   "player": [
-    2,
-    2
+    1,
+    0
   ],
   "centers": [
     {
       "pos": [
-        1,
-        2
+        3,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true,
+      "hitCenters": true
+    },
+    {
+      "pos": [
+        0,
+        1
       ],
       "arms": {
         "N": "red",
@@ -25,7 +40,7 @@
     },
     {
       "pos": [
-        3,
+        0,
         2
       ],
       "arms": {
@@ -38,7 +53,7 @@
     },
     {
       "pos": [
-        3,
+        2,
         3
       ],
       "arms": {
@@ -47,58 +62,39 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "E",
-      "reactiveTo": {
-        "center": 0,
-        "arm": "N",
-        "color": "red"
-      }
-    },
-    {
-      "pos": [
-        3,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "E",
-      "reactiveTo": {
-        "center": 0,
-        "arm": "N",
-        "color": "green"
-      }
+      "leaving": "W"
     }
   ],
-  "groups": [],
+  "groups": [
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "color": "purple"
+    }
+  ],
   "lights": [],
   "stages": [
     {
       "goals": [
         {
-          "center": 2,
+          "center": 1,
           "arm": "N",
           "color": "green"
-        }
-      ]
-    },
-    {
-      "goals": [
+        },
         {
-          "center": 0,
+          "center": 2,
           "arm": "N",
           "color": "green"
         },
         {
           "center": 3,
-          "arm": "N",
+          "arm": "E",
           "color": "green"
         }
       ]
     }
   ],
-  "par": 4
+  "par": 9
 }

@@ -1,48 +1,68 @@
 {
   "id": "109.5°-33",
-  "name": "提前转好开口",
-  "hint": "护罩挡进攻和共振，但不挡光格。罩里的开口，可以在护罩打开前先转好。",
-  "width": 6,
-  "height": 4,
+  "name": "开罩接空穴",
+  "hint": "第一撞的共振其实够得到罩里的中心，被挡住是正常的。做完当前阶段，罩里的中心自然就能撞了。",
+  "width": 5,
+  "height": 3,
   "walls": [],
   "player": [
     0,
-    0
+    1
   ],
   "centers": [
+    {
+      "pos": [
+        1,
+        1
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
     {
       "pos": [
         2,
         1
       ],
       "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "N": "green",
+        "E": "red",
+        "W": "blue"
       },
-      "leaving": "S"
+      "leaving": "N",
+      "kind": "trigonal"
     },
     {
       "pos": [
-        4,
+        3,
         1
       ],
       "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
       },
       "leaving": "N",
       "shieldUntilStage": 1
+    },
+    {
+      "pos": [
+        2,
+        0
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "N"
     }
-  ],
-  "lights": [
-    [
-      1,
-      0
-    ]
   ],
   "stages": [
     {
@@ -50,16 +70,21 @@
         {
           "center": 0,
           "arm": "N",
-          "color": "green"
+          "color": "yellow"
         }
       ]
     },
     {
       "goals": [
         {
-          "center": 1,
-          "arm": "W",
-          "color": "blue"
+          "center": 2,
+          "arm": "N",
+          "color": "yellow"
+        },
+        {
+          "center": 3,
+          "arm": "S",
+          "color": "yellow"
         }
       ]
     }

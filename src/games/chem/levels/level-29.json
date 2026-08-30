@@ -1,25 +1,17 @@
 {
   "id": "109.5°-29",
-  "name": "带空穴的弹射",
-  "hint": "三臂的弹射中心一翻，珠、空穴和弹出的方向都跟着翻到对面；身后有什么挡着，决定珠落在哪。",
+  "name": "先转再弹",
+  "hint": "踩光格会转开弹射中心的开口：从哪边撞、珠往哪边飞，都跟着变。",
   "width": 5,
-  "height": 5,
+  "height": 4,
   "walls": [
     [
-      0,
-      2
-    ],
-    [
-      2,
-      1
-    ],
-    [
-      2,
+      3,
       3
     ]
   ],
   "player": [
-    0,
+    1,
     0
   ],
   "centers": [
@@ -31,33 +23,39 @@
       "arms": {
         "N": "red",
         "E": "blue",
-        "S": "green"
+        "S": "yellow",
+        "W": "green"
       },
-      "leaving": "E",
-      "kind": "trigonal",
+      "leaving": "N",
       "ejects": true
     }
   ],
   "groups": [
     {
       "pos": [
-        1,
-        0
+        0,
+        1
       ],
-      "color": "yellow"
+      "color": "purple"
     }
+  ],
+  "lights": [
+    [
+      0,
+      0
+    ]
   ],
   "goals": [
     {
       "center": 0,
-      "arm": "N",
-      "color": "green"
+      "arm": "W",
+      "color": "purple"
     },
     {
       "center": 0,
-      "arm": "W",
+      "arm": "N",
       "color": "yellow"
     }
   ],
-  "par": 5
+  "par": 6
 }

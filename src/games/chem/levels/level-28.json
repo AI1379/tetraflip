@@ -1,33 +1,54 @@
 {
   "id": "109.5°-28",
-  "name": "先转再弹",
-  "hint": "踩光格会转开弹射中心的开口：从哪边撞、珠往哪边飞，都跟着变。",
+  "name": "弹出的珠接着用",
+  "hint": "第一次弹射顺带传一次共振。弹出去的珠别丢，后面还要用。",
   "width": 5,
-  "height": 4,
-  "walls": [
-    [
-      3,
-      3
-    ]
-  ],
+  "height": 5,
+  "walls": [],
   "player": [
-    1,
+    0,
     0
   ],
   "centers": [
+    {
+      "pos": [
+        2,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "green",
+        "S": "yellow",
+        "W": "blue"
+      },
+      "leaving": "E",
+      "ejects": true
+    },
     {
       "pos": [
         3,
         2
       ],
       "arms": {
+        "N": "yellow",
+        "E": "red",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "E"
+    },
+    {
+      "pos": [
+        1,
+        4
+      ],
+      "arms": {
         "N": "red",
-        "E": "blue",
-        "S": "yellow",
+        "E": "yellow",
+        "S": "blue",
         "W": "green"
       },
-      "leaving": "N",
-      "ejects": true
+      "leaving": "S"
     }
   ],
   "groups": [
@@ -39,12 +60,6 @@
       "color": "purple"
     }
   ],
-  "lights": [
-    [
-      0,
-      0
-    ]
-  ],
   "goals": [
     {
       "center": 0,
@@ -52,10 +67,15 @@
       "color": "purple"
     },
     {
-      "center": 0,
+      "center": 1,
+      "arm": "E",
+      "color": "blue"
+    },
+    {
+      "center": 2,
       "arm": "N",
-      "color": "yellow"
+      "color": "green"
     }
   ],
-  "par": 6
+  "par": 8
 }

@@ -32,69 +32,69 @@ const baseline: Record<string, number> = {
   './levels/level-07.json': 6, // 共振首现即教学：换出蓝珠后一击接通双中心（旧 06）
   './levels/level-08.json': 1, // 多米诺：三级链逐级接通（旧 11）
   './levels/level-09.json': 3, // 碰不到的中心：共振是唯一的门（v5 新关）
-  './levels/level-10.json': 7, // 点火前先调整奇偶与手持珠（旧 12）
-  './levels/level-11.json': 7, // 安全点火：红珠止链，蓝珠误烧链尾（旧 13）
-  './levels/level-12.json': 9, // 奇偶序列点燃两条链（旧 14）
+  './levels/level-10.json': 7, // 安全点火：红珠止链，蓝珠误烧链尾（原 11）
+  './levels/level-11.json': 9, // 奇偶序列点燃两条链（旧 14）
+  './levels/level-12.json': 7, // 点火前先调整奇偶与手持珠（原 10）
   './levels/level-13.json': 6, // 光照入门：转轴开出进攻路（旧 16）
   './levels/level-14.json': 7, // 分步目标入门（旧 17）
   './levels/level-15.json': 6, // 光照 × 共振（旧 18）
   './levels/level-16.json': 10, // 光照 × 搬运 × 分步（旧 19）
   './levels/level-17.json': 9, // 分步共振毕业（旧 20）
   './levels/level-18.json': 2, // 三臂中心：标准翻转 + 缺口移到对侧（旧 21）
-  './levels/level-19.json': 3, // 空穴断路器：先断链，翻空穴后再接通链尾（旧 22）
-  './levels/level-20.json': 1, // 空穴保险丝：传播后翻洞保护已达标链尾（旧 23）
-  './levels/level-21.json': 8, // 南北双路换向：两次翻洞依次接通两支路（旧 24）
-  './levels/level-22.json': 9, // 光照 × 空穴 × 分步（旧 25）
-  './levels/level-23.json': 5, // 双染引链：染色换出的珠成为第二次染色的输入（旧 26）
+  './levels/level-19.json': 1, // 空穴保险丝：传播后翻洞保护已达标链尾（原 20）
+  './levels/level-20.json': 3, // 空穴断路器：先断链，翻空穴后再接通链尾（原 19）
+  './levels/level-21.json': 5, // 双染引链：染色换出的珠成为第二次染色的输入（原 23）
+  './levels/level-22.json': 8, // 南北双路换向：两次翻洞依次接通两支路（原 21）
+  './levels/level-23.json': 9, // 光照 × 空穴 × 分步（原 22）
   './levels/level-24.json': 3, // 弹射入门：顶出珠沿身后落地（旧 27）
-  './levels/level-25.json': 7, // 压缩后的弹射资源复用（旧 28）
-  './levels/level-26.json': 4, // 一击三果：翻转 + 连锁 + 弹射（旧 29）
-  './levels/level-27.json': 8, // 弹射珠跨中心复用（旧 30）
-  './levels/level-28.json': 6, // 光照改变喷流轴（旧 31）
-  './levels/level-29.json': 5, // 三臂弹射中心：障碍控制落点（旧 32）
+  './levels/level-25.json': 5, // 三臂弹射中心：障碍控制落点（原 29）
+  './levels/level-26.json': 7, // 压缩后的弹射资源复用（原 25）
+  './levels/level-27.json': 4, // 一击三果：翻转 + 连锁 + 弹射（原 26）
+  './levels/level-28.json': 8, // 弹射珠跨中心复用（原 27）
+  './levels/level-29.json': 6, // 光照改变喷流轴（原 28）
   './levels/level-30.json': 5, // 阶段护罩：完成当步不追溯，下一步扩链（旧 33）
   './levels/level-31.json': 5, // 延迟连锁：下一动作才穿透护罩（旧 34）
   './levels/level-32.json': 3, // 多护罩按阶段依次解除（旧 35）
-  './levels/level-33.json': 6, // 光照预对齐阶段护罩（旧 36）
-  './levels/level-34.json': 6, // 开罩接空穴：第一击连锁被护罩拦下（旧 37）
+  './levels/level-33.json': 6, // 开罩接空穴：第一击连锁被护罩拦下（原 34）
+  './levels/level-34.json': 6, // 光照预对齐阶段护罩（原 33）
   './levels/level-35.json': 4, // 阶段护罩 × 弹射 × 共振（旧 38）
   './levels/level-36.json': 9, // 毕业：阶段护罩 + 空穴 + 光照 + 弹射中心（旧 39）
   './levels/level-37.json': 8, // v4 弹射撞核：弹射珠撞中心纯翻转（旧 41）
-  './levels/level-38.json': 8, // v4 撞光又撞核：先转轴后顺势撞入（旧 42）
+  './levels/level-38.json': 3, // v4 撞光又撞核教学降噪：一发先转轴后撞入
   './levels/level-39.json': 7, // v4 关闸保形：主动关盾隔离共振（旧 43）
-  './levels/level-40.json': 9, // v4 回授闸门：闭→开→闭→开（旧 44）
-  './levels/level-41.json': 10, // v4 护罩缓冲：关盾挡下飞珠撞核（旧 45）
-  './levels/level-42.json': 9, // v4 撞核共振链：撞核后共振继续传播（旧 46）
-  './levels/level-43.json': 4, // 双态闸门：互补双闸交换通行权（候选池 53 提升）
+  './levels/level-40.json': 4, // 双态闸门：互补双闸交换通行权（原 43）
+  './levels/level-41.json': 9, // v4 回授闸门：闭→开→闭→开（原 40）
+  './levels/level-42.json': 9, // v4 护罩缓冲降噪：关盾挡下飞珠撞核（原 41）
+  './levels/level-43.json': 9, // v4 撞核共振链：撞核后共振继续传播（旧 46）
   './levels/level-44.json': 6, // mastery：光照预对齐三阶段护罩（旧 48）
   './levels/level-45.json': 7, // mastery：开罩接三路，奇偶复位后接通（旧 49）
   './levels/level-46.json': 8, // mastery：开罩后三臂弹射、共振与余料终投（候选池 59 提升）
-  './levels/level-47.json': 10, // mastery：一束光转正两个开口后回收弹射珠（旧 47）
-  './levels/level-48.json': 11, // mastery：光照预调后三臂再生闸门开→关→开（候选池 58 提升）
+  './levels/level-47.json': 11, // mastery：光照预调后三臂再生闸门开→关→开（原 48）
+  './levels/level-48.json': 10, // mastery：一束光转正两个开口后回收弹射珠（原 47）
   './levels/level-49.json': 14, // mastery：双喷口接力，飞珠连续接力（候选池 55 提升）
   './levels/level-50.json': 12, // 终局：三阶段光照 × 搬运 × 弹射 × 护罩（旧 50，唯一终局）
-  './levels/level-51.json': 9, // 进阶综合：双锁撞核（旧 51）
-  './levels/level-52.json': 10, // 进阶综合：缺口缓冲（旧 52）
-  './levels/level-53.json': 12, // 进阶综合：解锁撞链（旧 54）
-  './levels/level-54.json': 12, // 进阶综合：三段注入（旧 56）
-  './levels/level-55.json': 11, // 进阶综合：三路余波（旧 57）
-  './levels/level-56.json': 12, // 进阶综合：双锁回收（旧 60，去终局命名）
-  './levels/level-57.json': 11, // 全机制组合：撞核转喷口（撞核目标首次是弹射中心本体）
-  './levels/level-58.json': 11, // 全机制组合：空穴准星（撞核翻空穴接通共振键）
-  './levels/level-59.json': 9, // 全机制组合：撞核关闸（空穴撞进监视槽主动关再生闸）
-  './levels/level-60.json': 11, // 全机制组合：双光时序（双光照 + 双护罩顺序谜题）
-  './levels/level-61.json': 14, // 全机制组合：喷口对射（对脸撞核再瞄准 + 撞光转轴）
-  './levels/level-62.json': 13, // 全机制组合：空手关闸（监视臂怕染料，只能空手撞）
-  './levels/level-63.json': 14, // 全机制组合：三级火箭（弹射三级接力，中段触光）
+  './levels/level-51.json': 11, // 进阶综合：三路余波（原 55）
+  './levels/level-52.json': 10, // 进阶综合：可见关罩态的缺口缓冲（原 56）
+  './levels/level-53.json': 9, // 进阶综合：双锁撞核（原 52）
+  './levels/level-54.json': 12, // 进阶综合：解锁撞链（原 53）
+  './levels/level-55.json': 12, // 进阶综合：三段注入（原 54）
+  './levels/level-56.json': 12, // 进阶综合：双锁回收（原 55，去终局命名）
+  './levels/level-57.json': 9, // 全机制组合：撞核关闸（原 59）
+  './levels/level-58.json': 13, // 全机制组合：空手关闸（原 62）
+  './levels/level-59.json': 11, // 全机制组合：空穴准星（原 58）
+  './levels/level-60.json': 11, // 全机制组合：撞核转喷口（原 57）
+  './levels/level-61.json': 11, // 全机制组合：双光时序（原 60）
+  './levels/level-62.json': 14, // 全机制组合：三级火箭（原 63）
+  './levels/level-63.json': 14, // 全机制组合：喷口对射（原 61）
   './levels/level-64.json': 11, // 全机制组合：罩内预瞄（护罩内预转喷口，解锁即射）
   './levels/level-65.json': 19, // 全机制组合：合流（三段闭环：连锁 → 光瞄撞核关闸 → 余料终投）
   './levels/level-66.json': 23, // 全机制组合：四段全谱（四段闭环 + 双弹射 + 双光照 + 空穴接收端）
-  './levels/level-67.json': 11, // 转辙：北口回声（波反弹换向 + 三段接力注入）
-  './levels/level-68.json': 10, // 转辙：唤醒（先西后北的顺序由键奇偶锁死）
+  './levels/level-67.json': 10, // 转辙：唤醒（原 68）
+  './levels/level-68.json': 11, // 转辙：北口回声（原 67）
   './levels/level-69.json': 10, // 转辙·遥扳（步数红线 + 漏斗墙 + 撞核二跳级联）
-  './levels/level-70.json': 14, // 红线·对射（61 镜像 + 预算使绕行非法）
+  './levels/level-70.json': 11, // 红线·预瞄（原 72）
   './levels/level-71.json': 14, // 红线·接力（63 旋转 + 预算）
-  './levels/level-72.json': 11, // 红线·预瞄（64 旋转 + 预算）
+  './levels/level-72.json': 14, // 红线·对射（原 70）
   './levels/level-73.json': 19, // 红线·合流（65 旋转 + 预算）
   './levels/level-74.json': 14, // 转辙·终章（三波换向 + 借射第四波 + 红线）
   './levels/level-75.json': 25, // LV.999：01 复刻口袋 + 重写总线 + 全锁设施，零冗余红线
@@ -326,13 +326,13 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
         )
       expect(usesMasteryMechanic, `level-${n} 应深化既有机制`).toBe(true)
     }
-    for (const n of [37, 38, 42]) {
+    for (const n of [37, 38, 43]) {
       expect(
         at(n).centers.some((c) => c.hitLights || c.hitCenters),
         `level-${n} 应使用弹射打结构`,
       ).toBe(true)
     }
-    for (const n of [39, 40, 41, 43, 48]) {
+    for (const n of [39, 40, 41, 42, 47]) {
       expect(at(n).centers.some((c) => c.reactiveTo), `level-${n} 应使用再生护罩`).toBe(true)
     }
     // 唯一终局：50；赛后挑战 51–74 与正式曲线其余关不得使用终局命名
@@ -388,8 +388,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     }
   })
 
-  it('level-11 仍强制安全色判断：红珠一次点火通关，蓝珠会烧过链尾并显著增加恢复代价', () => {
-    const level = chemGame.parseLevel(levelFiles['./levels/level-11.json'])
+  it('level-10 仍强制安全色判断：红珠一次点火通关，蓝珠会烧过链尾并显著增加恢复代价', () => {
+    const level = chemGame.parseLevel(levelFiles['./levels/level-10.json'])
     let safe = initialState(level)
     for (const d of ['W', 'E', 'N'] as const) safe = step(safe, d)
     const safeResult = solveFrom(chemGame, safe, { maxDepth: 12 })
@@ -408,8 +408,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(dangerous.won).toBe(false)
   })
 
-  it('level-19 空穴断路器：最短解先断开链尾，再翻空穴接通；缺少接通事件无等长解', () => {
-    const file = './levels/level-19.json'
+  it('level-20 空穴断路器：最短解先断开链尾，再翻空穴接通；缺少接通事件无等长解', () => {
+    const file = './levels/level-20.json'
     const transitions = shortestTransitions(file)
     const breaksTail = (t: Transition): boolean =>
       holeAt(t.before, 1) === 'W' &&
@@ -427,8 +427,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], connectsTail)).toBe(false)
   })
 
-  it('level-20 空穴保险丝：共振命中三臂中心后先翻洞，已达标链尾保持不动', () => {
-    const file = './levels/level-20.json'
+  it('level-19 空穴保险丝：共振命中三臂中心后先翻洞，已达标链尾保持不动', () => {
+    const file = './levels/level-19.json'
     const transitions = shortestTransitions(file)
     const protectsTail = (t: Transition): boolean =>
       holeAt(t.before, 1) === 'W' &&
@@ -443,8 +443,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], protectsTail)).toBe(false)
   })
 
-  it('level-21 南北换路：两次翻洞分别只接通北支与南支，任一事件缺失均无等长解', () => {
-    const file = './levels/level-21.json'
+  it('level-22 南北换路：两次翻洞分别只接通北支与南支，任一事件缺失均无等长解', () => {
+    const file = './levels/level-22.json'
     const transitions = shortestTransitions(file)
     const northRoute = (t: Transition): boolean =>
       holeAt(t.before, 0) === 'N' &&
@@ -464,8 +464,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], southRoute)).toBe(false)
   })
 
-  it('level-23 双染引链：两次染色缺一不可，第二次染色的输入来自第一次换出的珠', () => {
-    const file = './levels/level-23.json'
+  it('level-21 双染引链：两次染色缺一不可，第二次染色的输入来自第一次换出的珠', () => {
+    const file = './levels/level-21.json'
     expect(shortestInteractionTrace(file)).toEqual([
       'carry:empty>purple',
       'attack:1:purple',
@@ -487,8 +487,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     ).toBe(false)
   })
 
-  it('level-34 开罩接空穴：第一击连锁够到护罩但被拦下，开罩后罩内中心才被使用', () => {
-    const file = './levels/level-34.json'
+  it('level-33 开罩接空穴：第一击连锁够到护罩但被拦下，开罩后罩内中心才被使用', () => {
+    const file = './levels/level-33.json'
     const transitions = shortestTransitions(file)
     const firstStrike = transitions[0]
 
@@ -545,15 +545,15 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it.each([
-    [43, ['stage', 'reactive', 'multi-center']],
+    [40, ['stage', 'reactive', 'multi-center']],
     [46, ['hole', 'stage-shield', 'eject', 'carry', 'multi-center']],
-    [48, ['light', 'hole', 'reactive', 'multi-center', 'stage']],
+    [47, ['light', 'hole', 'reactive', 'multi-center', 'stage']],
     [49, ['light', 'eject', 'carry']],
-    [51, ['light', 'stage-shield', 'reactive', 'hole', 'eject', 'hit-center']],
-    [52, ['hole', 'reactive', 'eject', 'carry']],
-    [53, ['stage-shield', 'eject', 'hit-center', 'multi-center', 'carry']],
-    [54, ['light', 'stage-shield', 'carry', 'stage']],
-    [55, ['hole', 'stage-shield', 'eject', 'carry', 'multi-center']],
+    [51, ['hole', 'stage-shield', 'eject', 'carry', 'multi-center']],
+    [52, ['hole', 'reactive', 'eject', 'carry', 'stage']],
+    [53, ['light', 'stage-shield', 'reactive', 'hole', 'eject', 'hit-center']],
+    [54, ['stage-shield', 'eject', 'hit-center', 'multi-center', 'carry']],
+    [55, ['light', 'stage-shield', 'carry', 'stage']],
     [56, ['light', 'stage-shield', 'reactive', 'hole', 'eject', 'hit-center', 'carry']],
   ] as const)('level-%s 综合关的最短解实际使用全部设计机制', (number, expected) => {
     const file = `./levels/level-${number}.json`
@@ -563,8 +563,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it.each([
-    ['./levels/level-51.json', 0, 2],
-    ['./levels/level-53.json', 0, 1],
+    ['./levels/level-53.json', 0, 2],
+    ['./levels/level-54.json', 0, 1],
     ['./levels/level-56.json', 1, 3],
   ] as const)('%s 的最短解必须由弹射珠撞翻指定远端中心', (file, launcher, target) => {
     const hitsTarget = (t: Transition): boolean =>
@@ -576,10 +576,13 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], hitsTarget)).toBe(false)
   })
 
-  it('level-52 缺口缓冲：三臂控制臂往返，关盾期间飞珠落地但不撞翻罩内中心', () => {
+  it('level-52 缺口缓冲：可见中间段锁定关罩态，复位后才接通新增链尾', () => {
     const file = './levels/level-52.json'
     expect(reactiveShieldPhases(file)).toEqual([false, true, false])
     const transitions = shortestTransitions(file)
+    expect(transitions.map((t) => t.after.stage)).toEqual([0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
+    expect(transitions[2].after.centers[0].arms.N).toBe('purple')
+    expect(isShielded(transitions[2].after, transitions[2].after.centers[1])).toBe(true)
     const bufferedShot = transitions.find(
       (t) => isEjection(t, 2) && isShielded(t.before, t.before.centers[1]),
     )
@@ -597,8 +600,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], opensTail)).toBe(false)
   })
 
-  it('level-43 双态闸门：同一控制臂把通行权从下闸交给上闸', () => {
-    const file = './levels/level-43.json'
+  it('level-40 双态闸门：同一控制臂把通行权从下闸交给上闸', () => {
+    const file = './levels/level-40.json'
     const transitions = shortestTransitions(file)
     const states = [transitions[0].before, ...transitions.map((t) => t.after)]
     const lower = states.map((state) => isShielded(state, state.centers[2]))
@@ -621,8 +624,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     ])
   })
 
-  it('level-48 光启缺口：只预调一次光，三臂反馈令再生闸门开→关→开', () => {
-    const file = './levels/level-48.json'
+  it('level-47 光启缺口：只预调一次光，三臂反馈令再生闸门开→关→开', () => {
+    const file = './levels/level-47.json'
     const level = chemGame.parseLevel(levelFiles[file])
     const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
     const transitions = shortestTransitions(file)
@@ -646,7 +649,7 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it.each([
-    ['./levels/level-55.json', ['attack:2:green', 'carry:empty>red', 'attack:4:red']],
+    ['./levels/level-51.json', ['attack:2:green', 'carry:empty>red', 'attack:4:red']],
     ['./levels/level-46.json', ['attack:1:purple', 'carry:empty>blue', 'attack:3:blue']],
     ['./levels/level-56.json', ['attack:1:blue', 'carry:empty>red', 'attack:2:red']],
   ] as const)('%s 弹射余料必须被回收并投入终段', (file, requiredTail) => {
@@ -659,13 +662,13 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it.each([
-    [57, ['stage', 'hole', 'eject', 'hit-center', 'carry', 'multi-center']],
-    [58, ['stage', 'hole', 'eject', 'hit-center', 'carry', 'multi-center']],
-    [59, ['stage', 'hole', 'eject', 'hit-center', 'reactive', 'multi-center']],
-    [60, ['light', 'stage-shield', 'hole', 'carry', 'stage']],
-    [61, ['light', 'eject', 'hit-center', 'carry', 'stage']],
-    [62, ['stage', 'hole', 'reactive', 'carry', 'multi-center']],
-    [63, ['light', 'hole', 'eject', 'hit-center', 'carry', 'multi-center', 'stage']],
+    [57, ['stage', 'hole', 'eject', 'hit-center', 'reactive', 'multi-center']],
+    [58, ['stage', 'hole', 'reactive', 'carry', 'multi-center']],
+    [59, ['stage', 'hole', 'eject', 'hit-center', 'carry', 'multi-center']],
+    [60, ['stage', 'hole', 'eject', 'hit-center', 'carry', 'multi-center']],
+    [61, ['light', 'stage-shield', 'hole', 'carry', 'stage']],
+    [62, ['light', 'hole', 'eject', 'hit-center', 'carry', 'multi-center', 'stage']],
+    [63, ['light', 'eject', 'hit-center', 'carry', 'stage']],
     [64, ['light', 'stage-shield', 'eject', 'hit-center', 'carry', 'multi-center', 'stage']],
     [65, ['light', 'hole', 'eject', 'hit-center', 'reactive', 'carry', 'multi-center', 'stage']],
     [66, ['light', 'hole', 'eject', 'hit-center', 'reactive', 'carry', 'multi-center', 'stage']],
@@ -678,10 +681,10 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it.each([
-    ['./levels/level-57.json', 1, 0],
-    ['./levels/level-58.json', 0, 1],
-    ['./levels/level-59.json', 4, 3],
-    ['./levels/level-61.json', 0, 1],
+    ['./levels/level-60.json', 1, 0],
+    ['./levels/level-59.json', 0, 1],
+    ['./levels/level-57.json', 4, 3],
+    ['./levels/level-63.json', 0, 1],
     ['./levels/level-64.json', 1, 2],
     ['./levels/level-65.json', 5, 4],
     ['./levels/level-66.json', 5, 4],
@@ -696,8 +699,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(hasWinningPathAvoiding(level, baseline[file], hitsTarget)).toBe(false)
   })
 
-  it('level-59 撞核关闸：撞击瞬间闸门合上，罩内受害者保持达标；去掉再生护罩则不可解', () => {
-    const file = './levels/level-59.json'
+  it('level-57 撞核关闸：撞击瞬间闸门合上，罩内受害者保持达标；去掉再生护罩则不可解', () => {
+    const file = './levels/level-57.json'
     expect(reactiveShieldPhases(file)).toEqual([false, true])
     const transitions = shortestTransitions(file)
     const shot = transitions.find((t) => isEjection(t, 4))
@@ -720,8 +723,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(solve(chemGame, withoutReactiveShields(level), { maxDepth: 30 }).solved).toBe(false)
   })
 
-  it('level-62 空手关闸：关闸只能空手（持珠会污染监视臂）；去掉再生护罩则不可解', () => {
-    const file = './levels/level-62.json'
+  it('level-58 空手关闸：关闸只能空手（持珠会污染监视臂）；去掉再生护罩则不可解', () => {
+    const file = './levels/level-58.json'
     expect(reactiveShieldPhases(file)).toEqual([false, true])
     const latch = (t: Transition): boolean =>
       attackedCenter(t) === 5 && t.before.holding === null && centerChanged(t, 5)
@@ -733,8 +736,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(solve(chemGame, withoutReactiveShields(level), { maxDepth: 30 }).solved).toBe(false)
   })
 
-  it('level-60 双光时序：两块光照格各只踏一次，北闸先于南闸被使用', () => {
-    const file = './levels/level-60.json'
+  it('level-61 双光时序：两块光照格各只踏一次，北闸先于南闸被使用', () => {
+    const file = './levels/level-61.json'
     const level = chemGame.parseLevel(levelFiles[file])
     const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
     const visits = new Map<string, number>()
@@ -754,8 +757,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(southUsed).toBeGreaterThan(northUsed)
   })
 
-  it('level-63 三级火箭：一颗种子珠依次烧穿三级喷口', () => {
-    expect(shortestInteractionTrace('./levels/level-63.json')).toEqual([
+  it('level-62 三级火箭：一颗种子珠依次烧穿三级喷口', () => {
+    expect(shortestInteractionTrace('./levels/level-62.json')).toEqual([
       'carry:empty>green',
       'attack:0:green',
       'carry:empty>blue',
@@ -892,9 +895,9 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     [67, ['stage', 'hole', 'carry', 'multi-center']],
     [68, ['stage', 'hole', 'carry', 'multi-center']],
     [69, ['stage', 'hole', 'carry', 'multi-center', 'eject', 'hit-center', 'stage-shield']],
-    [70, ['stage', 'light', 'carry', 'eject', 'hit-center']],
+    [70, ['stage', 'light', 'stage-shield', 'carry', 'eject', 'hit-center', 'multi-center']],
     [71, ['stage', 'light', 'hole', 'carry', 'eject', 'hit-center', 'multi-center']],
-    [72, ['stage', 'light', 'stage-shield', 'carry', 'eject', 'hit-center', 'multi-center']],
+    [72, ['stage', 'light', 'carry', 'eject', 'hit-center']],
     [73, ['stage', 'light', 'hole', 'reactive', 'carry', 'eject', 'hit-center', 'multi-center']],
     [74, ['stage', 'hole', 'carry', 'multi-center', 'eject', 'hit-center']],
   ] as const)('level-%s 转辙/红线关的最短解实际使用全部设计机制', (number, expected) => {
@@ -905,7 +908,7 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it('预算关红线分两档：零冗余关（含 LV.999）= 最短解，其余 = 最短解 + 3', () => {
-    const tight = new Set([69, 70, 71, 74, 75])
+    const tight = new Set([69, 71, 72, 74, 75])
     for (const [file, json] of entries) {
       const level = chemGame.parseLevel(json)
       if (level.moveLimit === undefined) continue
@@ -925,8 +928,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     }
   })
 
-  it('level-67 北口回声：第一波同时出北口与东口，第二波借北口进、南口出', () => {
-    const file = './levels/level-67.json'
+  it('level-68 北口回声：第一波同时出北口与东口，第二波借北口进、南口出', () => {
+    const file = './levels/level-68.json'
     const transitions = shortestTransitions(file)
     const wave1 = transitions.find(
       (t) => attackedCenter(t) === 0 && centerChanged(t, 2) && centerChanged(t, 4),
@@ -943,8 +946,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     ).toBe(false)
   })
 
-  it('level-68 唤醒：北口开火必须晚于西口（奇偶锁死顺序）', () => {
-    const file = './levels/level-68.json'
+  it('level-67 唤醒：北口开火必须晚于西口（奇偶锁死顺序）', () => {
+    const file = './levels/level-67.json'
     const transitions = shortestTransitions(file)
     const west = transitions.findIndex((t) => attackedCenter(t) === 0)
     const north = transitions.findIndex((t) => attackedCenter(t) === 1)
@@ -999,8 +1002,8 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(third.before.centers[1].leaving).toBe('W')
   })
 
-  it('level-47 最短解不重复踏入同一光照格（无光格乒乓）', () => {
-    const file = './levels/level-47.json'
+  it('level-48 最短解不重复踏入同一光照格（无光格乒乓）', () => {
+    const file = './levels/level-48.json'
     const level = chemGame.parseLevel(levelFiles[file])
     const lightKeys = new Set(level.lights.map(([x, y]) => cellKey(x, y)))
     const visits = new Map<string, number>()
@@ -1099,11 +1102,11 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
       ['carry:empty>purple', 'attack:0:purple'],
     ],
     [
-      './levels/level-10.json',
+      './levels/level-12.json',
       ['attack:0:empty', 'carry:empty>blue', 'attack:0:blue'],
     ],
     [
-      './levels/level-12.json',
+      './levels/level-11.json',
       ['attack:1:empty', 'carry:empty>purple', 'attack:1:purple'],
     ],
   ])('%s 最短解仍执行目标教学交互序列', (file, expected) => {
@@ -1156,12 +1159,12 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
     expect(final.after.won).toBe(true)
   })
 
-  it('v4 弹射打结构关：最短解必须真的用弹射中心发射（37/38/41/42）', () => {
+  it('v4 弹射打结构关：最短解必须真的用弹射中心发射（37/38/42/43）', () => {
     for (const file of [
       './levels/level-37.json',
       './levels/level-38.json',
-      './levels/level-41.json',
       './levels/level-42.json',
+      './levels/level-43.json',
     ]) {
       const level = chemGame.parseLevel(levelFiles[file])
       const ejectIndices = level.centers
@@ -1174,6 +1177,25 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
       })
       expect(usedLauncher, `${file} 最短解必须使用弹射中心发射`).toBe(true)
     }
+  })
+
+  it('v4 38 撞光首教：同一发弹珠必须落光格、转开口并撞翻远端中心', () => {
+    const file = './levels/level-38.json'
+    const level = chemGame.parseLevel(levelFiles[file])
+    const transitions = shortestTransitions(file)
+    const shot = transitions.find((t) => isEjection(t, 0))
+    expect(shot).toBeDefined()
+    expect(shot!.after.groups.some(
+      (group) => level.lights.some(([x, y]) => group.pos[0] === x && group.pos[1] === y),
+    )).toBe(true)
+    expect(shot!.before.centers[1].leaving).toBe('S')
+    expect(shot!.after.centers[1].leaving).toBe('E')
+    expect(centerChanged(shot!, 1), '光格转轴后同一颗珠必须继续撞翻远端中心').toBe(true)
+    expect(hasWinningPathAvoiding(
+      level,
+      baseline[file],
+      (transition) => isEjection(transition, 0) && centerChanged(transition, 1),
+    )).toBe(false)
   })
 
   it('v4 39 关闸保形：开→关→开，关盾确实阻断会烧坏已达标中心的共振', () => {
@@ -1203,11 +1225,11 @@ describe('chem（109.5°）正式 01–74 + LV.999 隐藏彩蛋', () => {
   })
 
   it('v4 40 回授闸门：最短解形成闭→开→闭→开的完整反馈脉冲', () => {
-    expect(reactiveShieldPhases('./levels/level-40.json')).toEqual([true, false, true, false])
+    expect(reactiveShieldPhases('./levels/level-41.json')).toEqual([true, false, true, false])
   })
 
-  it('v4 41 护罩缓冲：开→关→开，关盾期间发射只落珠、不撞翻受保护中心', () => {
-    const file = './levels/level-41.json'
+  it('v4 42 护罩缓冲：开→关→开，关盾期间发射只落珠、不撞翻受保护中心', () => {
+    const file = './levels/level-42.json'
     expect(reactiveShieldPhases(file)).toEqual([false, true, false])
     const transitions = shortestTransitions(file)
     const bufferedShot = transitions.find(

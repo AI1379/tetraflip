@@ -1,27 +1,27 @@
 {
   "id": "109.5°-21",
-  "name": "南北换路",
-  "hint": "空穴只在南北两边之间换；每翻一次，接通哪条路、断开哪条路正好对调。",
+  "name": "染两次",
+  "hint": "染色换出来的珠，正好给下一次染色用；空穴翻到哪边，决定每一撞的共振传去哪边。",
   "width": 5,
-  "height": 5,
+  "height": 3,
   "walls": [],
   "player": [
-    1,
+    2,
     2
   ],
   "centers": [
     {
       "pos": [
-        2,
-        2
+        1,
+        1
       ],
       "arms": {
-        "E": "red",
-        "S": "blue",
-        "W": "green"
+        "N": "red",
+        "E": "blue",
+        "S": "green",
+        "W": "purple"
       },
-      "leaving": "E",
-      "kind": "trigonal"
+      "leaving": "S"
     },
     {
       "pos": [
@@ -29,25 +29,34 @@
         1
       ],
       "arms": {
-        "N": "red",
-        "E": "yellow",
-        "S": "blue",
-        "W": "green"
+        "N": "yellow",
+        "E": "blue",
+        "S": "red"
       },
-      "leaving": "N"
+      "leaving": "N",
+      "kind": "trigonal"
     },
     {
       "pos": [
         2,
-        3
+        0
       ],
       "arms": {
-        "N": "blue",
-        "E": "red",
-        "S": "yellow",
-        "W": "green"
+        "N": "yellow",
+        "E": "green",
+        "S": "purple",
+        "W": "red"
       },
-      "leaving": "S"
+      "leaving": "N"
+    }
+  ],
+  "groups": [
+    {
+      "pos": [
+        3,
+        2
+      ],
+      "color": "purple"
     }
   ],
   "stages": [
@@ -55,25 +64,30 @@
       "goals": [
         {
           "center": 1,
-          "arm": "N",
-          "color": "blue"
+          "arm": "S",
+          "color": "purple"
         }
       ]
     },
     {
       "goals": [
         {
+          "center": 0,
+          "arm": "S",
+          "color": "yellow"
+        },
+        {
           "center": 1,
           "arm": "N",
-          "color": "blue"
+          "color": "purple"
         },
         {
           "center": 2,
-          "arm": "S",
-          "color": "blue"
+          "arm": "N",
+          "color": "purple"
         }
       ]
     }
   ],
-  "par": 8
+  "par": 5
 }

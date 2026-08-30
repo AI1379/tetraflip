@@ -99,6 +99,15 @@
         {
           "center": 0,
           "arm": "N",
+          "color": "purple"
+        }
+      ]
+    },
+    {
+      "goals": [
+        {
+          "center": 0,
+          "arm": "N",
           "color": "green"
         },
         {

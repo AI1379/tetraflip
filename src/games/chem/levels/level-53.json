@@ -1,46 +1,46 @@
 {
   "id": "109.5°-53",
-  "name": "隔开的链",
-  "hint": "这条链一开始被带编号的护罩隔开。先在两座中心共用的位置空手翻一次，再让弹出的珠替你把整条链传通。",
-  "width": 5,
-  "height": 4,
+  "name": "先过两道关",
+  "hint": "第一撞要同时打开两道关：让带编号的护罩放开弹射中心，让控制臂放开远处的中心。先踩光格转好开口，再让弹出的珠去撞最后一下。",
+  "width": 7,
+  "height": 5,
   "walls": [],
   "player": [
-    1,
-    0
+    5,
+    1
   ],
   "centers": [
     {
       "pos": [
-        3,
-        1
+        4,
+        2
       ],
       "arms": {
-        "N": "red",
-        "E": "green",
-        "S": "yellow",
-        "W": "blue"
+        "N": "purple",
+        "E": "red",
+        "S": "green"
       },
-      "leaving": "E",
+      "leaving": "N",
+      "kind": "trigonal",
       "ejects": true,
-      "hitCenters": true
-    },
-    {
-      "pos": [
-        0,
-        1
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "W",
+      "hitCenters": true,
       "shieldUntilStage": 1
     },
     {
       "pos": [
+        5,
+        2
+      ],
+      "arms": {
+        "N": "red",
+        "E": "yellow",
+        "S": "green",
+        "W": "blue"
+      },
+      "leaving": "S"
+    },
+    {
+      "pos": [
         0,
         2
       ],
@@ -50,50 +50,34 @@
         "S": "green",
         "W": "yellow"
       },
-      "leaving": "E"
-    },
-    {
-      "pos": [
-        2,
-        3
-      ],
-      "arms": {
-        "N": "red",
-        "E": "blue",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "W"
-    },
-    {
-      "pos": [
-        1,
-        2
-      ],
-      "arms": {
-        "N": "red",
-        "E": "purple",
-        "S": "green",
-        "W": "yellow"
-      },
-      "leaving": "S"
+      "leaving": "S",
+      "reactiveTo": {
+        "center": 1,
+        "arm": "N",
+        "color": "green"
+      }
     }
   ],
   "groups": [
     {
       "pos": [
         2,
-        0
+        2
       ],
-      "color": "purple"
+      "color": "blue"
     }
   ],
-  "lights": [],
+  "lights": [
+    [
+      2,
+      0
+    ]
+  ],
   "stages": [
     {
       "goals": [
         {
-          "center": 4,
+          "center": 1,
           "arm": "N",
           "color": "green"
         }
@@ -102,7 +86,12 @@
     {
       "goals": [
         {
-          "center": 1,
+          "center": 0,
+          "arm": "W",
+          "color": "blue"
+        },
+        {
+          "center": 0,
           "arm": "N",
           "color": "green"
         },
@@ -110,14 +99,9 @@
           "center": 2,
           "arm": "N",
           "color": "green"
-        },
-        {
-          "center": 3,
-          "arm": "E",
-          "color": "green"
         }
       ]
     }
   ],
-  "par": 12
+  "par": 9
 }
