@@ -15,6 +15,15 @@
 
 ---
 
+## #83 2026-08-31 — Vite 单文件提交包：双击与静态托管共用产物
+
+- 改了什么：① 在 `design.md` §8 冻结单文件发布决策：比赛默认包不能假设评审先启动 HTTP 服务，`base: './'` 只解决子路径托管，不能绕过 `file://` 的外部 ES module CORS。② `vite.config.ts` 新增零依赖的生产构建插件，继续由 Vite / Rollup 完成模块转换与压缩，再在 `generateBundle` 阶段把唯一入口 JS 和全部 CSS 内联进 `index.html`；`public/favicon.svg` 在 `transformIndexHtml` 阶段转为 SVG base64 data URI，生产构建关闭 `publicDir` 复制，开发服务器仍照常从 `public/` 提供 favicon。③ 插件把单入口、无动态分包、入口标签匹配与零残留外部 `src` / `href` 设为硬失败条件；成功后删除已内联 bundle 项，`dist/` 最终只含一个 `index.html`。`pnpm build` 仍是唯一生产命令，不新增依赖或特殊提交命令。
+- 为什么：原产物虽能在任意 HTTP 静态服务正常运行，但直接双击时外部 `<script type="module">` 从 `origin: null` 加载本地 JS 会被浏览器按 CORS 拒绝，造成空白页；比赛交付存在评审直接解压双击的现实风险。当前应用只有一个入口、一个 JS 与一个 CSS，约 293 KB 未压缩，内联带来的缓存损失远小于零启动步骤与单文件不漏资源的收益。
+- 如何验证：`pnpm build` 输出仅 `dist/index.html`（292,599 bytes），静态检查为 1 个内联 module、1 个内联 style、1 个 `data:image/svg+xml;base64` favicon、0 个文档级外部 `src` / `href`，bundle 中没有动态 `import`。Vite Preview 实际加载后标题为《109.5° · 结构解谜》，`#app` 有 10 个顶层节点、Canvas 为 1，首关 HUD / 教程文本正常，控制台 0 warning / error。最终 `pnpm typecheck`、23 文件 / 469 项 `pnpm test`、`pnpm build` 与 `git diff --check` 全部通过。
+- 遗留问题：自动化浏览器按安全策略禁止导航 `file://`，因此双击入口用“单 HTML + 零外部加载项”的产物不变量验收；仍需提交前在目标桌面浏览器手动双击一次作为人工烟测。`file://` 下 `localStorage` 的路径隔离细节由浏览器实现决定，移动 HTML 后不承诺继承旧路径存档；HTTP 同源存档语义不变。
+
+---
+
 ## #82 2026-08-30 — v9 可见长期因果：重做 51–56 的段末断崖
 
 - 改了什么：① 在 `design.md` §7.4 冻结“完整状态保持 Markov、长期规划靠可见盘面承诺而非隐藏历史”的制关原则。② 对旧 56《空穴往返》做三轮候选：给原 10 步必经的 `center 0 / N = purple` 关罩态增加阶段检查点；联合远端核目标与延迟远端核目标两版因过密奖励 / 代理冲突淘汰。最终保留单一关罩态检查点，地图、中心、珠、反应护罩、弹射关系、原终局四目标与 `par = 10` 全不变。③ 该清晰版不再硬充当段末峰值，而前移为 52；原 52–55 顺延至 53–56，形成“哪条链能通 → 空穴往返 → 先过两道关 → 隔开的链 → 一颗珠开三道门 → 最后一颗珠”。内部 ID、最短解基线、机制覆盖、撞核 / 余料与空穴语义测试全部随号迁移；试玩配对与 AGENTS v9 状态同步。④ 全量重生成精确图 / B8-B32-B128 / tabular RL / Rasch 未校准报告，并在 RTX 4060 Laptop 上从头重跑 01→74 的实际、无红线两条三种子共享 QR-DQN 课程；`deep-difficulty-report.md` 更新为新关序，01–56 两课程逐 seed 完全复现。
