@@ -2126,11 +2126,11 @@ window.addEventListener('pageshow', () => {
 })
 
 // ---------- 隐藏关控制台彩蛋 + dev 调试接口 ----------
-// 正式版即暴露 __lexin.lv999.enter() / .state()，并在控制台留一条主题化邀请（design §5 四次决策：
+// 正式版即暴露 __tetraflip.lv999.enter() / .state()，并在控制台留一条主题化邀请（design §5 四次决策：
 // 控制台是骇客的主场，打开 devtools 的玩家正是彩蛋的目标受众）；reset / discover 仍仅限开发构建。
 declare global {
   interface Window {
-    __lexin?: {
+    __tetraflip?: {
       lv999: {
         /** 接入隐藏挑战（任何状态可用；正在其中时只回一句终端台词） */
         enter(): void
@@ -2145,14 +2145,14 @@ declare global {
   }
 }
 
-window.__lexin = {
+window.__tetraflip = {
   lv999: {
     enter: () => {
       if (isLv999Level()) {
-        console.info('[lexin] > 你已经在这里了')
+        console.info('[tetraflip] > 你已经在这里了')
         return
       }
-      console.info('[lexin] > 隐藏挑战已接入 · LV.999')
+      console.info('[tetraflip] > 隐藏挑战已接入 · LV.999')
       enterLv999()
     },
     state: () => ({ discovered: lv999Discovered, levelIndex: index, baitClicks: lv999BaitClicks }),
@@ -2169,7 +2169,7 @@ function printLv999ConsoleInvite(): void {
     '████   █   ██ ████ ████ ████',
   ].join('\n')
   console.info(
-    `%c${art}\n\n> PUNKLORDE TERMINAL v9.99\n> 检测到空闲扇区……\n> __lexin.lv999.enter()   // 仅限无敌玩家`,
+    `%c${art}\n\n> PUNKLORDE TERMINAL v9.99\n> 检测到空闲扇区……\n> __tetraflip.lv999.enter()   // 仅限无敌玩家`,
     'color:#bd7cff;font-family:ui-monospace,Menlo,Consolas,monospace;',
   )
 }
@@ -2179,7 +2179,7 @@ if (import.meta.env.DEV) {
     updateHud()
     if (!pickerBackdrop.classList.contains('hidden')) buildPicker()
   }
-  window.__lexin.lv999.reset = () => {
+  window.__tetraflip.lv999.reset = () => {
     try {
       progressStore?.removeItem(LV999_DISCOVERED_KEY)
     } catch {
@@ -2189,15 +2189,15 @@ if (import.meta.env.DEV) {
     lv999BaitClicks = 0
     if (isLv999Level()) openLevel(49) // 面包屑在 50《终局》的通关卡上
     else refreshLv999Ui()
-    console.info('[lexin] LV.999 已重置为未发现')
+    console.info('[tetraflip] LV.999 已重置为未发现')
   }
-  window.__lexin.lv999.discover = () => {
+  window.__tetraflip.lv999.discover = () => {
     markLv999Discovered()
     refreshLv999Ui()
-    console.info('[lexin] LV.999 已标记为发现')
+    console.info('[tetraflip] LV.999 已标记为发现')
   }
   printLv999ConsoleInvite()
-  console.info('[dev] 隐藏关调试：__lexin.lv999.enter() / .reset() / .discover() / .state()')
+  console.info('[dev] 隐藏关调试：__tetraflip.lv999.enter() / .reset() / .discover() / .state()')
 } else {
   printLv999ConsoleInvite()
 }

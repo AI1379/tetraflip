@@ -15,6 +15,15 @@
 
 ---
 
+## #84 2026-08-31 — 仓库脱离比赛方命名：tetraflip
+
+- 改了什么：GitHub 仓库与本地目录由 `lexin-games` 改名为 `tetraflip`；package 名和 Vite 单文件插件标识同步更新。作品展示名仍为《109.5°》，LV.999 控制台入口由 `__lexin` 改为 `__tetraflip`，博客项目记录同步指向新仓库。已有 `lexin.*` / `lexin-games:*` 浏览器存储键作为存档兼容标识保留，避免改名导致现有进度、主题偏好与试玩记录丢失。
+- 为什么：原仓库名只来自比赛发布方，不表达作品本身；`tetraflip` 直接概括四面体翻转这一核心机制，适合作为稳定、可读的 ASCII 仓库标识，同时让作品标题继续承担对外身份。
+- 如何验证：GitHub 目标名在改名前为空且远端改名成功；`pnpm typecheck`、`pnpm test`、`pnpm build` 与博客生产构建均通过，博客内嵌的单文件产物与新构建一致。
+- 遗留问题：无；浏览器存储键只作为向后兼容的内部协议存在，不再用于仓库或玩家可见命名。
+
+---
+
 ## #83 2026-08-31 — Vite 单文件提交包：双击与静态托管共用产物
 
 - 改了什么：① 在 `design.md` §8 冻结单文件发布决策：比赛默认包不能假设评审先启动 HTTP 服务，`base: './'` 只解决子路径托管，不能绕过 `file://` 的外部 ES module CORS。② `vite.config.ts` 新增零依赖的生产构建插件，继续由 Vite / Rollup 完成模块转换与压缩，再在 `generateBundle` 阶段把唯一入口 JS 和全部 CSS 内联进 `index.html`；`public/favicon.svg` 在 `transformIndexHtml` 阶段转为 SVG base64 data URI，生产构建关闭 `publicDir` 复制，开发服务器仍照常从 `public/` 提供 favicon。③ 插件把单入口、无动态分包、入口标签匹配与零残留外部 `src` / `href` 设为硬失败条件；成功后删除已内联 bundle 项，`dist/` 最终只含一个 `index.html`。`pnpm build` 仍是唯一生产命令，不新增依赖或特殊提交命令。

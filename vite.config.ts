@@ -29,7 +29,7 @@ function singleFileBuild(): Plugin {
   const faviconDataUri = `data:image/svg+xml;base64,${readFileSync(faviconPath).toString('base64')}`
 
   return {
-    name: 'lexin-single-file-build',
+    name: 'tetraflip-single-file-build',
     apply: 'build',
     enforce: 'post',
     transformIndexHtml: {
